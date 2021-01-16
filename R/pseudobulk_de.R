@@ -134,7 +134,7 @@ BulkDesignMatrix = function(metadata, sample_column, variable_column, pseudobulk
   stopifnot(any(colSums(met) == 0) == FALSE)
 
   # view design matrix
-  stats::heatmap(met, Rowv = NA, Colv = NA)
+  stats::heatmap(as.matrix(met), Rowv = NA, Colv = NA)
   return(met)
 }
 
