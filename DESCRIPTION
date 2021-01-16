@@ -1,0 +1,9 @@
+Package: scglmmr
+Type: Package
+Title: Sample-level Single-cell Generalized Linear Multilevel Models in R 
+Version: 0.1.0
+Authors@R: c(person(given = 'Matthew', family = 'Mulè', email = 'matthew.mule@nih.gov', role = c('aut', 'cre'), comment = c(ORCID = '0000-0001-8457-2716')), person(given = 'John', family = 'Tsang', email = 'john.tsang@nih.gov', role = c('pdr'), comment = c(ORCID = '0000-0003-3186-3047')))
+Description: group and sample level comparisons for single cell data with multlevel models 
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.0
