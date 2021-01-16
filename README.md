@@ -1,4 +1,5 @@
-Single Cell General Linear Mixed Model R Package scglmmr
+scglmmr *S*ample-level *S*ingle-cell *G*eneralized *L*inear *M*ultilevel
+*M*odels in *R*
 ================
 MPM
 

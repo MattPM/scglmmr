@@ -1,5 +1,5 @@
 ---
-title: Single Cell General Linear Mixed Model R Package scglmmr
+title:  scglmmr *S*ample-level *S*ingle-cell *G*eneralized *L*inear *M*ultilevel *M*odels in *R*
 output: github_document
 author: MPM
 ---
