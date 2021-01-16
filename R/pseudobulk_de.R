@@ -69,7 +69,8 @@ PseudobulkList = function(rawcounts, metadata, sample_col, celltype_col, avg_or_
   # warn user if celltypes without represenation in some samples have not been removed
   if (!is.null(flagcelltypes)) {
     warning('some samples have 0 cells for ', flagcelltypes,
-            " cannot use RunVoomLimma variancePartition::dream() without a separate custom design matrix" )
+            "cannot use RunVoomLimma or dreamMixedModel without custom design matrix for each celltype",
+            "recommend removing cells of this celltype from cell metadata and raw counts" )
   }
   # remove genes with no counts across all cells
   rawcounts = rawcounts[Matrix::rowSums(rawcounts) > 0, ]
@@ -206,7 +207,7 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #'
 #' @param dge_lists list of dgelists created with NormalizePseudobulk
 #' @param apriori_contrasts one of TRUE or FALSE, whether to fit a priori contrasts
-#' @param version if using R 3.5 bioc < 3.8 make version '1' otherwse will run version '2' from bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package
+#' @param version if using R 3.5 bioc < 3.8 make version '1' otherwse leave default 2 runs bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package
 #' @param contrast_matrix contrast matrix created with make.contrasts
 #' @param design_matrix design matrix created with BulkDesignMatrix
 #' @param plotsavepath a path to save created plot of contrasts
@@ -230,9 +231,9 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #' # run dream mixed model
 # dream method Hoffman et.al. 2020  https://doi.org/10.1093/bioinformatics/btaa687
 # biorxiv version 1 and 2 implemented below.
-dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, version = NULL, contrast_matrix = NULL, design_matrix,
-                           plotsavepath, ncores= 4, cell_metadata, fixed_effects, sample_column,
-                           lme4_formula = '~ 0 + cohort_timepoint + (1|sampleid)'){
+dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, sample_column, contrast_matrix = NULL, design_matrix,
+                           fixed_effects, cell_metadata, lme4_formula = '~ 0 + cohort_timepoint + (1|sampleid)', plotsavepath,
+                           ncores= 4,  version = "2") {
 
   # parallelize function
   cl = parallel::makeCluster(ncores)
@@ -255,24 +256,24 @@ dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, version = NULL,
   # convert tibble to dataframe to use in dream fit
   model_md = base::as.data.frame(model_md)
   rownames(model_md) = model_md[[sample_column]]
+  print("dream data argument for model "); print(model_md)
 
   # check row index of model metadata matches dgelist columns and show spesified symbolic formula
   stopifnot(isTRUE(all.equal(target = colnames(dge_lists[[1]]), current = rownames(model_md))))
-  print('model specified (change with argument to lme4_formula) '); lme4_formula
+  print('model specified (change with argument to lme4_formula) '); print(lme4_formula)
 
   # calculate voom observational level weights
   print("implementing dream v1.10.4 bioc 3.7 and R 3.5, to implement bioc > 3.7 R3.6 change set argument `version` = '2'")
-  if (version == "2"){
-    v1 = lapply(dge_lists, function(x){
-      variancePartition::voomWithDreamWeights(counts = x, design = design_matrix,
-                                              normalize.method = "none", save.plot = T, plot = T) })
-  } else{
+  if (version == "1"){
     v1 = lapply(dge_lists, function(x){
       limma::voom(counts = x, design = design_matrix,
                   normalize.method = "none", save.plot = T, plot = T) })
+  } else{
+    v1 = lapply(dge_lists, function(x){
+    variancePartition::voomWithDreamWeights(counts = x, data = model_md, formula = lme4_formula,
+                                            normalize.method = "none", save.plot = T, plot = T) })
   }
-
-  # if user specified custom a priori contrasts, fit mixed model and estimate contrast coefficients
+  # if custom a priori contrasts are specified fit mixed model and estimate contrast coefficients
   if(isTRUE(apriori_contrasts)) {
 
     # visualize custom a priori contrasts
@@ -282,8 +283,7 @@ dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, version = NULL,
 
     # fit mixed model
     fit1 = lapply(v1, function(x){
-      variancePartition::dream(exprObj = x, formula = lme4_formula,
-                               data = model_md, L = as.matrix(contrast_matrix))
+      variancePartition::dream(exprObj = x, formula = lme4_formula, data = model_md, L = as.matrix(contrast_matrix))
     })
   } else {
     # fit model without custom contrasts
