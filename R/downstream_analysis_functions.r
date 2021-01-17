@@ -540,6 +540,10 @@ LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, NES.fi
 #' @param top_n_genes
 #'
 #' @return
+#' @importFrom dplyr filter arrange
+#' @importFrom purrr map_int
+#' @importFrom tibble rownames_to_column
+#' @tidyr gather
 #' @export
 #'
 #' @examples
@@ -561,7 +565,7 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
   }
 
   # get lists with results passing filter and subset result lists by that index
-  g =  which(map_int(resultsub, length) > 0) %>% names
+  g =  which(purrr::map_int(resultsub, length) > 0) %>% names
   resultsub = resultsub[g] ; avsub = av.exprs.list[g]
   stopifnot(g > 0 ); print("lists passing filter") ; print(g)
 
