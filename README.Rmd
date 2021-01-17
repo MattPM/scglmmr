@@ -269,114 +269,63 @@ Later, a more recent report introduced the muscat R package and simulation studi
 
 This paper included simulation and validation studies of established bulk RNAseq methods for within cluster differential expression analysis. In that report, a pseudobulk method that performed particularly well was using limma with voom observational weights, and mixed effects (i.e. the ability to specify a random effect for donor baseline expression) with lme4 model formula implemented through the “dream” method available through the vairance partition package. We implemented a weighted mixed effects model using this limma + voom + lme4 method within each cell type using a random intercept for each donor with contrast coding to test for group level fold change differences. 
 
-# this needs to be rewritten 
-
 ```{r, eval = FALSE}
-# # joint limma model on joint clusters H1 H5 
-# suppressMessages(library(tidyverse))
-# suppressMessages(library(Seurat))
-# suppressMessages(library(magrittr))
-# suppressMessages(library(variancePartition))
-# suppressMessages(library(here))
-# 
-# # init cores 
-# n_cores = 8
-# 
-# # get all DE functions
-# source("de_workflow-master/full_differential_expression_workflow_functions.R")
-# source("de_workflow-master/downstream_analysis_functions.r")
-# 
-# # dir = here("mid_res/2_H1_H5_joint_limmaDE/")
-# datapath = here("your_file_path/generated_data/")
-# figpath = here("your_file_path/figures/")
-# dir.create(datapath); dir.create(figpath)
-# 
-# # read seurat object 
-# Seurat = readRDS(file = "data/your_seurat_object.rds")
-# 
-# # DS model -- get celltypes ; remove low representation celltypes and doublets. 
-# celltypes  = GetCelltypes(SeuratObject = Seurat, celltype = "celltype_joint")
-# mytable = GetSubjectCelltypeTable(Seurat.Object = Seurat,celltype_column = "celltype_joint",sample_column = "sample")
-# remove = mytable$`low representation celltypes`
-# remove = c(remove, "DOUBLET")
-# celltypes = celltypes[celltypes %ni% remove]
-# 
-# 
-# # pool pseudobulk library raw counts 
-# sl = MakePseudobulkList(seurat.object = Seurat, celltype_column = "celltype_joint", 
-#                         sample_column = "sample",vector.of.celltypes = celltypes)
-# saveRDS(sl, file = paste0(datapath,"raw_pseudobulk_list.rds"))
-# 
-# # make metadata and model matrix for contrasts fit. 
-# d1 = MakeMetaTableFromSeurat(seurat_object = Seurat,sample_column = 'sample',variable_column = "cohort_timepoint",
-#                              aggregate.data.list = sl, celltypes.vector = celltypes) 
-# 
-# 
-# # create model metadata and contrast matrix 
-# d1 = d1 %>% 
-#   select(sample, cohort_timepoint) %>%
-#   mutate(sampleid = str_sub(sample,-6,-4)) %>% 
-#   droplevels() %>% 
-#   column_to_rownames("sample")
-# d1m = d1 %>% mutate_if(is.character, as.factor) %$% cohort_timepoint
-# d1m = model.matrix(~0 + d1m)
-# colnames(d1m) = str_sub(colnames(d1m), start = 4, end = -1)
-# 
-# # qc model rank and detect unused factor levels. 
-# stopifnot(Matrix::rankMatrix(d1m) == ncol(d1m))
-# stopifnot(any(colSums(d1m) == 0) == FALSE)
-# 
-# # make contrasts -- specify any arbitrary contrast 
-# contrast_matrix  = makeContrasts(
-#   # high vs low groups day 1 fold change 
-#   t1_HighvsLow = (d1_high - d0_high) - (d1_low - d0_low),
-#   ## timepoint only 
-#   t1_vs_t0 = ((d1_high + d1_low)/2) - ((d0_high + d0_low)/2), 
-#   ##low vs high
-#   levels = colnames(d1m)
-# )
-# 
-# # need this formatting for VariancePartition
-# rownames(contrast_matrix) = paste0("cohort_timepoint", rownames(contrast_matrix))
-# contrast_matrix = as.matrix(contrast_matrix) %>% as.data.frame()
-# 
-# # QC contrast matrix 
-# variancePartition::plotContrasts(contrast_matrix)
-# 
-# # Filter matrix this edgeR function called within to get genes for each celltype https://rdrr.io/bioc/edgeR/man/filterByExpr.html
-# d1sum_dge = NormalizePseudobulk(aggregate.list =  sl, normalization.method = "RLE", model.metadataframe = d1,
-#                                 comparison.group = "cohort_timepoint",minimum.gene.count = 5)
-# 
-# # run pseudobulk modelvoom weights with lme4 model with random intercept for subject, contrast day 1 fc in h5 vs h1. 
-# cl = makeCluster(n_cores)
-# doParallel::registerDoParallel(cl = cl)
-# 
-# # specify formula for lme4 / dream. 
-# form = ~ 0 + cohort_timepoint + (1|sampleid)  
-# 
-# # optional; for dream lme4 pipeline, strip cell type from colnames of counts: 
-# # d1sum_dge = lapply(d1sum_dge, function(x){ colnames(x$counts) = str_sub(colnames(x$counts), -6,-1) ; return(x)}) 
-# 
-# # Get voom observational level weights. 
-# v1 = lapply(d1sum_dge, function(x){ x = voom(counts = x, design = d1m, normalize.method = "none", save.plot = TRUE, plot = FALSE)})
-# 
-# # fit model. 
-# fit1 = lapply(v1, function(x){ dream(exprObj = x, formula = form, data = d1, L = contrast_matrix) })
-# 
-# 
-# # save outputs. 
-# names(d1sum_dge) = names(v1) = names(fit1) = celltypes 
-# saveRDS(d1sum_dge, file = paste0(datapath,"/d1sum_dge_h1h5.rds"))
-# model_list = list(v1, fit1)
-# names(model_list) = c("voom", "fit")
-# saveRDS(model_list, file = paste0(datapath,"/embedded_model_list.rds"))
-# 
+suppressMessages(library(Seurat))
+suppressMessages(library(tidyverse))
+suppressMessages(library(magrittr))
+suppressMessages(library(here))
+'%ni%' = Negate('%in%')
 
+#devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
+library(scglmmr)
 
+# load seurat or sce object etc. 
+s = readRDS("path/seuratobject.rds")
+
+# define counts and metadata and subset to cells above rm seurat object from workspace 
+meta = s@meta.data
+umi = s@assays$RNA@counts
+
+# remove seurat object 
+rm(s); gc()
+
+# QC contingency of cells by subject for each celltype 
+tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "lineage", sample_column = "sample")
+tab$celltypes_remove
+
+# remove cells prior to pseudobulk analysis 
+cells_keep = meta %>% 
+  rownames_to_column("bc") %>% 
+  filter(celltype %ni% tab$celltypes_remove) %$% 
+  bc
+
+# subset data 
+meta = meta[cells_keep, ]
+umi = umi[ ,cells_keep]
+
+# pseudobulk workflow 
+pb = scglmmr::PseudobulkList(rawcounts = umi, metadata = meta, sample_col = "sample", celltype_col = "lineage", avg_or_sum = "sum")
+designmat = scglmmr::BulkDesignMatrix(metadata = meta, sample_column = "sample",variable_column = "cohort_timepoint", pseudobulklist = pb)
+dge = scglmmr::NormalizePseudobulk(pseudobulklist = pb, design_matrix = designmat, minimum.gene.count = 5)
+
+# custom a priori contrasts time effect for the IRAE group vs non irae group and overall time effect and baseline between groups. 
+c_mat = makeContrasts(
+  foldchange_difference = (cohort_timepoint1_1 - cohort_timepoint1_0) - (cohort_timepoint0_1 - cohort_timepoint0_0),
+  time1_foldchange = (cohort_timepoint1_1 + cohort_timepoint0_1) / 2  - (cohort_timepoint1_0 + cohort_timepoint0_0) / 2, 
+  baseline_groups = (cohort_timepoint1_0 - cohort_timepoint0_0),
+  levels = colnames(designmat)
+)
+  
+# fit mixed model 
+fit = scglmmr::dreamMixedModel(dge_lists = dge, apriori_contrasts = TRUE, sample_column = 'sample',
+                               cell_metadata = meta, contrast_matrix = c_mat, design_matrix = designmat, 
+                               fixed_effects = c('age', 'gender', 'cohort_timepoint'), 
+                               lme4_formula =  '~ 0 + age + gender + cohort_timepoint + (1|sampleid)', 
+                               plotsavepath = figpath, version = "2", ncores = 4)
 ```
 
 
-### Downstream analysis on pseudobulk results examples using provided convenience functions 
+### Downstream analysis on pseudobulk results
 
 ```{r, eval=FALSE}
 ### Extract contrast and ranke results 
