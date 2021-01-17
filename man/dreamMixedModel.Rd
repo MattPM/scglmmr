@@ -7,15 +7,15 @@
 dreamMixedModel(
   dge_lists,
   apriori_contrasts = FALSE,
-  version = NULL,
+  sample_column,
   contrast_matrix = NULL,
   design_matrix,
+  fixed_effects,
+  cell_metadata,
+  lme4_formula = "~ 0 + cohort_timepoint + (1|sampleid)",
   plotsavepath,
   ncores = 4,
-  cell_metadata,
-  fixed_effects,
-  sample_column,
-  lme4_formula = "~ 0 + cohort_timepoint + (1|sampleid)"
+  version = "2"
 )
 }
 \arguments{
@@ -23,23 +23,23 @@ dreamMixedModel(
 
 \item{apriori_contrasts}{one of TRUE or FALSE, whether to fit a priori contrasts}
 
-\item{version}{if using R 3.5 bioc < 3.8 make version '1' otherwse will run version '2' from bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package}
+\item{sample_column}{quoted character e.g. "sample" the subject level sample variable should have multiple timepoints subjectID_timepoint i.e. s1_0, s1_1}
 
 \item{contrast_matrix}{contrast matrix created with make.contrasts}
 
 \item{design_matrix}{design matrix created with BulkDesignMatrix}
 
+\item{fixed_effects}{a vector of covariates that are columns in metadata e.g. a vector of  'age' 'gender'}
+
+\item{cell_metadata}{metadata cells-rows variables-columns i.e. ColData or seuratmeta.data}
+
+\item{lme4_formula}{symbolic model formula the default is '~ 0 + cohort_timepoint + (1|sampleid)'}
+
 \item{plotsavepath}{a path to save created plot of contrasts}
 
 \item{ncores}{number of cores for doParallel}
 
-\item{cell_metadata}{metadata cells-rows variables-columns i.e. ColData or seuratmeta.data}
-
-\item{fixed_effects}{a vector of covariates that are columns in metadata e.g. a vector of  'age' 'gender'}
-
-\item{sample_column}{quoted character e.g. "sample" the subject level sample variable should have multiple timepoints subjectID_timepoint i.e. s1_0, s1_1}
-
-\item{lme4_formula}{symbolic model formula the default is '~ 0 + cohort_timepoint + (1|sampleid)'}
+\item{version}{if using R 3.5 bioc < 3.8 make version '1' otherwse leave default 2 runs bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package}
 }
 \value{
 list of model fits indexed by celltype
