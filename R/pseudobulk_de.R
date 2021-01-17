@@ -204,7 +204,7 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 
 
 #' dreamMixedModel - run dream mixed model
-#'
+#' note due to this issue must require variancepartition https://github.com/GabrielHoffman/variancePartition/issues/17
 #' @param dge_lists list of dgelists created with NormalizePseudobulk
 #' @param apriori_contrasts one of TRUE or FALSE, whether to fit a priori contrasts
 #' @param version if using R 3.5 bioc < 3.8 make version '1' otherwse leave default 2 runs bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package
@@ -234,7 +234,8 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, sample_column, contrast_matrix = NULL, design_matrix,
                            fixed_effects, cell_metadata, lme4_formula = '~ 0 + cohort_timepoint + (1|sampleid)', plotsavepath,
                            ncores= 4,  version = "2") {
-
+  # sub optimal but must call until Bioc update https://github.com/GabrielHoffman/variancePartition/issues/17
+  require(variancePartition)
   # parallelize function
   cl = parallel::makeCluster(ncores)
   doParallel::registerDoParallel(cl = ncores)
@@ -257,14 +258,13 @@ dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, sample_column, 
   model_md = base::as.data.frame(model_md)
   rownames(model_md) = model_md[[sample_column]]
   print("dream data argument for model "); print(model_md)
-
   # check row index of model metadata matches dgelist columns and show spesified symbolic formula
   stopifnot(isTRUE(all.equal(target = colnames(dge_lists[[1]]), current = rownames(model_md))))
   print('model specified (change with argument to lme4_formula) '); print(lme4_formula)
 
   # calculate voom observational level weights
-  print("implementing dream v1.10.4 bioc 3.7 and R 3.5, to implement bioc > 3.7 R3.6 change set argument `version` = '2'")
   if (version == "1"){
+    print("implementing dream v1.10.4 bioc 3.7 and R 3.5, to implement bioc > 3.7 R3.6 change set argument `version` = '2'")
     v1 = lapply(dge_lists, function(x){
       limma::voom(counts = x, design = design_matrix,
                   normalize.method = "none", save.plot = T, plot = T) })
