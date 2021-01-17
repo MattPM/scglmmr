@@ -586,24 +586,26 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
   return(tidy)
 }
 
-## usage:
-
-#
-# # customization of the general results above for this project
-# high.responders = c("205","207","209","212","215","234","237","245","250","256")
-# topav = lapply(topav, function(x){
-#   x = x %>%
-#     mutate(cohort = if_else(str_sub(sample, -11, -8) == "H5N1", true =  "H5N1", false = "H1N1")) %>%
-#     mutate(timepoint = str_sub(sample, -2,-1)) %>%
-#     mutate(group =
-#              if_else(cohort == "H5N1", true = "H5 Adjuvant",
-#                      if_else(cohort == "H1N1" & str_sub(sample, -6,-4) %in% high.responders, true = "H1 high responder", false = "H1 low responder")))
-#   x$group = factor(x$group, levels = c("H1 low responder" , "H1 high responder" ,"H5 Adjuvant"))
-#   return(x)
-# })
 
 
-
+#' RunHypergeometricTest - run a hypergeometric test on results returned by GetContrastResults or GetContrastResultsRaw
+#'
+#' @param result_list results returned by by GetContrastResults or GetContrastResultsRaw
+#' @param TERM2GENE_dataframe see clusterprofiler, these objects are automatically loaded in the scglmmr package one of term_df_btm, term_df_kegg, term_df_reactome etc.
+#' @param pval_threshold p threshold for genes to consider in hypergeometric distribution
+#' @param logFC_threshold logFC threshold  for genes to consider in hypergeometric distribution
+#' @param usefdr_threshold use the FDR adjusted p values for ranking genes-this is a strict filter for single cell data, recommended to set FALSE
+#'
+#' @return
+#' @importFrom AnnotationDbi select
+#' @importFrom clusterProfiler enricher
+#' @importFrom org.Hs.eg.db org.Hs.eg.db
+#' @importFrom dplyr mutate bind_rows
+#' @importFrom tidyr separate
+#' @export
+#'
+#' @examples
+#' hyp_hvl = RunHypergeometricTest(result_list = d1red, TERM2GENE_dataframe = term_df_btm, pval_threshold = 0.1, logFC_threshold = 0, usefdr_threshold = FALSE)
 RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshold = 0.05,
                                  logFC_threshold = 0.5, usefdr_threshold = FALSE){
   # result_list = resl[[6]]
@@ -643,41 +645,55 @@ RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshol
   # init store
   hypergeometric = list()
   for (i in 1:length(entrez_subset)){
-
     cells = names(entrez_subset[i])
     print(paste0("hypergeometric test in: ", cells, " index ", i))
     # at least 3 genes
     if(length(entrez_subset[[i]]) <= 3){
       hypergeometric[[i]] = NA
     } else {
-
       # run enrichment
       hypergeometric[[i]] = suppressMessages(tryCatch(
         clusterProfiler::enricher(entrez_subset[[i]], TERM2GENE = TERM2GENE_dataframe),
         error = function(e) return(NA)))
-
       # return NA if there were no enriched pathways within the Entrez IDS in hypergeometric[[i]]
       if (is.null(hypergeometric[[i]]@result)) {
         hypergeometric[[i]] = NA
       } else {
         # reformat enrichment results as dataframe
         hypergeometric[[i]] = hypergeometric[[i]]@result %>%
-          mutate(celltype = cells) %>%
-          separate(GeneRatio,into = c("gene_num", "gene_denom"), sep = "/") %>%
-          mutate(gene_num = as.numeric(gene_num)) %>%
-          mutate(gene_denom = as.numeric(gene_denom)) %>%
-          mutate(gene_ratio = round(gene_num / gene_denom, 3))
+          dplyr::mutate(celltype = cells) %>%
+          tidyr::separate(GeneRatio,into = c("gene_num", "gene_denom"), sep = "/") %>%
+          dplyr::mutate(gene_num = as.numeric(gene_num)) %>%
+          dplyr::mutate(gene_denom = as.numeric(gene_denom)) %>%
+          dplyr::mutate(gene_ratio = round(gene_num / gene_denom, 3))
       }
     }
   }
   # combine results and format for PlotHypergeometric() function
-  hyp = do.call(rbind, hypergeometric)
-  hyp %<>% mutate(n_logp = -log10(p.adjust))
+  hyp = hypergeometric %>%
+    dplyr::bind_rows() %>%
+    dplyr::mutate(n_logp = -log10(p.adjust))
   return(hyp)
 }
 
 
 
+#' PlotHypergeometric - plot results returned by RunHypergeometricTest
+#'
+#' @param hyperg_result
+#' @param p.adjust.filter
+#' @param genenumber_filter
+#' @param savepath
+#' @param savename
+#' @param title
+#' @param height
+#' @param width
+#'
+#' @return
+#' @import ggplot2
+#' @export
+#'
+#' @examples
 PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_filter = 0, savepath = figpath, savename , title, height = 10, width = 8 ){
   # plot attributes
   hyperg_attr = list(
@@ -698,12 +714,13 @@ PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_
       theme(plot.title = element_text(face = "bold", color = "black", size = 8))
   )
   hyp = hyperg_result
-  p = ggplot(hyp %>%
-               filter(gene_num > genenumber_filter) %>%
-               filter(p.adjust < p.adjust.filter),
-             aes(y = ID, x = celltype, fill = n_logp, size = gene_ratio)) +
+  # filter results
+  hyp = hyp[hyp$gene_num > genenumber_filter & p.adjust < p.adjust.filter, ]
+  # plot
+  p = ggplot(hyp, aes(y = ID, x = celltype, fill = n_logp, size = gene_ratio)) +
     hyperg_attr +
     ggtitle(title)
+  # save
   ggsave(p, filename = paste0(savepath, savename, ".pdf"), width = width, height = height)
 }
 
