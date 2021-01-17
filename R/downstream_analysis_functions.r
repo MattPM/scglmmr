@@ -157,7 +157,7 @@ GetRankResults = function(limma.fit.object.list, coefficient.number, contrast.na
 #' @param contrast.result.raw.list results returned by dreamMixedModel
 #'
 #' @return
-#' @importFrom dplyrarrange select desc
+#' @importFrom dplyr arrange select desc
 #' @importFrom tibble column_to_rownames
 #' @export
 #'
