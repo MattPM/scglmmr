@@ -2,7 +2,8 @@
 % Please edit documentation in R/pseudobulk_de.R
 \name{dreamMixedModel}
 \alias{dreamMixedModel}
-\title{dreamMixedModel - run dream mixed model}
+\title{dreamMixedModel - run dream mixed model
+note due to this issue must require variancepartition https://github.com/GabrielHoffman/variancePartition/issues/17}
 \usage{
 dreamMixedModel(
   dge_lists,
@@ -46,6 +47,7 @@ list of model fits indexed by celltype
 }
 \description{
 dreamMixedModel - run dream mixed model
+note due to this issue must require variancepartition https://github.com/GabrielHoffman/variancePartition/issues/17
 }
 \examples{
 # run dream mixed model
