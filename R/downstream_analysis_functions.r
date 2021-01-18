@@ -20,14 +20,14 @@ GetContrastResults = function(limma.fit.object.list, coefficient.number, contras
         GetContrastResults uses emperican Bayes shrinkage see https://github.com/GabrielHoffman/variancePartition/issues/4 ")
   # init store
   test = list()
+  celltypes = names(limma.fit.object.list)
 
   for (i in 1:length(limma.fit.object.list)) {
     test[[i]] =
       limma::topTable(limma.fit.object.list[[i]], coef = coefficient.number, number = Inf, sort.by = "p") %>%
       tibble::rownames_to_column("gene") %>%
       dplyr::mutate(contrast = rep(contrast.name)) %>%
-      dplyr::mutate(pvalue0.01 = dplyr::if_else(P.Value < 0.01, true = "1", false = "0")) %>%
-      dplyr::mutate(celltype = celltypes.vector[i])
+      dplyr::mutate(celltype = celltypes[i])
   }
   names(test) = names(limma.fit.object.list)
   return(test)
@@ -50,29 +50,23 @@ GetContrastResultsRaw =  function(limma.fit.object.list, coefficient.number, con
   print("this function returns results from dreamMixedModel, to get coefficient from RunVoomLimma, use GetContrastResults
         GetContrastResults uses emperican Bayes shrinkage see https://github.com/GabrielHoffman/variancePartition/issues/4 ")
   ## pt 1 return ONLY gene, logFC, AveExpr, contrast, celltype from eBayes call to format data and add raw p values from lme4, correct with BH.
-  pvals = lapply(limma.fit.object.list, function(x){ x$pValue[ , coefficient.number] %>%
-      as.data.frame() %>%
-      tibble::rownames_to_column("gene") %>%
-      dplyr::rename(P.Value = '.') })
+  pvals = lapply(limma.fit.object.list, function(x){ data.frame(P.Value = x$p.value[ ,coefficient.number], gene = rownames(x))})
+  lapply(pvals, function(x) rownames(x) = NULL)
 
   # parameters to run ordinary t statistic
   coef = lapply(limma.fit.object.list, function(x){ x$coefficients[ ,coefficient.number] })
   stdev = lapply(limma.fit.object.list, function(x){ x$stdev.unscaled[ ,coefficient.number] })
   sigma_ = lapply(limma.fit.object.list, function(x){ x$sigma })
   # Note eBayes t statistics are NOT used, only for formatting output, next section adds raw p values and logFC returned by lme4
-  ebf = lapply(limma.fit.object.list, eBayes) ##
+  ebf = lapply(limma.fit.object.list, function(x) suppressWarnings(eBayes(x))) ##
   contrast_result = GetContrastResults(limma.fit.object.list = ebf,
                                        coefficient.number = coefficient.number,
-                                       sort.by = "p",
                                        contrast.name = contrast.name)
   contrast_result = lapply(contrast_result, function(x){ x %>% dplyr::select(gene, logFC, AveExpr, contrast, celltype) })
   result = t_statistic = list()
   for (i in 1:length(limma.fit.object.list)) {
-    # Ordinary t-statistic (see e.g. limma eBayes documentation: ordinary.t <- fit$coef[,2] / fit$stdev.unscaled[,2] / fit$sigma
-    t_statistic[[i]] = coef[[i]] / stdev[[i]] / sigma_[[i]] %>% as.data.frame()
-    t_statistic[[i]] =  t_statistic[[i]] %>% tibble::rownames_to_column("gene")
-    colnames(t_statistic[[i]]) = c("gene", "t")
-
+    # compute ordinary t-statistic (see e.g. limma eBayes documentation: ordinary.t <- fit$coef[,2] / fit$stdev.unscaled[,2] / fit$sigma
+    t_statistic[[i]] = data.frame(t = coef[[i]] / stdev[[i]] / sigma_[[i]]) %>% tibble::rownames_to_column("gene")
     result[[i]] =
       contrast_result[[i]] %>%
       dplyr::mutate(P.Value = plyr::mapvalues(x = gene, from = pvals[[i]]$gene, to = round(pvals[[i]]$P.Value, digits = 9))) %>%
@@ -101,8 +95,13 @@ GetContrastResultsRaw =  function(limma.fit.object.list, coefficient.number, con
 #' @export
 #'
 #' @examples
-GetGeneMatrix = function(result.list, gene_subset, stat_for_matrix = "logFC", pvalfilter, logfcfilter){
-  gene_subset = do.call(rbind, test)$gene %>% unique
+GetGeneMatrix = function(result.list, gene_subset = NULL, stat_for_matrix = "logFC", pvalfilter, logfcfilter){
+
+  if (is.null(gene_subset)) {
+    gene_subset = do.call(rbind, result.list)$gene %>% unique
+  } else{
+    gene_subset = gene_subset
+  }
   mtx = lapply(result.list, function(x){
     x = x %>%
       dplyr::filter(gene %in% gene_subset) %>%
@@ -208,7 +207,7 @@ RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSi
                                     maxSize = maxSize,
                                     minSize = minSize,
                                     nperm = nperm)) %>%
-      dplyr::mutate(celltype = celltypes.vector[i]) %>%
+      dplyr::mutate(celltype = names(rank.list.celltype)[i]) %>%
       dplyr::arrange(pval)
     if (positive.enrich.only == TRUE) {
       gsea[[i]] = gsea[[i]] %>% dplyr::filter(ES > 0)
@@ -230,7 +229,7 @@ RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSi
 #' @export
 #'
 #' @examples
-RbindGseaResultList = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.05){
+RbindGseaResultList = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1){
   score = lapply(gsea_result_list, function(x){
     x = x %>%
       dplyr::select(pathway, padj, NES, celltype) %>%
@@ -558,7 +557,7 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
   })
 
   # # get top n genes if specified.
-  if (!is_null(top_n_genes)){
+  if (!is.null(top_n_genes)){
     resultsub = lapply(resultsub, function(x){ x[1:top_n_genes] })
   }else{
     resultsub = resultsub
@@ -578,7 +577,7 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
     index1 = colnames(average_data)[1]; index2 = colnames(average_data)[ncol(average_data)]
     tidy[[i]] = average_data %>%
       tibble::rownames_to_column("gene") %>%
-      tidyr::gather(sample, av_exp, index1:index2)
+      suppressMessages(tidyr::gather(sample, av_exp, index1:index2))
 
     tidy[[i]]$celltype = names(avsub[i])
   }
@@ -695,30 +694,25 @@ RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshol
 #'
 #' @examples
 PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_filter = 0, savepath = figpath, savename , title, height = 10, width = 8 ){
-  # plot attributes
-  hyperg_attr = list(
-    geom_point(shape = 21),
-    scale_fill_viridis_c(option = "B"),
-    theme_bw(),
-    scale_x_discrete(position = "top"),
-    theme(axis.text.x=element_text(angle = 45, hjust = 0)),
-    theme(axis.title.y = element_blank()),
-    # theme(legend.position = "bottom"),
-    labs(fill = '-log10(ajdusted P value)', size = 'gene ratio'),
-    theme(legend.title = element_text(face = "bold",colour = "black", size = 8)),
-    theme(axis.text.y = element_text(size = 8, face = "bold", color = "black")),
-    theme(axis.text.x = element_text(size = 8.5, face = "bold", color = "black")),
-    guides(shape = guide_legend(override.aes = list(size = 5))),
-    guides(color = guide_legend(override.aes = list(size = 5))),
-    theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
-      theme(plot.title = element_text(face = "bold", color = "black", size = 8))
-  )
-  hyp = hyperg_result
+
   # filter results
-  hyp = hyp[hyp$gene_num > genenumber_filter & p.adjust < p.adjust.filter, ]
+  hyp = hyperg_result[hyperg_result$gene_num > genenumber_filter & hyperg_result$p.adjust < p.adjust.filter, ]
   # plot
   p = ggplot(hyp, aes(y = ID, x = celltype, fill = n_logp, size = gene_ratio)) +
-    hyperg_attr +
+    geom_point(shape = 21) +
+    scale_fill_viridis_c(option = "B") +
+    theme_bw() +
+    scale_x_discrete(position = "top") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 0)) +
+    theme(axis.title.y = element_blank()) +
+    labs(fill = '-log10(ajdusted P value)', size = 'gene ratio') +
+    theme(legend.title = element_text(face = "bold",colour = "black", size = 8)) +
+    theme(axis.text.y = element_text(size = 8, face = "bold", color = "black")) +
+    theme(axis.text.x = element_text(size = 8.5, face = "bold", color = "black")) +
+    guides(shape = guide_legend(override.aes = list(size = 5))) +
+    guides(color = guide_legend(override.aes = list(size = 5))) +
+    theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+    theme(plot.title = element_text(face = "bold", color = "black", size = 8)) +
     ggtitle(title)
   # save
   ggsave(p, filename = paste0(savepath, savename, ".pdf"), width = width, height = height)
@@ -728,15 +722,28 @@ PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_
 
 ##### plot average gene distributions for each sample in each cohort.
 # most general version
-GetTidySummary = function(av.exprs.list, celltype.index, genes.use, subset_cohort = FALSE, cohort.plot = NULL){
+
+#' GetTidySummary - tidy data summary for a single cell type
+#'
+#' @param av.exprs.list - object returned by PseudobulkList
+#' @param celltype.index - index of celltype to ret results see names of PseudobulkList object
+#' @param genes.use - subet of genes to use
+#'
+#' @return
+#' @importFrom tibble rownames_to_column
+#' @importFrom tidyr gather
+#' @export
+#'
+#' @examples
+GetTidySummary = function(av.exprs.list, celltype.index, genes.use){
   gene.index.1 = genes.use[1]
   gene.index.2 = genes.use[length(genes.use)]
   tidy_data =
     av.exprs.list[[celltype.index]][genes.use, ] %>%
     t %>%
     as.data.frame() %>%
-    rownames_to_column("sample") %>%
-    gather(key = gene, value = count, gene.index.1:gene.index.2)
+    tibble::rownames_to_column("sample") %>%
+    tidyr::gather(key = gene, value = count, gene.index.1:gene.index.2)
   return(tidy_data)
 }
 
@@ -828,9 +835,9 @@ VolcanoPlotTop = function(contrast.result.list, contrast.name, save.path, size =
       arrange(adj.P.Val)  %>%
       mutate(nlp = -log10(adj.P.Val)) %>%
       mutate(color =
-               if_else(nlp > 1 & LogFC > 0.2, true = "1",
-                       if_else(nlp > 1 & LogFC < -0.2,  true = "2",
-                               if_else(nlp > 1 & LogFC < 0.2 & LogFC > - 0.2,  true = "3", false = "0"))))
+      if_else(nlp > 1 & LogFC > 0.2, true = "1",
+      if_else(nlp > 1 & LogFC < -0.2,  true = "2",
+      if_else(nlp > 1 & LogFC < 0.2 & LogFC > - 0.2,  true = "3", false = "0"))))
 
     # volcano plot
     p = ggplot(data = contrast.result.list[[i]], aes(x = LogFC, y = nlp, label = gene, color = color)) +

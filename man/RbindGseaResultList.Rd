@@ -4,7 +4,7 @@
 \alias{RbindGseaResultList}
 \title{RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot}
 \usage{
-RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.05)
+RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
 }
 \arguments{
 \item{padj_filter}{}

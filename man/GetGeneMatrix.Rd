@@ -6,7 +6,7 @@
 \usage{
 GetGeneMatrix(
   result.list,
-  gene_subset,
+  gene_subset = NULL,
   stat_for_matrix = "logFC",
   pvalfilter,
   logfcfilter
