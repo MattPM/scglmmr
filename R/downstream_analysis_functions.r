@@ -621,6 +621,9 @@ RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshol
     } else {
       result_list[[i]] = result_list[[i]] %>% filter(P.Value < pval_threshold  & logFC > logFC_threshold)
     }
+    # remove subsets with no genes passing filter.
+    result_list = lapply(result_list, function(x){x[sapply(x, nrow)>0]})
+
     # map geneID to entrez ids
     entrez_subset[[i]] =
       tryCatch(
@@ -638,6 +641,7 @@ RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshol
       entrez_subset[[i]] = entrez_subset[[i]]$ENTREZID
     }
   }
+
   # remove any unmapped features
   entrez_subset = lapply(entrez_subset, function(x) x = x[!is.na(x)])
   names(entrez_subset) = names(result_list)
@@ -669,6 +673,7 @@ RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshol
     }
   }
   # combine results and format for PlotHypergeometric() function
+  hypergeometric = hypergeometric[!is.na(hypergeometric)]
   hyp = hypergeometric %>%
     dplyr::bind_rows() %>%
     dplyr::mutate(n_logp = -log10(p.adjust))
