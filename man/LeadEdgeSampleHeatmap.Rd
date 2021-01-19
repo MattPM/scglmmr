@@ -11,7 +11,11 @@ LeadEdgeSampleHeatmap(
   metadata,
   metadata_annotate,
   sample_column,
-  returnmat
+  returnmat,
+  plotwidth = 5,
+  plotheight = 8,
+  savepath,
+  savename
 )
 }
 \arguments{

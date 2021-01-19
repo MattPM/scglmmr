@@ -605,7 +605,9 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
 #' @export
 #'
 #' @examples
-LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot, metadata, metadata_annotate, sample_column, returnmat ){
+LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot,
+                                 metadata, metadata_annotate, sample_column, returnmat,
+                                 plotwidth = 5, plotheight = 8, savepath , savename ){
 
   ### subset average expression object
   d = tidy.exprs.list[[celltype_plot]] %>%
@@ -618,16 +620,18 @@ LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot, met
   } else{
     gvar = rlang::sym(sample_column)
     heatmap_anno = meta[meta$celltype == celltype_plot,   c(sample_column, metadata_annotate)] %>%
-      dplyr::group_by({{sample_column}}) %>%
+      dplyr::group_by({{gvar}}) %>%
       dplyr::summarise_each(list(~unique(.))) %>%
-      tibble::column_to_rownames("sample")
+      tibble::column_to_rownames(sample_column)
 
     # cu = rev(pals::brewer.rdbu(12))
     cu = c("#053061", "#1E61A5", "#3C8ABE", "#7CB7D6", "#BAD9E9", "#E5EEF3",
            "#F9EAE1", "#F9C7AD", "#EB9273", "#CF5246", "#AB1529", "#67001F")
-    x = pheatmap::pheatmap(d, scale = NA,
+    x = pheatmap::pheatmap(d, scale = 'row',
                            annotation = heatmap_anno,
-                           color = cu)
+                           color = cu,
+                           width = plotwidth, height = plotheight,
+                           filename = paste0(savepath, savename, ".pdf"))
     return(x)
   }
 }
