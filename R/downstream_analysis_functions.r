@@ -274,8 +274,8 @@ GSEABarPlot = function(rbind_gsea_result_dataframe, celltype_name, save_path, ti
     guides(color = guide_legend(override.aes = list(size = 5))) +
     theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
     ggtitle(title)
-    ggsave(p, filename = paste0(save_path,save_name,".pdf"), width = width, height = height)
-    print(p)
+  ggsave(p, filename = paste0(save_path,save_name,".pdf"), width = width, height = height)
+  print(p)
 }
 
 
@@ -516,6 +516,7 @@ LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, NES.fi
 
     index1 = colnames(average_data)[1]; index2 = colnames(average_data)[ncol(average_data)]
     tidy[[i]] = average_data %>%
+      base::as.data.frame() %>%
       tibble::rownames_to_column("gene") %>%
       dplyr::filter(gene %in% mods[[i]]$gene)
 
@@ -528,6 +529,7 @@ LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, NES.fi
   names(tidy) = names(avsub)
   return(tidy)
 }
+
 
 
 #' TopGenesTidySampleExprs convert a PseudobulkList into a tidy dataframe for each sample across cell types of the top differentially expressed genes for a contrast
@@ -583,6 +585,51 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
   }
   names(tidy) = names(avsub)
   return(tidy)
+}
+
+#' LeadEdgeSampleHeatmap make a heatmap of average expression for top or leading edge genes returned by LeadEdgeTidySampleExprs
+#'
+#' @param tidy.exprs.list the object returned by returned by TopGenesTidySampleExprs or LeadEdgeTidySampleExprs which is created from metadata adn the object returned by PseudobulkList (can be average or summed expression)
+#' @param modulename The name of the module to plot
+#' @param celltype_plot the name of the celltype to plot
+#' @param metadata cells x metadata dataframe
+#' @param metadata_annotate a vector of variables (columns) of sample level  metadata to annotate on the heatmap. Must be categorical for each sample e.g. "age" but not "nUMI"
+#' @param sample_column the column in the metadata object corresponding to the sample labels, usually 'smaple'
+#' @param returnmat instead of making an annotated heatmap just return the matrix of averge values per sample of the module subset
+#'
+#' @return
+#' @importFrom dplyr filter select group_by summarize_each
+#' @importFrom tidyr spread
+#' @importFrom tibble rownames_to_column column_to_rownames
+#' @importFrom pheatmap pheatmap
+#' @export
+#'
+#' @examples
+LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot, metadata, metadata_annotate, sample_column, returnmat ){
+
+  ### subset average expression object
+  d = tidy.exprs.list[[celltype_plot]] %>%
+    dplyr::filter(module == modulename) %>%
+    dplyr::select(gene, sample, av_exp) %>%
+    tidyr::spread(sample, av_exp) %>%
+    tibble::column_to_rownames("gene")
+  if(returnwhat == "matrix") {
+    return(d)
+  } else{
+    gvar = rlang::sym(sample_column)
+    heatmap_anno = meta[meta$celltype == celltype_plot,   c(sample_column, metadata_annotate)] %>%
+      dplyr::group_by({{sample_column}}) %>%
+      dplyr::summarise_each(list(~unique(.))) %>%
+      tibble::column_to_rownames("sample")
+
+    # cu = rev(pals::brewer.rdbu(12))
+    cu = c("#053061", "#1E61A5", "#3C8ABE", "#7CB7D6", "#BAD9E9", "#E5EEF3",
+           "#F9EAE1", "#F9C7AD", "#EB9273", "#CF5246", "#AB1529", "#67001F")
+    x = pheatmap::pheatmap(d, scale = NA,
+                           annotation = heatmap_anno,
+                           color = cu)
+    return(x)
+  }
 }
 
 
