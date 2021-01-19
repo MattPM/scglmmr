@@ -599,7 +599,7 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
 #' @importFrom AnnotationDbi select
 #' @importFrom clusterProfiler enricher
 #' @importFrom org.Hs.eg.db org.Hs.eg.db
-#' @importFrom dplyr mutate bind_rows
+#' @importFrom dplyr mutate bind_rows filter
 #' @importFrom tidyr separate
 #' @export
 #'
@@ -607,69 +607,66 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
 #' hyp_hvl = RunHypergeometricTest(result_list = d1red, TERM2GENE_dataframe = term_df_btm, pval_threshold = 0.1, logFC_threshold = 0, usefdr_threshold = FALSE)
 RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshold = 0.05,
                                  logFC_threshold = 0.5, usefdr_threshold = FALSE){
-  # result_list = resl[[6]]
-  # TERM2GENE_dataframe = term_df_hllmark
-  # pval_threshold = 0.05
-  # logFC_threshold = 0
-  # usefdr_threshold = TRUE
+
   print("result_list = list of dataframes indexed by celltype \n column names: gene, logFC, adj.P.Val, P.Value; use PlotHypergeometric() on results")
+
+  # create list of entrez IDs for enriched features passing specified filters
   entrez_subset = list()
   for (i in 1:length(result_list)) {
-
     if (isTRUE(usefdr_threshold)) {
-      result_list[[i]] = result_list[[i]] %>% filter(adj.P.Val < pval_threshold  & logFC > logFC_threshold)
+      d = result_list[[i]]
+      d = d[d$adj.P.Val < pval_threshold & d$logFC > logFC_threshold, ]
     } else {
-      result_list[[i]] = result_list[[i]] %>% filter(P.Value < pval_threshold  & logFC > logFC_threshold)
+      d = result_list[[i]]
+      d = d[d$p_val < pval_threshold & d$logFC > logFC_threshold, ]
     }
-    # remove subsets with no genes passing filter.
-    result_list = lapply(result_list, function(x){x[sapply(x, nrow)>0]})
-
-    # map geneID to entrez ids
-    entrez_subset[[i]] =
-      tryCatch(
-        AnnotationDbi::select(org.Hs.eg.db::org.Hs.eg.db,
-                              keys = result_list[[i]]$gene, columns = c("ENTREZID", "SYMBOL"),
-                              keytype = "SYMBOL"),
-        error = function(e) return(NA)
-      )
-    # if no ids are mapped keep the NA value.
-    if (is.na(entrez_subset[i])) {
-      entrez_subset[[i]] = NA
+    if (nrow(d) < 1) {
+      entrez_subset[[i]] = d = NA
     } else {
-      dup = duplicated(entrez_subset[[i]]$SYMBOL)
-      entrez_subset[[i]] = entrez_subset[[i]][!dup, ]
-      entrez_subset[[i]] = entrez_subset[[i]]$ENTREZID
+      # map geneID to entrez ids
+      ent =
+        tryCatch(
+          AnnotationDbi::select(org.Hs.eg.db::org.Hs.eg.db,
+                                keys = d$gene, columns = c("ENTREZID", "SYMBOL"),
+                                keytype = "SYMBOL"),
+          error = function(e) return(NA)
+        )
+      # if after mapping, no ids are mapped, keep the NA value.
+      if (all(is.na(ent))) {
+        entrez_subset[[i]] = NA
+      } else {
+        dup = duplicated(ent$SYMBOL)
+        ent = ent[!dup, ]$ENTREZID
+        ent = ent[!is.na(ent)]
+        entrez_subset[[i]] = ent
+      }
     }
   }
-
-  # remove any unmapped features
-  entrez_subset = lapply(entrez_subset, function(x) x = x[!is.na(x)])
   names(entrez_subset) = names(result_list)
-  # init store
+  # remove individual subsets without any unmapped features
+  entrez_subset = entrez_subset[!is.na(entrez_subset)]
+  # run hypergeometric test
+  # init strage and iterate over remaining subsets
   hypergeometric = list()
   for (i in 1:length(entrez_subset)){
+
     cells = names(entrez_subset[i])
     print(paste0("hypergeometric test in: ", cells, " index ", i))
-    # at least 3 genes
-    if(length(entrez_subset[[i]]) <= 3){
+    # don't run hypergeometric test if there is only 1 gene enriched or 0 genes enriched.
+    if(length(entrez_subset[[i]]) <= 1){
       hypergeometric[[i]] = NA
     } else {
-      # run enrichment
+      # run hypergeometric test with clusterprfiler package
       hypergeometric[[i]] = suppressMessages(tryCatch(
-        clusterProfiler::enricher(entrez_subset[[i]], TERM2GENE = TERM2GENE_dataframe),
-        error = function(e) return(NA)))
-      # return NA if there were no enriched pathways within the Entrez IDS in hypergeometric[[i]]
-      if (is.null(hypergeometric[[i]]@result)) {
-        hypergeometric[[i]] = NA
-      } else {
-        # reformat enrichment results as dataframe
-        hypergeometric[[i]] = hypergeometric[[i]]@result %>%
+        clusterProfiler::enricher(entrez_subset[[i]], TERM2GENE = TERM2GENE_dataframe)@result %>%
           dplyr::mutate(celltype = cells) %>%
           tidyr::separate(GeneRatio,into = c("gene_num", "gene_denom"), sep = "/") %>%
           dplyr::mutate(gene_num = as.numeric(gene_num)) %>%
           dplyr::mutate(gene_denom = as.numeric(gene_denom)) %>%
-          dplyr::mutate(gene_ratio = round(gene_num / gene_denom, 3))
-      }
+          dplyr::mutate(gene_ratio = round(gene_num / gene_denom, 3)),
+        # return NA if no enrichment
+        error = function(e) return(NA)
+        ))
     }
   }
   # combine results and format for PlotHypergeometric() function
