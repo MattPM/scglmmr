@@ -2,7 +2,7 @@
 % Please edit documentation in R/pseudobulk_de.R
 \name{RunVoomLimma_covar}
 \alias{RunVoomLimma_covar}
-\title{Title}
+\title{RunVoomLimma_covar RunLimmaVoom with an option to adjust for a covariate within mRNA.}
 \usage{
 RunVoomLimma_covar(
   dgelists,
@@ -36,5 +36,5 @@ RunVoomLimma_covar(
 
 }
 \description{
-Title
+RunVoomLimma_covar RunLimmaVoom with an option to adjust for a covariate within mRNA.
 }

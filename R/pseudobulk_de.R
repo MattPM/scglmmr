@@ -22,7 +22,7 @@ SubjectCelltypeTable = function(metadata, celltype_column, sample_column) {
 
   # flag cell types with low or 0 representaiton
   lowcelltypes = unique(rownames(which(x = out < 10, arr.ind = TRUE, useNames = TRUE)))
-  flagcelltypes = unique(rownames(which(x = out == 0, arr.ind = TRUE, useNames = TRUE)))
+  flagcelltypes = unique(rownames(which(x = out <=1, arr.ind = TRUE, useNames = TRUE)))
 
   # print message for user
   if(!is.null(lowcelltypes)) {
@@ -30,7 +30,7 @@ SubjectCelltypeTable = function(metadata, celltype_column, sample_column) {
     message(paste0(lowcelltypes , ", " ))
     }
   if(!is.null(flagcelltypes)) {
-    print('Celltypes with 0 cells for n>0 samples, remove these cells from md and counts prior to PseudobulkList()')
+    print('Celltypes with 1 or less cell cells for n>0 samples, remove these cells from metadata and counts prior to PseudobulkList()')
     message(paste0(flagcelltypes, ", " ))
     }
 
@@ -341,7 +341,8 @@ calc_avg_module_zscore = function(module.list, average.data.frame) {
   return(res)
 }
 
-#' Title
+
+#' AverageSampleModuleZscore apply the function  calc_avg_module_zscore to a pseudobulklist.
 #'
 #' @param average.metacell.list poorly named argument - the object created by PseudobulkList either an average or summed pseudobulk data
 #' @param module.list list of modules as named list each element is a vector of gene names
@@ -378,9 +379,13 @@ AverageSampleModuleZscore = function(average.metacell.list,
 
 
 ################# AJM functions
+
+# RunVoomLimma_covar - Note:
 # removed celltypes vector argument to match updated function above; argument was not needed.
 # same as above [RunLimmaVoom] with option to adjust for covariate within the mRNA (AJM)
-#' Title
+
+
+#' RunVoomLimma_covar RunLimmaVoom with an option to adjust for a covariate within mRNA.
 #'
 #' @param dgelists DGElists created with PseudobulkList
 #' @param design_matrix design matrix created with BulkDesignMatrix
@@ -433,6 +438,34 @@ RunVoomLimma_covar = function(dgelists, design_matrix, co_variable_genes = NULL,
   # }
 return(eb_c_fit)
 }
+
+
+## metacell method (AJM)
+MakeMetaCellperSampleList = function(seurat.object, cluster.Res, sample_column, num.pcs=20, assays, CITEprots, vector.of.samples, numthreads = 1) {
+  sl = list()
+  distlist = list()
+  MetaCelllist = list()
+  samples = vector.of.samples
+  Idents(seurat.object) <- sample_column
+  for (i in 1:length(samples)) {
+    sl[[i]] = seurat.object %>%
+      subset(idents = samples[i]) %>%
+      FindVariableFeatures(nfeatures=2000) %>%
+      ScaleData(assay="RNA") %>%
+      RunPCA(assay="RNA", slot = "scale.data")
+    distlist[[i]] <- parDist(t(rbind(GetAssayData(sl[[i]][["CITE"]])[CITEprots,],t(Embeddings(sl[[i]], reduction="pca")[,num.pcs]))), threads = numthreads)
+
+    sl[[i]][["FiltCATres_snn"]] <- FindNeighbors(distlist[[i]])$snn
+    sl[[i]] <- FindClusters(sl[[i]], resolution = cluster.Res, graph.name = "FiltCATres_snn", algorithm = 1)
+  }
+  for (j in 1:length(samples)) {
+    MetaCelllist[[j]] = AverageExpression3(sl[[j]], assays = assays, features = NULL, return.seurat = TRUE,
+                                           slot = "counts", use.counts=TRUE, verbose = TRUE)
+  }
+  names(MetaCelllist) = samples
+  return(MetaCelllist)
+}
+
 
 
 
@@ -1038,31 +1071,5 @@ return(eb_c_fit)
 
 
 ### depends AverageExpression3
-
-## metacell method (AJM)
-# MakeMetaCellperSampleList = function(seurat.object, cluster.Res, sample_column, num.pcs=20, assays, CITEprots, vector.of.samples, numthreads = 1) {
-#   sl = list()
-#   distlist = list()
-#   MetaCelllist = list()
-#   samples = vector.of.samples
-#   Idents(seurat.object) <- sample_column
-#   for (i in 1:length(samples)) {
-#     sl[[i]] = seurat.object %>%
-#       subset(idents = samples[i]) %>%
-#       FindVariableFeatures(nfeatures=2000) %>%
-#       ScaleData(assay="RNA") %>%
-#       RunPCA(assay="RNA", slot = "scale.data")
-#     distlist[[i]] <- parDist(t(rbind(GetAssayData(sl[[i]][["CITE"]])[CITEprots,],t(Embeddings(sl[[i]], reduction="pca")[,num.pcs]))), threads = numthreads)
-#
-#     sl[[i]][["FiltCATres_snn"]] <- FindNeighbors(distlist[[i]])$snn
-#     sl[[i]] <- FindClusters(sl[[i]], resolution = cluster.Res, graph.name = "FiltCATres_snn", algorithm = 1)
-#   }
-#   for (j in 1:length(samples)) {
-#     MetaCelllist[[j]] = AverageExpression3(sl[[j]], assays = assays, features = NULL, return.seurat = TRUE,
-#                                            slot = "counts", use.counts=TRUE, verbose = TRUE)
-#   }
-#   names(MetaCelllist) = samples
-#   return(MetaCelllist)
-# }
 
 

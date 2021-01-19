@@ -2,7 +2,7 @@
 % Please edit documentation in R/pseudobulk_de.R
 \name{AverageSampleModuleZscore}
 \alias{AverageSampleModuleZscore}
-\title{Title}
+\title{AverageSampleModuleZscore apply the function  calc_avg_module_zscore to a pseudobulklist.}
 \usage{
 AverageSampleModuleZscore(
   average.metacell.list,
@@ -24,7 +24,7 @@ AverageSampleModuleZscore(
 returns a dataframe of module scores for each celltype
 }
 \description{
-Title
+AverageSampleModuleZscore apply the function  calc_avg_module_zscore to a pseudobulklist.
 }
 \examples{
 #
