@@ -316,84 +316,106 @@ c_mat = makeContrasts(
   levels = colnames(designmat)
 )
   
-# fit mixed model 
+# fit mixed model for the multi timepoint contrasts 
 fit = scglmmr::dreamMixedModel(dge_lists = dge, apriori_contrasts = TRUE, sample_column = 'sample',
                                cell_metadata = meta, contrast_matrix = c_mat, design_matrix = designmat, 
                                fixed_effects = c('age', 'gender', 'cohort_timepoint'), 
                                lme4_formula =  '~ 0 + age + gender + cohort_timepoint + (1|sampleid)', 
                                plotsavepath = figpath, version = "2", ncores = 4)
+
+# fit simple linear model for the baseline group level contrast 
+bl = scglmmr::RunVoomLimma(dgelists = dge, design_matrix = designmat, do_contrast_fit = T, my_contrast_matrix = c_mat[ ,3])
+
 ```
 
 
 ### Downstream analysis on pseudobulk results
-
+example.
 ```{r, eval=FALSE}
-### Extract contrast and ranke results 
-## Note if using a version of variancepartition from bioconductor  can use versions of these functions in the more detailed section below 
-# the "Raw" was added for a n earlier version of variancepartition that used ebayes on mixed model results .
-# this is not valid so the "raw" versions of the functions for use with older Seurat versions calculate the ordinary t statistic manually 
-##########
-# Create results objects and run fGSEA on BTM. 
-d1time_res = GetContrastResultsRaw(limma.fit.object.list = fit1,
-                                   coefficient.number = 1, 
-                                   contrast.name = "d1_h1vsh5_time", 
-                                   celltypes.vector = celltypes)
-d1time_rank = GetRankResultsRaw(contrast.result.raw.list = d1time_res) 
-#########
+# hlmk = readRDS(file = here("signature_curation/hallmark.rds"))
+figpath = "your/path"
+test = scglmmr::GetRankResults(limma.fit.object.list = bl, coefficient.number = 1, "test")
+res = scglmmr::GetContrastResults(limma.fit.object.list = bl, coefficient.number = 1, contrast.name = "test")
+
+# note the name of these functions is different (to calculate the dinart t statistic) for models fit with dreamMixedModel
+fit_res = scglmmr::GetContrastResultsRaw(limma.fit.object.list = fit, coefficient.number = 1,contrast.name = "foldchangedifference")
+fit_rank = scglmmr::GetRankResultsRaw(contrast.result.raw.list = fit_res)
 
 
-##### Downstream analysis 
-# run full gene set enrichment on gene ranks. 
-gsea1 = RunFgseaOnRankList(rank.list.celltype = d1time_rank, pathways = btm)
+# Gene Set Enrichment Analysis 
+gsea1 = scglmmr::RunFgseaOnRankList(rank.list.celltype = test, pathways = hlmk)
+d = scglmmr::RbindGseaResultList(gsea_result_list = gsea1,NES_filter = -Inf,padj_filter = 0.2)
+scglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
+# also see scglmmr::GSEABarPlot()
 
-# get tidy enrichment BTM data and make bubbleplot with positive and negative enrichmemt. 
-score = RbindGseaResultList(gsea_result_list = gsea1,NES_filter = -Inf,padj_filter = 0.1)
-GSEABubblePlot(rbind_gsea_result_dataframe = score,  include_negative = TRUE, 
-               save_name = "/btm_0.1",
-               save_path = figpath, 
-               width = 7.9, height = 6.2
-               ) 
+# full set of leading edge genes vs celltypes 
+lefull = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1,NES.filter = -Inf)
 
-
-# Run and plot hypergeometric test
-# term_df = readRDS("signature_curation/cluster_profiler_termdf.rds") # this is included in the repo 
-hyp_time = RunHypergeometricTest(result_list = d1time_res, TERM2GENE_dataframe = term_df,
-                                 pval_threshold = 0.05, logFC_threshold = 0, usefdr_threshold = FALSE)
-PlotHypergeometric(hyperg_result = hyp_time,p.adjust.filter = 0.05,genenumber_filter = 2, 
-                   title = "hypergeometric test LI BTM, FDR 0.05, gene filter n > 2, genes with raw p value < 0.05", 
-                   savepath = figpath,
-                   savename = "d1time_hypergeometric_padj0.05.pdf",
-                   height = 6, width = 8
-                   )
+# combine GSEA results with model coefficient for each gene in leading edge 
+cr = scglmmr::CombineResults(gsealist = gsea1, contrastlist = res, gseafdr = 0.1, genefdr = 1)
 
 
-## plot all DE genes from a given contrast in a heatmap. 
-all_gene = do.call(rbind, d1time_res ) %$% gene %>% unique
-mtx = GetGeneMatrix(result.list = d7time_res, 
-                    stat_for_matrix = "logFC",
-                    gene_subset = all_gene, 
-                    pvalfilter = 0.01, 
-                    logfcfilter = 0.25)
-pheatmap::pheatmap(mtx,
-                   color = viridis::viridis(n = 99, option = "B"),
-                   breaks =seq(from = 0, to = 2,length.out = 99),
-                   fontsize = 8, width = 4, height = 10, fontsize_row = 2.7, fontsize_col = 7, border_color = NA,  
-                   filename = paste0(figpath,"d1_genes_heatmap.pdf"))
+# make tidy average data 
+av = scglmmr::PseudobulkList(rawcounts = umi, metadata = meta,sample_col = "sample", celltype_col = "celltype", avg_or_sum = 'average')
+le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = av, gsea.list = hlmk_ctm0, padj.filter = 0.1,NES.filter = -Inf)
 
 
-# plot only the leading edge genes from enrichment in a heatmap. 
-le = GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.2,NES.filter = -Inf)
+# example plot of sample level average leading edge genes annotated 
+scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr,modulename = "MODULENAME",celltype_plot = "TCELL",
+                      metadata = meta, metadata_annotate = c('group', 'timepoint', 'age', 'gender'),
+                      sample_column = 'sample', returnmat = F, 
+                      savepath = figpath, savename = "filename")
+
+# see also: 
+# scglmmr::TopGenesTidySampleExprs() - same as aobve for 'top' de genes estimated by model coeffcient / p value. 
+# scglmmr::GetTidySummary() - for custom plotting
+
+
+# repeat this for all enriched pathways 
+heatpath = here("sime/path"); dir.create(heatpath)
+for (i in 1:length(le_expr)) {
+  cdat = le_expr[[i]]
+  ctype = names(le_expr[i])
+  umod = unique(cdat$module)
+  for (u in 1:length(umod)) {
+    scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr, 
+                          modulename = umod[u], 
+                          celltype_plot = ctype,
+                          metadata = meta, metadata_annotate = c('group', 'timepoint', 'age', 'gender'),
+                          sample_column = 'sample',
+                          returnmat = F, 
+                          savepath = heatpath,
+                          savename = paste0(ctype, " ",umod[u],'.pdf'))
+  }
+}
+
+# plot only the leading edge genes from enrichment in a heatmap of log Fold Change estimated for a model contrast 
+le = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1, NES.filter = -Inf)
 genesub = do.call(rbind, le) %$% gene %>% unique 
-mtx2 = GetGeneMatrix(result.list = d7time_res, 
+mtx2 = scglmmr::GetGeneMatrix(result.list = res, 
                     stat_for_matrix = "logFC",
                     gene_subset = genesub, 
                     pvalfilter = -Inf, 
-                    logfcfilter = 0.2)
+                    logfcfilter = 0.1)
+
 pheatmap::pheatmap(mtx2,
-                   color = viridis::viridis(n = 99, option = "B"),
                    breaks =seq(from = 0, to = 2,length.out = 99),
-                   fontsize = 8, width = 4, height = 10, fontsize_row = 2.7, fontsize_col = 7, border_color = NA,  
-                   filename = paste0(figpath,"d1_LEgenes_heatmap.pdf"))
+                   filename = paste0(figpath,"LEgenes_heatmap.pdf"))
+
+
+
+### Hypergeometric 
+load(termdf)
+hyp = scglmmr::RunHypergeometricTest(result_list = fit_res, TERM2GENE_dataframe = termdf,
+                                     pval_threshold = 0.1,logFC_threshold = 0, usefdr_threshold = FALSE)
+scglmmr::PlotHypergeometric(hyperg_result = hyp, p.adjust.filter = 0.1,genenumber_filter = 2,
+                            savepath = figpath,savename = "name", title = "title")
+
+# calculate average module z score across samples (z score across samples of gene z scores)
+# baseline_samples = c('')
+lapply(av, function(x), x[ ,baseline_samples])
+mz = scglmmr::AverageSampleModuleZscore(average.metacell.list = av,module.list = hlmk,use.module.subset = F)
+
 
 ```
 
@@ -402,4 +424,4 @@ pheatmap::pheatmap(mtx2,
 <!-- badges: end -->
 
 Questions?
-Please open an issue in the github. 
+Pls open an issue. 

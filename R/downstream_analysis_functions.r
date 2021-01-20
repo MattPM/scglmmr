@@ -606,7 +606,7 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
 #'
 #' @examples
 LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot,
-                                 metadata, metadata_annotate, sample_column, returnmat,
+                                 metadata, metadata_annotate, sample_column, returnmat = FALSE,
                                  plotwidth = 5, plotheight = 8, savepath , savename ){
 
   ### subset average expression object
@@ -615,7 +615,7 @@ LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot,
     dplyr::select(gene, sample, av_exp) %>%
     tidyr::spread(sample, av_exp) %>%
     tibble::column_to_rownames("gene")
-  if(returnwhat == "matrix") {
+  if(isTRUE(returnmat)) {
     return(d)
   } else{
     gvar = rlang::sym(sample_column)
