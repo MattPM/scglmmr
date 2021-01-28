@@ -11,7 +11,7 @@ LeadEdgeSampleHeatmap(
   metadata,
   metadata_annotate,
   sample_column,
-  returnmat,
+  returnmat = FALSE,
   plotwidth = 5,
   plotheight = 8,
   savepath,

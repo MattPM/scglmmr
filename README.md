@@ -376,7 +376,10 @@ pb = scglmmr::PseudobulkList(rawcounts = umi, metadata = meta, sample_col = "sam
 designmat = scglmmr::BulkDesignMatrix(metadata = meta, sample_column = "sample",variable_column = "cohort_timepoint", pseudobulklist = pb)
 dge = scglmmr::NormalizePseudobulk(pseudobulklist = pb, design_matrix = designmat, minimum.gene.count = 5)
 
-# custom a priori contrasts time effect for the IRAE group vs non irae group and overall time effect and baseline between groups. 
+# custom a priori contrasts
+# foldchange_difference =  difference in fold change between groups 
+# time1_foldchange = overall time1 vs baseline fold change across both groups 
+# baseline_groups - baseline difference between groups 
 c_mat = makeContrasts(
   foldchange_difference = (cohort_timepoint1_1 - cohort_timepoint1_0) - (cohort_timepoint0_1 - cohort_timepoint0_0),
   time1_foldchange = (cohort_timepoint1_1 + cohort_timepoint0_1) / 2  - (cohort_timepoint1_0 + cohort_timepoint0_0) / 2, 

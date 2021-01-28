@@ -5,7 +5,7 @@ WeightedCellModuleScore = function(seurat_object, module_list, threshold = 0.1, 
   require(dplyr) ; require(magrittr)
   score_keep = list()
   names_vec = vector()
-  library(parallel)
+  # library(parallel)
   #apply to each module
   print("function returns a dataframe with cell barcodes as rownames and module as column name")
   for (i in 1:length(module_list)) {
