@@ -16,7 +16,7 @@
 #' @importFrom ggpubr ggpaired rremove
 #' @importFrom egg ggarrange
 #' @importFrom broom tidy
-#' @importFrom dplyr select mutate bind_rows if_else
+#' @importFrom dplyr select mutate bind_rows if_else filter
 #' @importFrom tidyr spread everything
 #' @export
 #'
@@ -57,7 +57,8 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value, fixe
   for (i in 1:length(varsall)) {
 
     # fit model separately for each modeled  response variable
-    d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
+    d3 = tidydf %>% dplyr::filter(response_variable == {{varsall[i]}})
+    #d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
     m1 = tryCatch(lme4::lmer(formula = f1, data = d3, REML = TRUE), error = function(e)  return(NA))
     emm1 = tryCatch(emmeans::emmeans(m1, specs = ~group_id), error = function(e)  return(NA))
 
