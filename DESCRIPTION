@@ -9,3 +9,5 @@ LazyData: true
 RoxygenNote: 7.1.0
 URL: https://github.com/MattPM/scglmmr
 BugReports: https://github.com/MattPM/scglmmr/issues
+Imports: 
+    magrittr

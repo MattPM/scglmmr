@@ -9,12 +9,17 @@
 #' @param Seurat_version - if seurat_object is not NULL, and seurat object version < 3 input "2"
 #'
 #' @return
-#' @importFrom Matrix rowSums
+#' @importFrom Matrix rowSums colMeans
+#' @import Seurat
 #' @export
 #'
 #' @examples
 WeightedCellModuleScore = function(seurat_object= NULL, gene_matrix = NULL, module_list,
                                    threshold = 0.1, cellwise_scaling = FALSE, return_weighted = TRUE, Seurat_version = NULL){
+
+  # may remove this section to not require import of Seurat but keeping for now for backwards compatibility with FSC
+  # require(Seurat)
+
   if(!is.null(seurat_object)) {
     message("extracting gene expression from seurat object")
     if(Seurat_version == "2" & !is.null(seurat_object@data)) {
@@ -25,6 +30,9 @@ WeightedCellModuleScore = function(seurat_object= NULL, gene_matrix = NULL, modu
     mtx = gene_matrix
     }
   }
+  ###################################
+
+
   # calculate score for each module
   for (i in 1:length(module_list)) {
     # init
@@ -54,7 +62,7 @@ WeightedCellModuleScore = function(seurat_object= NULL, gene_matrix = NULL, modu
     # option to return score scaled across all cells / can change to return non weighted score
     if (isTRUE(cellwise_scaling) & isTRUE(return_weighted)) {
       # average weighted by non-zero gene representation in cell z scored of cells in object
-      score_return = scaled_mod_weight_avg =  mod_avg * frac_nonzero %>% base::scale()
+      score_return = scaled_mod_weight_avg = scale(mod_avg * frac_nonzero)
     }
     if (!isTRUE(cellwise_scaling) & isTRUE(return_weighted)) {
       # average weighted by non-zero gene representation in cell
@@ -62,7 +70,7 @@ WeightedCellModuleScore = function(seurat_object= NULL, gene_matrix = NULL, modu
     }
     if (isTRUE(cellwise_scaling) & !isTRUE(return_weighted)) {
       # average in cell z scored of cells in object
-      score_return = scaled_mod_avg =  mod_avg  %>% base::scale()
+      score_return = scaled_mod_avg =  scale(mod_avg)
     }
     if (!isTRUE(cellwise_scaling) & !isTRUE(return_weighted)) {
       # average exprs of genes in cell
