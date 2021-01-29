@@ -56,9 +56,8 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value, fixe
   # fit model for each protein
   for (i in 1:length(varsall)) {
 
-    # fit model separately for each protein
+    # fit model separately for each modeled  response variable
     d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
-    lme4::lmer(formula = f1, data = d3, REML = TRUE)
     m1 = tryCatch(lme4::lmer(formula = f1, data = d3, REML = TRUE), error = function(e)  return(NA))
     emm1 = tryCatch(emmeans::emmeans(m1, specs = ~group_id), error = function(e)  return(NA))
 
@@ -103,7 +102,7 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value, fixe
         xlab("group_id") +
         ggpubr::rremove(object = "legend")
       p3 = egg::ggarrange(plots = list(p2,p1), nrow = 1, widths = c(3,1))
-      ggsave(p3, filename = paste0(figpath,"VLN ", proteins[i], ".pdf"), width = 4, height = 4)
+      ggsave(p3, filename = paste0(figpath,"VLN ", varsall[i], ".pdf"), width = 4, height = 4)
 
       # format model results
       marginal_mean_df =
