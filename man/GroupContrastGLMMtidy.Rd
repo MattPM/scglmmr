@@ -10,16 +10,8 @@ GroupContrastGLMMtidy(
   response_value,
   fixed_effects = NULL,
   lmer_formula = NULL,
-  figpath
-)
-
-GroupContrastGLMMtidy(
-  tidydf,
-  response_variable,
-  response_value,
-  fixed_effects = NULL,
-  lmer_formula = NULL,
-  figpath
+  figpath,
+  plotdatqc = TRUE
 )
 }
 \arguments{
@@ -39,12 +31,8 @@ GroupContrastGLMMtidy(
 }
 \value{
 
-
-
 }
 \description{
-GroupContrastGLMMtidy - fit a random intercept model of the difference in fold change between groups and fold change across both groups and baseline controlling for any number of covariates.
-
 GroupContrastGLMMtidy - fit a random intercept model of the difference in fold change between groups and fold change across both groups and baseline controlling for any number of covariates.
 }
 \examples{
@@ -59,16 +47,6 @@ GroupContrastGLMMtidy - fit a random intercept model of the difference in fold c
   fixed_effects = c("Age", "Race", "Gender")
   mmres = GroupContrastGLMMtidy(tidydf = tidydf, response_variable = 'protein', response_value = 'log10protvalue',
    fixed_effects = c('gender', 'ethnicity'), lmer_formula = NULL, subject_colum 'subjectid', figpath = '~' )
-  }
-
-\donttest{
-  tidydf = d2 \%>\%
-  dplyr::rename('subjectid'= subject) \%>\%
-  mutate(group_id = factor(group_id, levels = c(0_0, 0_1, 1_0, 1_1)))
-
-  response_variable = "logprot"
-  fixed_effects = c("Age", "Race", "Gender")
-  mmres = GroupContrastGLMMtidy(tidydf = tidydf, response_variable = 'protein', response_value = 'log10protvalue', fixed_effects = c('gender', 'ethnicity'), lmer_formula = NULL, subject_colum 'subjectid', figpath = '~' )
   }
 
 }
