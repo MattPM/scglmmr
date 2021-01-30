@@ -33,6 +33,7 @@
 #'
 GroupContrastGLMMtidy = function(tidydf, response_variable, response_value, fixed_effects = NULL, lmer_formula = NULL, figpath){
 
+  # specify custom contrasts difference in treatment between groups, treatment effect across groups, per-treatment difference between groups.
   c00 = c(1,0,0,0) ; c01 = c(0,1,0,0) ; c10 = c(0,0,1,0) ; c11 = c(0,0,0,1)
   contrast_list = list(
     "time1vs0_group2vs1" = (c11 - c10) - (c01 - c00),
@@ -59,7 +60,8 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value, fixe
     # fit model separately for each modeled  response variable
     #fvar = rlang::sym(varsall[i])
     #d3 = tidydf %>% dplyr::filter(response_variable == fvar)
-    d3 = tidydf[tidydf$response_variable == varsall[i], ]
+    d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
+    print(d3)
     #d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
     m1 = tryCatch(lme4::lmer(formula = f1, data = d3, REML = TRUE), error = function(e)  return(NA))
     emm1 = tryCatch(emmeans::emmeans(m1, specs = ~group_id), error = function(e)  return(NA))
