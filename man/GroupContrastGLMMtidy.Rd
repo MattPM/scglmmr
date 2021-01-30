@@ -12,6 +12,15 @@ GroupContrastGLMMtidy(
   lmer_formula = NULL,
   figpath
 )
+
+GroupContrastGLMMtidy(
+  tidydf,
+  response_variable,
+  response_value,
+  fixed_effects = NULL,
+  lmer_formula = NULL,
+  figpath
+)
 }
 \arguments{
 \item{tidydf}{tidy data must contain column 'subjectid' and any names covariates (specified with )}
@@ -25,14 +34,33 @@ GroupContrastGLMMtidy(
 \item{lmer_formula}{lmer model formula, if not specified, creates a donor random intercept model of 0 + group_id + (1|subjectid)}
 
 \item{figpath}{path to save figures e.g.  file.path()}
+
+\item{plotdatqc}{if TRUE , saves a qq plot of the variable, random effects, variance covariance matrix, and em means vs data means boxplot fo the directory specified with figpath}
 }
 \value{
+
+
 
 }
 \description{
 GroupContrastGLMMtidy - fit a random intercept model of the difference in fold change between groups and fold change across both groups and baseline controlling for any number of covariates.
+
+GroupContrastGLMMtidy - fit a random intercept model of the difference in fold change between groups and fold change across both groups and baseline controlling for any number of covariates.
 }
 \examples{
+\donttest{
+
+ # subjectid and group_id need to be specified, other variables can be added as covariates by specifying a vector of column names in tidydf to `fixed_effects`
+ tidydf = d2 \%>\%
+   dplyr::rename('subjectid'= subject) \%>\%
+   mutate(group_id = factor(group_id, levels = c(0_0, 0_1, 1_0, 1_1)))
+
+  response_variable = "logprot"
+  fixed_effects = c("Age", "Race", "Gender")
+  mmres = GroupContrastGLMMtidy(tidydf = tidydf, response_variable = 'protein', response_value = 'log10protvalue',
+   fixed_effects = c('gender', 'ethnicity'), lmer_formula = NULL, subject_colum 'subjectid', figpath = '~' )
+  }
+
 \donttest{
   tidydf = d2 \%>\%
   dplyr::rename('subjectid'= subject) \%>\%
