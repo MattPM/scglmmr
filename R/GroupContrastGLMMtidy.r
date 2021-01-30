@@ -10,6 +10,8 @@
 #' @return
 #' @import ggplot2
 #' @import lme4
+#' @importFrom stats as.formula
+#' @importFrom rlang sym
 #' @importFrom emmeans emmeans
 #' @importFrom lattice qqmath levelplot dotplot
 #' @importFrom gridExtra grid.arrange
@@ -56,6 +58,8 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
       f1 = paste(response_value, "~ 0 +", 'group_id + (1|subjectid)')
     }
 
+  f1 = stats::as.formula(f1)
+
   # init store
   res_list = list()
   varsall = unique(tidydf[[response_variable]])
@@ -63,15 +67,15 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
   for (i in 1:length(varsall)) {
 
     # fit model separately for each modeled  response variable
-    #fvar = rlang::sym(varsall[i])
-    #d3 = tidydf %>% dplyr::filter(response_variable == fvar)
-    d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
-    print(d3)
-    print(exists('d3'))
+    gvar = rlang::sym('group_id')
+    # d3 = tidydf %>% dplyr::filter(response_variable == fvar)
+    # d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
+    # print(d3)
+    #3print(exists('d3'))
     #d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
-    lme4::lmer(formula = f1, data = d3, REML = TRUE)
-    m1 = tryCatch(lme4::lmer(formula = f1, data = d3, REML = TRUE), error = function(e)  return(NA))
-    emm1 = tryCatch(emmeans::emmeans(m1, specs = ~group_id), error = function(e)  return(NA))
+    # m1 = tryCatch(lme4::lmer(formula = f1, data = d3, REML = TRUE), error = function(e)  return(NA))
+    m1 = lme4::lmer(formula = f1,  data = tidydf[tidydf[[response_variable]] == varsall[i], ], REML = TRUE)
+    emm1 = tryCatch(emmeans::emmeans(m1, specs = ~ {{ group_id }}), error = function(e)  return(NA))
 
     # error checking
     if( suppressWarnings(is.na(m1))) {
@@ -136,7 +140,7 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
           theme(plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
 
         p2 =
-          ggpubr::ggpaired(d3,x = 'group_id', y = response_value, fill = 'group_id') +
+          ggpubr::ggpaired(tidydf[tidydf[[response_variable]] == varsall[i], ],x = 'group_id', y = response_value, fill = 'group_id') +
           scale_fill_manual(values = c("dodgerblue", "midnightblue", "red", "firebrick")) +
           theme(plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm")) +
           theme_bw() +
