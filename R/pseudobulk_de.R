@@ -218,7 +218,7 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #' @param lme4_formula symbolic model formula the default is '~ 0 + cohort_timepoint + (1|sampleid)'
 #'
 #' @return list of model fits indexed by celltype
-#' @import variancePartition
+#' @importFrom variancePartition voomWithDreamWeights dream plotContrasts
 #' @import limma
 #' @importFrom parallel makeCluster
 #' @importFrom ggplot2 theme ggsave
@@ -234,7 +234,7 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, sample_column, contrast_matrix = NULL, design_matrix,
                            fixed_effects, cell_metadata, lme4_formula = '~ 0 + cohort_timepoint + (1|sampleid)', plotsavepath,
                            ncores= 4,  version = "2") {
-  # sub optimal but must call until Bioc update https://github.com/GabrielHoffman/variancePartition/issues/17
+  # sub-optimal, but *must load* directly due to namespace bug in variancepartition until Bioc update https://github.com/GabrielHoffman/variancePartition/issues/17
   require(variancePartition)
   # parallelize function
   cl = parallel::makeCluster(ncores)

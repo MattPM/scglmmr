@@ -57,7 +57,7 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
     } else {
       f1 = paste(response_value, "~ 0 +", 'group_id + (1|subjectid)')
     }
-
+  f_store = f1
   f1 = stats::as.formula(f1)
 
   # init store
@@ -74,8 +74,8 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
     #3print(exists('d3'))
     #d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
     # m1 = tryCatch(lme4::lmer(formula = f1, data = d3, REML = TRUE), error = function(e)  return(NA))
-    m1 = lme4::lmer(formula = f1,  data = tidydf[tidydf[[response_variable]] == varsall[i], ], REML = TRUE)
-    emm1 = tryCatch(emmeans::emmeans(m1, specs = ~ {{ group_id }}), error = function(e)  return(NA))
+    m1 = lme4::lmer(formula = f1,  data = tidydf[tidydf[[response_variable]] == varsall[i], ], REML = TRUE); print(m1)
+    emm1 = tryCatch(emmeans::emmeans(m1, specs = ~ {{ group_id }}), error = function(e)  return(NA)); print(emm1)
 
     # error checking
     if( suppressWarnings(is.na(m1))) {
@@ -88,10 +88,7 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
     } else{
 
       # format model results
-      marginal_mean_df =
-        broom::tidy(emm1) %>%
-        dplyr::select(group_id, estimate) %>%
-        tidyr::spread(group_id, estimate)
+      marginal_mean_df = broom::tidy(emm1)[ ,1:2] %>% tidyr::spread('group_id','estimate')
       names(marginal_mean_df) = paste0(names(marginal_mean_df), "_marginal_mean")
 
       contrast_fit = emmeans::contrast(emm1, method = contrast_list)
@@ -101,8 +98,7 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
         as.data.frame() %>%
         unlist(use.names = F) %>%
         as.character()
-
-
+      # single line for feature i ; to be rbound
       contrastdf = cbind(contrastdf[1, ], contrastdf[2, ], contrastdf[3, ])
       names(contrastdf) = contrast_colnames
 
@@ -114,7 +110,7 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
       res_list[[i]] =
         cbind(contrastdf, marginal_mean_df) %>%
         dplyr::mutate(variable = varsall[i]) %>%
-        dplyr::mutate(formula = f1) %>%
+        dplyr::mutate(formula = f_store) %>%
         dplyr::select(variable, tidyr::everything())
 
       # plot model quality control and data vs model view save to figpath
