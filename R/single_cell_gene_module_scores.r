@@ -14,25 +14,28 @@
 #' @export
 #'
 #' @examples
-WeightedCellModuleScore = function(seurat_object= NULL, gene_matrix = NULL, module_list,
+WeightedCellModuleScore = function(seurat_object = NULL, gene_matrix = NULL, module_list,
                                    threshold = 0.1, cellwise_scaling = FALSE, return_weighted = TRUE, Seurat_version = NULL){
 
-  # may remove this section to not require import of Seurat but keeping for now for backwards compatibility with FSC
+  # may eventuall remove this section to not require import of Seurat but keeping for now for backwards compatibility with FSC repo
   # require(Seurat)
 
+  if(!is.null(seurat_object) & !is.null(gene_matrix)){
+    stop(" seurat_object and gene_matrix should not *both* be specified. If gene_matrix is specified, set seurat_object and Seurat_version to NULL  ")
+  }
   if(!is.null(seurat_object)) {
     message("extracting gene expression from seurat object")
     if(Seurat_version == "2" & !is.null(seurat_object@data)) {
       mtx = seurat_object@data
     } else if(!is.null(seurat_object@assays$RNA@data)) {
       mtx = seurat_object@assays$RNA@data
-    } else {
-    mtx = gene_matrix
     }
   }
+  if(!is.null(gene_matrix)){
+    mtx = gene_matrix
+  }
   ###################################
-
-
+  score_keep = list()
   # calculate score for each module
   for (i in 1:length(module_list)) {
     # init
@@ -78,7 +81,7 @@ WeightedCellModuleScore = function(seurat_object= NULL, gene_matrix = NULL, modu
     }
     # format returned score as dataframe columns = modules, rownames = barcodes
     score_return = as.data.frame(score_return)
-    names(score_return) = names_vec[i]
+    names(score_return) = signaturename
     score_keep[[i]] = score_return
   }
   score_df = do.call(cbind, score_keep)

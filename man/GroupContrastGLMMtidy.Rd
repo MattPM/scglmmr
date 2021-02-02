@@ -10,8 +10,8 @@ GroupContrastGLMMtidy(
   response_value,
   fixed_effects = NULL,
   lmer_formula = NULL,
-  figpath,
-  plotdatqc = TRUE
+  plotdatqc = TRUE,
+  figpath
 )
 }
 \arguments{
@@ -23,11 +23,11 @@ GroupContrastGLMMtidy(
 
 \item{fixed_effects}{the fixed effects to specify in this case as covariates e.g. c('gender', 'ethnicity'), these are automatically combined into formula with your_fixed_effects + 0 + group_id + (1|subjectid)}
 
-\item{lmer_formula}{lmer model formula, if not specified, creates a donor random intercept model of 0 + group_id + (1|subjectid)}
-
-\item{figpath}{path to save figures e.g.  file.path()}
+\item{lmer_formula}{lmer model formula, does NOT need to be specified. If NULL and if fixed_effects are NULL, automatically creates a donor random intercept model of 0 + group_id + (1|subjectid)}
 
 \item{plotdatqc}{if TRUE , saves a qq plot of the variable, random effects, variance covariance matrix, and em means vs data means boxplot fo the directory specified with figpath}
+
+\item{figpath}{path to save figures e.g.  file.path("mypath/")}
 }
 \value{
 
@@ -39,14 +39,17 @@ GroupContrastGLMMtidy - fit a random intercept model of the difference in fold c
 \donttest{
 
  # subjectid and group_id need to be specified, other variables can be added as covariates by specifying a vector of column names in tidydf to `fixed_effects`
- tidydf = d2 \%>\%
+ tidydf = mydata \%>\%
    dplyr::rename('subjectid'= subject) \%>\%
-   mutate(group_id = factor(group_id, levels = c(0_0, 0_1, 1_0, 1_1)))
+   mutate(group_id = factor(group_id, levels = c(0_0, 0_1, 1_0, 1_1))) \%>\%
+   mutate(log10protvalue = log10(expression + 1)) \%>\%
 
-  response_variable = "logprot"
-  fixed_effects = c("Age", "Race", "Gender")
+
+ # tidydf should have a column with the response variable (i.e. variable on the formua eft hand side) in long form, i.e. a variable called "genes" or "proteins" or "cytokines" etc.
+ # the values for the response variable are specified by the `response_value` for example, the log transfomred gene expression
+
   mmres = GroupContrastGLMMtidy(tidydf = tidydf, response_variable = 'protein', response_value = 'log10protvalue',
-   fixed_effects = c('gender', 'ethnicity'), lmer_formula = NULL, subject_colum 'subjectid', figpath = '~' )
+   fixed_effects = c('gender', 'ethnicity'), lmer_formula = NULL, subject_colum = 'subjectid', plotdatqc  = TRUE, figpath = '~' )
   }
 
 }

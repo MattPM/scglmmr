@@ -4,9 +4,9 @@
 #' @param response_variable the column containing the variables to be modeled in tidy (long) format -- e.g. 'gene' with the gene's values in the column in response_value
 #' @param response_value the value for the measurement response_variable -- should probably be in log space.
 #' @param fixed_effects the fixed effects to specify in this case as covariates e.g. c('gender', 'ethnicity'), these are automatically combined into formula with your_fixed_effects + 0 + group_id + (1|subjectid)
-#' @param lmer_formula lmer model formula, if not specified, creates a donor random intercept model of 0 + group_id + (1|subjectid)
+#' @param lmer_formula lmer model formula, does NOT need to be specified. If NULL and if fixed_effects are NULL, automatically creates a donor random intercept model of 0 + group_id + (1|subjectid)
 #' @param plotdatqc if TRUE , saves a qq plot of the variable, random effects, variance covariance matrix, and em means vs data means boxplot fo the directory specified with figpath
-#' @param figpath path to save figures e.g.  file.path()
+#' @param figpath path to save figures e.g.  file.path("mypath/")
 #' @return
 #' @import ggplot2
 #' @import lme4
@@ -27,18 +27,21 @@
 #' \donttest{
 #'
 #'  # subjectid and group_id need to be specified, other variables can be added as covariates by specifying a vector of column names in tidydf to `fixed_effects`
-#'  tidydf = d2 %>%
+#'  tidydf = mydata %>%
 #'    dplyr::rename('subjectid'= subject) %>%
-#'    mutate(group_id = factor(group_id, levels = c(0_0, 0_1, 1_0, 1_1)))
+#'    mutate(group_id = factor(group_id, levels = c(0_0, 0_1, 1_0, 1_1))) %>%
+#'    mutate(log10protvalue = log10(expression + 1)) %>%
 #'
-#'   response_variable = "logprot"
-#'   fixed_effects = c("Age", "Race", "Gender")
+#'
+#'  # tidydf should have a column with the response variable (i.e. variable on the formua eft hand side) in long form, i.e. a variable called "genes" or "proteins" or "cytokines" etc.
+#'  # the values for the response variable are specified by the `response_value` for example, the log transfomred gene expression
+#'
 #'   mmres = GroupContrastGLMMtidy(tidydf = tidydf, response_variable = 'protein', response_value = 'log10protvalue',
-#'    fixed_effects = c('gender', 'ethnicity'), lmer_formula = NULL, subject_colum 'subjectid', figpath = '~' )
+#'    fixed_effects = c('gender', 'ethnicity'), lmer_formula = NULL, subject_colum = 'subjectid', plotdatqc  = TRUE, figpath = '~' )
 #'   }
 #'
 GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
-                                 fixed_effects = NULL, lmer_formula = NULL, figpath, plotdatqc = TRUE){
+                                 fixed_effects = NULL, lmer_formula = NULL, plotdatqc = TRUE, figpath){
 
   # specify custom contrasts difference in treatment between groups, treatment effect across groups, per-treatment difference between groups.
   c00 = c(1,0,0,0) ; c01 = c(0,1,0,0) ; c10 = c(0,0,1,0) ; c11 = c(0,0,0,1)
@@ -60,6 +63,19 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
   f_store = f1
   f1 = stats::as.formula(f1)
 
+  # checks on minimal required metadata and formatting of group levels
+  print('model specified:'); print(f1)
+  stopifnot(is.factor(metadata$group_id))
+  cat("check levels, testing: \n",
+      "1: difference in treatmant effect between groups: ",
+      levels(metadata$group_id)[3:4], " fold change  vs: ", levels(metadata$group_id)[1:2], "fold change  \n",
+      "2: pre treatment baseline difference between groups: ", levels(metadata$group_id)[c(1,3)], " fold change \n",
+      "3: treatment effect across both groups combined \n",
+      "a prori contrasts across `group_id` variable: "
+  )
+  print(contrast_list)
+
+
   # init store
   res_list = list()
   varsall = unique(tidydf[[response_variable]])
@@ -68,14 +84,8 @@ GroupContrastGLMMtidy = function(tidydf, response_variable, response_value,
 
     # fit model separately for each modeled  response variable
     gvar = rlang::sym('group_id')
-    # d3 = tidydf %>% dplyr::filter(response_variable == fvar)
-    # d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
-    # print(d3)
-    #3print(exists('d3'))
-    #d3 = tidydf[tidydf[[response_variable]] == varsall[i], ]
-    # m1 = tryCatch(lme4::lmer(formula = f1, data = d3, REML = TRUE), error = function(e)  return(NA))
-    m1 = lme4::lmer(formula = f1,  data = tidydf[tidydf[[response_variable]] == varsall[i], ], REML = TRUE); print(m1)
-    emm1 = tryCatch(emmeans::emmeans(m1, specs = ~ {{ group_id }}), error = function(e)  return(NA)); print(emm1)
+    m1 = lme4::lmer(formula = f1,  data = tidydf[tidydf[[response_variable]] == varsall[i], ], REML = TRUE)
+    emm1 = tryCatch(emmeans::emmeans(m1, specs = ~ {{ group_id }}), error = function(e)  return(NA))
 
     # error checking
     if( suppressWarnings(is.na(m1))) {
