@@ -5,6 +5,13 @@ MPM
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
+## Installation
+
+``` r
+devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
+library(scglmmr)
+```
+
 ## Single cell within cluster perturbation response differential expression
 
 The purpose of this workflow is to do within cluster differential
@@ -205,6 +212,7 @@ group\_timepoint factor.
 # load data
 Seurat = readRDS("my_seurat_object.rds")
 
+scglmmr::
 
 # add cellwise module score for each signature 
 mod_scores = WeightedCellModuleScore(seurat_object = Seurat,

@@ -15,6 +15,14 @@ knitr::opts_chunk$set(
 ```
 
 
+## Installation  
+```{r}
+devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
+library(scglmmr)
+
+```
+
+
 ## Single cell within cluster perturbation response differential expression 
 
 The purpose of this workflow is to do within cluster differential expression in a perturbation study where there are multiple measurements made on the same donors. It can accomodate nested groups (e.g. poor vs good outcome), 2 timepoints and can accomodate any fixed effects to directly control for covariates. 
@@ -170,6 +178,7 @@ This function will also automatically save a helpful plot of the least squares m
 # load data
 Seurat = readRDS("my_seurat_object.rds")
 
+scglmmr::
 
 # add cellwise module score for each signature 
 mod_scores = WeightedCellModuleScore(seurat_object = Seurat,
