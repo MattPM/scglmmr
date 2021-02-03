@@ -177,7 +177,7 @@ NormalizePseudobulk = function(pseudobulklist, normalization.method = "RLE",
 #' @param my_contrast_matrix custom a priori contrasts created with make.contrasts - see limma or edgeR manual
 #'
 #' @return a list of linear model fits for each celltype
-#' @import limma
+#' @importFrom limma lmFit voom contrasts.fit eBayes
 #' @export
 #'
 #' @examples
@@ -219,7 +219,7 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #'
 #' @return list of model fits indexed by celltype
 #' @importFrom variancePartition voomWithDreamWeights dream plotContrasts
-#' @import limma
+#' @importFrom limma voom
 #' @importFrom parallel makeCluster
 #' @importFrom ggplot2 theme ggsave
 #' @importFrom doParallel registerDoParallel
