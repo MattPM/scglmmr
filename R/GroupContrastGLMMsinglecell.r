@@ -45,14 +45,6 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
     "time0_group2vs1" = c10 - c00
   )
 
-  ### testfun
-  lmer_formula = NULL
-  module_data_frame = mdf
-  metadata = met
-  celltype_column = "celltype_joint"
-  fixed_effects = 'batch'
-
-
   # specify model formula
   if(!is.null(lmer_formula)){
     f1 = lmer_formula
