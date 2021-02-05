@@ -89,7 +89,7 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
     print(paste0("fitting models for ", cts[u]))
 
     # subset metadat to dataeeded for modeling
-    metsub = met[met[[celltype_column]] == cts[u], c(fixed_effects, 'group_id', 'subjectid')]
+    metsub = metadata[metadata[[celltype_column]] == cts[u], c(fixed_effects, 'group_id', 'subjectid')]
     meta_fit = colnames(metsub)
 
     # subset module dataframe to cells in celltype u from metadata above
