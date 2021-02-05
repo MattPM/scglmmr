@@ -194,7 +194,7 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
             theme(plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
 
           # combine marginal means and data view
-          p3 = egg::ggarrange(plots = list(p2,p1), nrow = 1, widths = c(3,1))
+          p3 = egg::ggarrange(plots = list(p2,p1), nrow = 1, widths = c(3,1), draw = FALSE)
           ggsave(p3, filename = paste0(figpath,"VLN ", titleplot, ".pdf"), width = 3.5, height = 3.5)
         }
         # store result vector in result list i for celltype u
