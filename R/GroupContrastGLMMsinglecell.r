@@ -210,7 +210,7 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
     resdf = do.call(rbind, res_list)
     resdf = cbind(celltype = cts[u], resdf)
   }
-  resdf_full = do.call(rbind, res_df)
+  resdf_full = do.call(rbind, resdf)
   return(resdf_full)
 }
 
