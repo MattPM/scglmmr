@@ -34,11 +34,14 @@
 #   mutate_if(is.character, as.factor) %>%
 #   select(barcode_check, sampleid, timepoint, group_id, gender, celltype_joint)
 GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'celltype', metadata,
-                                       fixed_effects = NULL, lmer_formula = NULL, plotdatqc = TRUE, figpath){
+                                        fixed_effects = NULL, lmer_formula = NULL, plotdatqc = TRUE, figpath){
 
 
   # specify custom contrasts difference in treatment between groups, treatment effect across groups, per-treatment difference between groups.
-  c00 = c(1,0,0,0) ; c01 = c(0,1,0,0) ; c10 = c(0,0,1,0) ; c11 = c(0,0,0,1)
+  c00 = c(1,0,0,0)
+  c01 = c(0,1,0,0)
+  c10 = c(0,0,1,0)
+  c11 = c(0,0,0,1)
   contrast_list = list(
     "time1vs0_group2vs1" = (c11 - c10) - (c01 - c00),
     "time1vs0" = (c11 + c01) / 2 - (c10 + c00) / 2,
@@ -78,7 +81,7 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
   # init storage
   res_celltype = res_list = list()
 
-  # define module names
+  # define model data
   module_names = names(module_data_frame)
   cts = as.character(unique(metadata[[celltype_column]]))
 
@@ -89,8 +92,10 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
     print(paste0("fitting models for ", cts[u]))
 
     # subset metadat to dataeeded for modeling
-    metsub = metadata[metadata[[celltype_column]] == cts[u], c(fixed_effects, 'group_id', 'subjectid')]
+
+    metsub = metadata[metadata[[celltype_column]] == cts[u], ]
     meta_fit = colnames(metsub)
+    stopifnot(c( 'group_id', 'subjectid') %in% meta_fit)
 
     # subset module dataframe to cells in celltype u from metadata above
     mod_df = module_data_frame[rownames(metsub), ]
@@ -112,11 +117,11 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
 
       # error checking
       if( suppressWarnings(is.na(m1))) {
-        print(paste0(" could not fit  model for ", varsall[i]))
+        print(paste0(" could not fit  model for ", module_names[i]))
         res_list[[i]] = NA
       }
-      if(is.na(emm1)){
-        print(paste0(varsall[i],  " check vcov matrix could not calculate marginal means  "))
+      if( suppressWarnings(is.na(emm1))) {
+        print(paste0(module_names[i],  " check vcov matrix could not calculate marginal means  "))
         res_list[[i]] = NA
       } else{
 
@@ -181,16 +186,18 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
 
           p2 = ggplot(dat_fit, aes(x = group_id, y = modulescore)) +
             geom_violin(aes(fill = group_id), show.legend = FALSE) +
-            scale_fill_manual(values = c("dodgerblue", "midnightblue", "red", "firebrick")) +
+            # geom_boxplot(width=0.14, outlier.shape = NA) +
+            stat_summary(fun.y = mean, fun.ymin = mean, fun.ymax = mean, geom = "crossbar", color = "black", size = 0.3) +
+            scale_fill_manual(values = c("#1E90FFD9", "#191970D9", "#FF0000D9", "#CD0000D9")) +
             ggtitle(paste0(f_store, "\n", cts[u], " ", module, "\n", "baseline wilcox p = ", t0p, "\n",
                            "lmer 24h Fold Change delta p = ", t1p)) +
             theme_bw(base_size = 11) +
             theme(axis.title.y =  element_text(face = "bold", size = 7)) +
             theme(plot.title = element_text(size = 7, face = "bold")) +
             ylab(paste0(module, "  score  " )) +
-            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 6)) +
+            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 7, face = "bold")) +
             theme(axis.title.x = element_blank()) +
-            theme(plot.margin = unit(c(0, 0, 0, 0), "cm"))
+            theme(plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
 
           # combine marginal means and data view
           p3 = egg::ggarrange(plots = list(p2,p1), nrow = 1, widths = c(3,1))
@@ -203,6 +210,7 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
     resdf = do.call(rbind, res_list)
     resdf = cbind(celltype = cts[u], resdf)
   }
-  resdf_full = do.call(rbind, res_celltype)
+  resdf_full = do.call(rbind, res_df)
   return(resdf_full)
 }
+
