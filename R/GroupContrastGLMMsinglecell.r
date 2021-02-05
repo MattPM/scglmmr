@@ -157,14 +157,8 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
 
         # merge all results and  format into a single line of a list to be r bound.
         contrastdf = cbind(contrastdf, wt)
-        res_list[[i]] =
-          cbind(contrastdf, marginal_mean_df) %>%
-          dplyr::mutate(module = module) %>%
-          dplyr::mutate(formula = f_store) %>%
-          dplyr::select(module, tidyr::everything())
 
         if(isTRUE(plotdatqc)){
-
           # reformat minimal marginal means
           p1 = plot(emm1) +
             coord_flip() +
@@ -203,14 +197,23 @@ GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'cel
           p3 = egg::ggarrange(plots = list(p2,p1), nrow = 1, widths = c(3,1))
           ggsave(p3, filename = paste0(figpath,"VLN ", titleplot, ".pdf"), width = 3.5, height = 3.5)
         }
+        # store result vector in result list i for celltype u
+        res_list[[i]] =
+          cbind(contrastdf, marginal_mean_df) %>%
+          dplyr::mutate(module = module) %>%
+          dplyr::mutate(formula = f_store) %>%
+          dplyr::select(module, tidyr::everything())
       }
     }
-    # remove all module / celltypes without model fit; bind to df; add to cellype list.
     res_list = res_list[!is.na(res_list)]
     resdf = do.call(rbind, res_list)
-    resdf = cbind(celltype = cts[u], resdf)
+
+    # store bound results for each module for celltype u in list element u
+    res_celltype[[u]] = cbind(celltype = cts[u], resdf)
   }
-  resdf_full = do.call(rbind, resdf)
+  # bind results from each cell type into single dataframe
+  resdf_full = do.call(rbind, res_celltype)
   return(resdf_full)
 }
+
 
