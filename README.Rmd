@@ -66,14 +66,10 @@ Based on these we adopted the limma+voom method for pseudobulk testing, using th
 10.1101/713412. This paper included simulation and validation studies of established bulk RNAseq methods for within cluster differential expression analysis. In that report, a pseudobulk method that performed particularly well was using limma with voom observational weights, and mixed effects (i.e. the ability to specify a random effect for donor baseline expression) with lme4 model formula implemented through the “dream” method available through the vairance partition package. We implemented a weighted mixed effects model using this limma + voom + lme4 method within each cell type using a random intercept for each donor with contrast coding to test for group level fold change differences.  
 
 ```{r, eval = FALSE}
-suppressMessages(library(Seurat))
-suppressMessages(library(tidyverse))
-suppressMessages(library(magrittr))
-suppressMessages(library(here))
-'%ni%' = Negate('%in%')
-
 #devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
 library(scglmmr)
+'%ni%' = Negate('%in%')
+datapath = "mypath/"
 
 # load seurat or sce object etc. 
 s = readRDS("path/seuratobject.rds")
@@ -81,33 +77,26 @@ s = readRDS("path/seuratobject.rds")
 # define counts and metadata and subset to cells above rm seurat object from workspace 
 meta = s@meta.data
 umi = s@assays$RNA@counts
-
-# remove seurat object 
 rm(s); gc()
 
 # QC contingency of cells by subject for each celltype 
 tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "lineage", sample_column = "sample")
-tab$celltypes_remove
+tab$celltypes_remove; tab$`low representation celltypes`; tab$table
 
 # remove cells prior to pseudobulk analysis 
-cells_keep = meta %>% 
-  rownames_to_column("bc") %>% 
-  filter(celltype %ni% tab$celltypes_remove) %$% 
-  bc
+meta = meta[meta$celltype_label_3 %ni% tab$celltypes_remove, ]
 
 # subset data 
-meta = meta[cells_keep, ]
-umi = umi[ ,cells_keep]
+umi = umi[ ,rownames(meta)]
 
 # pseudobulk workflow 
-pb = scglmmr::PseudobulkList(rawcounts = umi, metadata = meta, sample_col = "sample", celltype_col = "lineage", avg_or_sum = "sum")
-designmat = scglmmr::BulkDesignMatrix(metadata = meta, sample_column = "sample",variable_column = "cohort_timepoint", pseudobulklist = pb)
+pb = scglmmr::PseudobulkList(rawcounts = umi, metadata = meta, sample_col = "sample",
+                             celltype_col = "lineage", avg_or_sum = "sum")
+designmat = scglmmr::BulkDesignMatrix(metadata = meta, sample_column = "sample",
+                                      variable_column = "cohort_timepoint", pseudobulklist = pb)
 dge = scglmmr::NormalizePseudobulk(pseudobulklist = pb, design_matrix = designmat, minimum.gene.count = 5)
 
 # custom a priori contrasts
-# foldchange_difference =  difference in fold change between groups 
-# time1_foldchange = overall time1 vs baseline fold change across both groups 
-# baseline_groups - baseline difference between groups 
 c_mat = makeContrasts(
   foldchange_difference = (cohort_timepoint1_1 - cohort_timepoint1_0) - (cohort_timepoint0_1 - cohort_timepoint0_0),
   time1_foldchange = (cohort_timepoint1_1 + cohort_timepoint0_1) / 2  - (cohort_timepoint1_0 + cohort_timepoint0_0) / 2, 
@@ -118,12 +107,20 @@ c_mat = makeContrasts(
 # fit mixed model for the multi timepoint contrasts 
 fit = scglmmr::dreamMixedModel(dge_lists = dge, apriori_contrasts = TRUE, sample_column = 'sample',
                                cell_metadata = meta, contrast_matrix = c_mat, design_matrix = designmat, 
-                               fixed_effects = c('age', 'gender', 'cohort_timepoint'), 
                                lme4_formula =  '~ 0 + age + gender + cohort_timepoint + (1|sampleid)', 
+                               fixed_effects = c('age', 'gender', 'cohort_timepoint'), 
                                plotsavepath = figpath, version = "2", ncores = 4)
 
 # fit simple linear model for the baseline group level contrast 
-bl = scglmmr::RunVoomLimma(dgelists = dge, design_matrix = designmat, do_contrast_fit = T, my_contrast_matrix = c_mat[ ,3])
+bl = scglmmr::RunVoomLimma(dgelists = dge, design_matrix = designmat, 
+                           do_contrast_fit = T, my_contrast_matrix = c_mat[ ,3])
+
+# save 
+saveRDS(bl, file = paste0(datapath, "blfit_object.rds"))
+saveRDS(fit, file = paste0(datapath, "fit_object.rds"))
+saveRDS(av, file = paste0(datapath, "av_object.rds"))
+saveRDS(pb, file = paste0(datapath, "pb_object.rds"))
+saveRDS(meta, file = paste0(datapath, "meta_object.rds"))
 
 ```
 
