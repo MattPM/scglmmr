@@ -1,10 +1,10 @@
 #' GroupContrastGLMMsinglecell - within each cell type contrast difference in fold change between groups, baseline difference, and fold change across groups of module scores.
 #'
 #' @param module_data_frame data for each cell to model -- designed to be scores for modules (columns) returned by scglmmr::WeightedModuleScore
-#' @param lme4metadata
-#' @param f1
-#' @param contrast_list
-#' @param plot_savepath
+#' @param lme4metadata metadata for model fit
+#' @param f1 model furmula
+#' @param contrast_list list of linear model contrasts.
+#' @param plot_savepath path to save results
 #' @param celltype_column the column in metadata with the cluster / celltype designation for each cell
 #'
 #' @return
@@ -27,9 +27,10 @@
 #'  module_df = h1@meta.data %>%
 #'   select(barcode_check, celltype_joint, module_n)
 #'   # add metadata for lme4 model
-#'   met = read_delim("git_ignore/full_metadata/full_sample_metadata.txt", delim = "\t")
+#'
 #'  # format metadata as factors for lme4 ordered for contrast contrast_fit = contrast(emm1, method = list( (c21 - c20) - (c11 - c10) ))
-# md = h1@meta.data %>%
+#   md = h1@meta.data %>%
+#   # high vs low time effect difference factor levels: example
 #   mutate(group_id = factor(adjmfc.time,  levels = c('d0 low', 'd1 low', 'd0 high', 'd1 high'))) %>%
 #   mutate_if(is.character, as.factor) %>%
 #   select(barcode_check, sampleid, timepoint, group_id, gender, celltype_joint)
