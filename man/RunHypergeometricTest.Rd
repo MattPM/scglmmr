@@ -24,7 +24,7 @@ RunHypergeometricTest(
 \item{usefdr_threshold}{use the FDR adjusted p values for ranking genes-this is a strict filter for single cell data, recommended to set FALSE}
 }
 \value{
-
+tidy hypergeometric test results dataframe
 }
 \description{
 RunHypergeometricTest - run a hypergeometric test on results returned by GetContrastResults or GetContrastResultsRaw

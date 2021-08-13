@@ -27,7 +27,7 @@ RunFgseaOnRankList(
 \item{positive.enrich.only}{include negative enrichments in results? TRUE/FALSE}
 }
 \value{
-
+results from fgsea package indexed by celltype
 }
 \description{
 RunFgseaOnRankList - wrapper around fast gene set enrichment analysis with the fgsea R package https://bioconductor.org/packages/release/bioc/html/fgsea.html

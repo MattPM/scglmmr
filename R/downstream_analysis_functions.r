@@ -1,13 +1,13 @@
-#### De functions not dependent on Seurat versions. Downstream enrichment etc.
-# select = dplyr::select
-'%ni%' = Negate('%in%')
+# source: https://github.com/MattPM/scglmmr
+# author: Matt Mulè
+# email: mattmule@gmail.com
 
 #' GetContrastResults - return results from a contrast fit on list of celltypes from RunVoomLimma using topTable
 #'
 #' @param limma.fit.object.list the results returned by RunVoomLimma, to get coefficiennt from dreamMixedModel use GetContrastResultsRaw
 #' @param coefficient.number corresponds to the contrast, the nmber is in order of the contrast matrix
 #' @param contrast.name this does not have to match the exact contrast name used in the contrast matrix, it is here to force / remind the user to choose the correct contrast.
-#' @return
+#' @return a list of dataframes with contrast results indexed by cell type
 #' @importFrom limma topTable
 #' @importFrom tibble rownames_to_column
 #' @importFrom dplyr mutate if_else
@@ -38,7 +38,7 @@ GetContrastResults = function(limma.fit.object.list, coefficient.number, contras
 #' @param limma.fit.object.list the results returned by dreamMixedModel, to get coefficiennt from RunVoomLimma use GetContrastResults
 #' @param coefficient.number corresponds to the contrast, the nmber is in order of the contrast matrix
 #' @param contrast.name this does not have to match the exact contrast name used in the contrast matrix, it is here to force / remind the user to choose the correct contrast.
-#' @return
+#' @return a list of dataframes with contrast results indexed by cell type
 #' @importFrom tibble rownames_to_column
 #' @importFrom dplyr mutate full_join select
 #' @importFrom stats p.adjust
@@ -88,7 +88,7 @@ GetContrastResultsRaw =  function(limma.fit.object.list, coefficient.number, con
 #' @param pvalfilter filter genes to retain in the matrix by the raw p values
 #' @param logfcfilter filter genes to retain in the matrix by the logFC
 #'
-#' @return
+#' @return a matrix
 #' @importFrom dplyr filter select bind_rows
 #' @importFrom tidyr spread
 #' @importFrom tibble column_to_rownames
@@ -122,10 +122,10 @@ GetGeneMatrix = function(result.list, gene_subset = NULL, stat_for_matrix = "log
 #' GetRankResults get list of gene ranks by t stat for fGSEA
 #'
 #' @param limma.fit.object.list the results returned by RunLimmaVoom. Use GetRankResultsRaw for results returned by dreamMixedModel
-#' @param coefficient.number
-#' @param contrast.name
+#' @param coefficient.number the coefficient from the custom contrasts , check with head(result@coefficients)
+#' @param contrast.name this can be arbitrary and does not have to match the result coefficient name but is designed to force user to know which coefficient they are using from the fitted contrast model.
 #'
-#' @return
+#' @return list of gene ranks by t stat -- use as argument to `RunFgseaOnRankList`
 #' @importFrom tibble column_to_rownames rownames_to_column
 #' @importFrom dplyr arrange select
 #' @importFrom limma topTable
@@ -138,7 +138,8 @@ GetRankResults = function(limma.fit.object.list, coefficient.number, contrast.na
   for (i in 1:length(limma.fit.object.list)) {
     test = as.data.frame(limma::topTable(limma.fit.object.list[[i]], coef = coefficient.number, number = Inf))
     ranks[[i]] =
-      test %>% tibble::rownames_to_column("gene") %>%
+      test %>%
+      tibble::rownames_to_column("gene") %>%
       dplyr::arrange(dplyr::desc(t)) %>%
       dplyr::select(gene, t) %>%
       tibble::column_to_rownames("gene") %>%
@@ -151,11 +152,11 @@ GetRankResults = function(limma.fit.object.list, coefficient.number, contrast.na
 }
 
 
-#' GetRankResults get list of gene ranks by t stat for fGSEA. for results returned by dreamMixedModel
+#' GetRankResultsRaw get list of gene ranks by t stat for fGSEA. for results returned by dreamMixedModel
 #'
 #' @param contrast.result.raw.list results returned by dreamMixedModel
 #'
-#' @return
+#' @return list of gene ranks by t stat -- use as argument to `RunFgseaOnRankList`
 #' @importFrom dplyr arrange select desc
 #' @importFrom tibble column_to_rownames
 #' @export
@@ -187,7 +188,7 @@ GetRankResultsRaw = function(contrast.result.raw.list){
 #' @param nperm recommended to keep set at 25000 based on optomization and p value stabilization
 #' @param positive.enrich.only include negative enrichments in results? TRUE/FALSE
 #'
-#' @return
+#' @return results from fgsea package indexed by celltype
 #' @importFrom fgsea fgsea
 #' @importFrom dplyr arrange filter
 #' @export
@@ -220,11 +221,11 @@ RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSi
 
 #' RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot
 #'
-#' @param gsea_result_list
-#' @param NES_filter
-#' @param padj_filter
+#' @param gsea_result_list result returned by RunFgseaOnRankList
+#' @param NES_filter filter out results below this NES
+#' @param padj_filter filter out results above this adjusted p threshold
 #'
-#' @return
+#' @return a dataframe of subsetted gsea results for all celltypes
 #' @importFrom dplyr select filter mutate
 #' @export
 #'
@@ -241,16 +242,16 @@ RbindGseaResultList = function(gsea_result_list, NES_filter = -Inf, padj_filter 
 
 #' GSEABarPlot - plot gsea results for a single cell type
 #'
-#' @param rbind_gsea_result_dataframe
-#' @param celltype_name
-#' @param save_path
-#' @param title
-#' @param save_name
-#' @param fill_color
-#' @param width
-#' @param height
+#' @param rbind_gsea_result_dataframe result returned from RbindGseaResultList
+#' @param celltype_name name of celltype to be plotted
+#' @param save_path file path to save results
+#' @param title title of plot
+#' @param save_name name of file saved to save_path
+#' @param fill_color color of bar
+#' @param width ggsave param
+#' @param height ggsave param
 #'
-#' @return
+#' @return nothing
 #' @import ggplot2
 #' @export
 #'
@@ -282,13 +283,13 @@ GSEABarPlot = function(rbind_gsea_result_dataframe, celltype_name, save_path, ti
 #' GSEABubblePlot plot gsea results for all cell types
 #'
 #' @param rbind_gsea_result_dataframe dataframe returned by RbindGseaResultList
-#' @param save_path
+#' @param save_path file path to save results
 #' @param include_negative TRUE/FALSE whether to include negative enrichment in the plot.
-#' @param save_name
-#' @param width
-#' @param height
+#' @param save_name name of file saved to save_path
+#' @param width ggpsave param
+#' @param height ggsave param
 #'
-#' @return
+#' @return nothing
 #' @import ggplot2
 #' @export
 #'
@@ -302,10 +303,10 @@ GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path, include_negati
     scale_x_discrete(position = "top"),
     theme(axis.text.x=element_text(angle = 45, hjust = 0)),
     theme(axis.title.y = element_blank()),
-    labs(fill = 'Normalized \n Enrichment \n Score', size = '-log10(FDR)'),
-    theme(legend.title = element_text(face = "bold",colour = "black", size = 8)),
-    theme(axis.text.y = element_text(size = 8, face = "bold", color = "black")),
-    theme(axis.text.x = element_text(size = 8.5, face = "bold", color = "black")),
+    labs(fill = 'Normalized \n Enrichment \n Score', size = '-log10(padj)'),
+    theme(legend.title = element_text(colour = "black", size = 8)),
+    theme(axis.text.y = element_text(size = 8, color = "black")),
+    theme(axis.text.x = element_text(size = 8.5, color = "black")),
     guides(shape = guide_legend(override.aes = list(size = 5))),
     guides(color = guide_legend(override.aes = list(size = 5))),
     theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8))
@@ -327,20 +328,13 @@ GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path, include_negati
 }
 
 
-
-# usage
-# score = RbindGseaResultList(gsea_result_list = gsea1,NES_filter = 0,padj_filter = 0.05)
-# GSEABubblePlot2(rbind_gsea_result_dataframe = score,save_path = figpath, save_name = "/btm_0.05",width = 7, height = 5)
-## Just Get the leading edge genes for the full dataset.
-
-
 #' GetLeadingEdgeFull Get a tidy dataframe of ALL Leading Edge Genes from gene set enrichment for all cell types
 #'
 #' @param gsea.list results returned by RunFgseaOnRankList
 #' @param padj.filter filter reslts
 #' @param NES.filter filter results
 #'
-#' @return
+#' @return a list
 #' @importFrom purrr map_int
 #' @importFrom dplyr filter select
 #' @importFrom tibble tibble
@@ -349,7 +343,8 @@ GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path, include_negati
 #' @examples
 #' y = GetLeadingEdgeFull(gsea, padj.filter = 0.1, NES.filter = -Inf)
 GetLeadingEdgeFull = function(gsea.list, padj.filter, NES.filter){
-  gseasub = lapply(gsea.list, function(x){x = x %>%
+  gseasub = lapply(gsea.list, function(x){
+    x %>%
     dplyr::filter(NES > NES.filter & padj < padj.filter) %>%
     dplyr::select(pathway, leadingEdge)
   })
@@ -358,11 +353,13 @@ GetLeadingEdgeFull = function(gsea.list, padj.filter, NES.filter){
   gseasub = gseasub[g]
   stopifnot(g > 0 ); print("lists passing filter") ; print(g)
   mods = lapply(gseasub, function(u){
-    testcase = u; paths = u$pathway; dataret = data.frame()
+    testcase = u; paths = u$pathway
+    dataret = data.frame()
+
     for (i in 1:length(paths)) {
-      genes_use = testcase %>%
-        dplyr::filter(pathway == paths[i]) %$% leadingEdge %>%
-        unlist %>%
+      genes_use = testcase %>% dplyr::filter(pathway == paths[i])
+      genes_use = genes_use$leadingEdge %>%
+        unlist() %>%
         as.character()
       dat =  tibble::tibble(gene = genes_use, module = rep(paths[i]))
       dataret = rbind(dataret, dat)
@@ -387,7 +384,7 @@ GetLeadingEdgeFull = function(gsea.list, padj.filter, NES.filter){
 #' @param celltype.index celltype number of result list
 #' @param module.name name of module
 #'
-#' @return
+#' @return a vector of genes
 #' @importFrom dplyr filter
 #' @export
 #'
@@ -408,21 +405,21 @@ GetLeadingEdgeGenes = function(gsea.result.list, celltype.index, module.name) {
 }
 
 
-#' CombineResults - For all cell types merge the GeneSetEnrichment leading edge genes coefficieint and p value from limma
+#' CombineResults - For all cell types merge the gsea leading edge genes with their contrast model coefficieint and p value from limma / dream
 #'
-#' @param gsealist
-#' @param contrastlist
-#' @param gseafdr
-#' @param genefdr
+#' @param gsealist list of results returned by `RunFgseaOnRankList()`
+#' @param contrastlist list of results returned by `GetContrastResults()` or `GetContrastResultsRaw()`
+#' @param gseafdr the adjusted p value threshold to filter out results (gsea)
+#' @param genefdr the adjusted p value threshold to filter out individual genes recommend keep this high.
 #'
-#' @return
+#' @return a tidy dataframe
 #' @importFrom dplyr mutate filter select group_by
 #' @export
 #'
 #' @examples
-#' test = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.1)
+#' test = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.2)
 CombineResults = function(gsealist, contrastlist, gseafdr, genefdr){
-  '%ni%' = Negate('%in%')
+
 
   # filter gsea esults and cat pathway and celltype
   gs = lapply(gsealist, function(x){
@@ -438,15 +435,15 @@ CombineResults = function(gsealist, contrastlist, gseafdr, genefdr){
   # subset GSEA results by cell types with genes DE < fdr threshold
   gs = gs[celltype_result]
 
-  # remove any celltypes without gsea results passing fdr filter
+  # remove any celltypes without gsea results passing filter
   enriched_dim = sapply(gs, dim)
   remove = which(enriched_dim[1, ] == 0) %>% names
 
   # subset the DE gene list by the celltypes with BTM results
-  generes = generes %>% dplyr::filter(celltype %ni% remove)
+  generes = generes %>% dplyr::filter(!celltype %in% remove)
 
   # subset the gsea list by the celltypes with DE genes.
-  celltype_result = celltype_result[celltype_result %ni% remove]
+  celltype_result = celltype_result[!celltype_result %in% remove]
   gs = gs[celltype_result]
 
   #combine data gs and generes have the same celltype info
@@ -476,12 +473,12 @@ CombineResults = function(gsealist, contrastlist, gseafdr, genefdr){
 
 #' LeadEdgeTidySampleExprs - convert a PseudobulkList into a tidy dataframe for each sample across cell types of the leading edge genes from a gsea list
 #'
-#' @param av.exprs.list object returned by PseudobulkList summed or average counts
+#' @param av.exprs.list object returned by `PseudobulkList` summed or average counts
 #' @param gsea.list object returned by RunFgseaOnRankList
 #' @param padj.filter filter for adjusted p from GSEA
 #' @param NES.filter filter for normalized enrichment score from GSEA
 #'
-#' @return
+#' @return a list of tidy dataframes by celltype
 #' @importFrom purrr map_int
 #' @importFrom dplyr filter select
 #' @importFrom tibble rownames_to_column
@@ -534,13 +531,13 @@ LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, NES.fi
 
 #' TopGenesTidySampleExprs convert a PseudobulkList into a tidy dataframe for each sample across cell types of the top differentially expressed genes for a contrast
 #'
-#' @param av.exprs.list
-#' @param result.list
-#' @param P.Value.filter
-#' @param logFC.filter
-#' @param top_n_genes
+#' @param av.exprs.list object returned by `PseudobulkList` summed or average counts
+#' @param result.list object returned by object returned by `GetContrastResultsRaw()` or `GetContrastResults()`
+#' @param P.Value.filter filter results
+#' @param logFC.filter filter results
+#' @param top_n_genes instead of stat thresholds above, get expression of n genes specified by this param, subsets each celltype by the top n genes  ranked by t statistic.
 #'
-#' @return
+#' @return a list of tidy dataframes by celltype
 #' @importFrom dplyr filter arrange
 #' @importFrom purrr map_int
 #' @importFrom tibble rownames_to_column
@@ -548,7 +545,6 @@ LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, NES.fi
 #' @export
 #'
 #' @examples
-#' topav = GetTopAvg(av.exprs.list = av,result.list = d1time, P.Value.filter = 0.01,logFC.filter = 1.2)
 TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, logFC.filter, top_n_genes = NULL){
 
   resultsub = lapply(result.list, function(x){
@@ -597,7 +593,7 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
 #' @param sample_column the column in the metadata object corresponding to the sample labels, usually 'smaple'
 #' @param returnmat instead of making an annotated heatmap just return the matrix of averge values per sample of the module subset
 #'
-#' @return
+#' @return a pheatmap object
 #' @importFrom dplyr filter select group_by summarize_each
 #' @importFrom tidyr spread
 #' @importFrom tibble rownames_to_column column_to_rownames
@@ -646,8 +642,8 @@ LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot,
 #' @param logFC_threshold logFC threshold  for genes to consider in hypergeometric distribution
 #' @param usefdr_threshold use the FDR adjusted p values for ranking genes-this is a strict filter for single cell data, recommended to set FALSE
 #'
-#' @return
-#' @importFrom AnnotationDbi select
+#' @return tidy hypergeometric test results dataframe
+#' @importFrom AnnotationDbi keys
 #' @importFrom clusterProfiler enricher
 #' @importFrom org.Hs.eg.db org.Hs.eg.db
 #' @importFrom dplyr mutate bind_rows filter
@@ -708,16 +704,18 @@ RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshol
       hypergeometric[[i]] = NA
     } else {
       # run hypergeometric test with clusterprfiler package
-      hypergeometric[[i]] = suppressMessages(tryCatch(
-        clusterProfiler::enricher(entrez_subset[[i]], TERM2GENE = TERM2GENE_dataframe)@result %>%
-          dplyr::mutate(celltype = cells) %>%
-          tidyr::separate(GeneRatio,into = c("gene_num", "gene_denom"), sep = "/") %>%
-          dplyr::mutate(gene_num = as.numeric(gene_num)) %>%
-          dplyr::mutate(gene_denom = as.numeric(gene_denom)) %>%
-          dplyr::mutate(gene_ratio = round(gene_num / gene_denom, 3)),
-        # return NA if no enrichment
-        error = function(e) return(NA)
-        ))
+      hypergeometric[[i]] =
+        suppressMessages(
+        tryCatch(
+          clusterProfiler::enricher(entrez_subset[[i]], TERM2GENE = TERM2GENE_dataframe)@result %>%
+            dplyr::mutate(celltype = cells) %>%
+            tidyr::separate(GeneRatio,into = c("gene_num", "gene_denom"), sep = "/") %>%
+            dplyr::mutate(gene_num = as.numeric(gene_num)) %>%
+            dplyr::mutate(gene_denom = as.numeric(gene_denom)) %>%
+            dplyr::mutate(gene_ratio = round(gene_num / gene_denom, 3)),
+          error = function(e) return(NA)
+        )
+        )
     }
   }
   # combine results and format for PlotHypergeometric() function
@@ -732,21 +730,22 @@ RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshol
 
 #' PlotHypergeometric - plot results returned by RunHypergeometricTest
 #'
-#' @param hyperg_result
-#' @param p.adjust.filter
-#' @param genenumber_filter
-#' @param savepath
-#' @param savename
-#' @param title
-#' @param height
-#' @param width
+#' @param hyperg_result result returned by `RunHypergeometricTest`
+#' @param p.adjust.filter filter results
+#' @param genenumber_filter number of genes within an enrichment minimum.
+#' @param savepath save oath
+#' @param savename name of object saved to save_path
+#' @param title title of plot
+#' @param height ggsave param
+#' @param width ggsave param
 #'
-#' @return
+#' @return nothing
 #' @import ggplot2
 #' @export
 #'
 #' @examples
-PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_filter = 0, savepath = figpath, savename , title, height = 10, width = 8 ){
+PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_filter = 0,
+                              savepath = figpath, savename , title, height = 10, width = 8 ){
 
   # filter results
   hyp = hyperg_result[hyperg_result$gene_num > genenumber_filter & hyperg_result$p.adjust < p.adjust.filter, ]
@@ -772,7 +771,6 @@ PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_
 }
 
 
-
 ##### plot average gene distributions for each sample in each cohort.
 # most general version
 
@@ -782,7 +780,7 @@ PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_
 #' @param celltype.index - index of celltype to ret results see names of PseudobulkList object
 #' @param genes.use - subet of genes to use
 #'
-#' @return
+#' @return a tidy dataframe
 #' @importFrom tibble rownames_to_column
 #' @importFrom tidyr gather
 #' @export
@@ -793,7 +791,7 @@ GetTidySummary = function(av.exprs.list, celltype.index, genes.use){
   gene.index.2 = genes.use[length(genes.use)]
   tidy_data =
     av.exprs.list[[celltype.index]][genes.use, ] %>%
-    t %>%
+    t() %>%
     as.data.frame() %>%
     tibble::rownames_to_column("sample") %>%
     tidyr::gather(key = gene, value = count, gene.index.1:gene.index.2)
@@ -803,23 +801,38 @@ GetTidySummary = function(av.exprs.list, celltype.index, genes.use){
 
 
 # plot the tidy gene x sample summary by cohort.
-PlotGeneDistCohort = function(merged_av_data, save_path, save_name, title = NULL, nrow = 5, height = 8, width = 10, plot_subset = FALSE, genes_plot = NULL){
-  print("merged av data needs to have a group column and a timepoint column if color error add more colors to cu = in first line of function")
-  #cu = pals::stepped()
-  # cu = cu[c(12,9,16,13,4,1)]
-  #cu = cu[c(12,9,16,13)]
-  # cu = c(cu,  "#FFBB78FF", "#FF7F0EFF")
-  cu = c("dodgerblue", "midnightblue", "red", "firebrick",  "#FFBB78FF", "#FF7F0EFF")
+#' Title
+#'
+#' @param merged_av_data data returned for a single cell type by `GetTidySummary`
+#' @param save_path file path to save results
+#' @param save_name name of plot saved to `save_path`
+#' @param title title of plot
+#' @param nrow number of rows to facet genes plotted on
+#' @param height ggsave param
+#' @param width ggsave param
+#' @param plot_subset whether to subset to some of the genes in `merged_av_data`
+#' @param genes_plot the subset of genes to plot
+#'
+#'@import ggplot2
+#'
+#' @return nothing
+#' @export
+#'
+#' @examples
+PlotGeneDistCohort = function(merged_av_data,
+                              save_path, save_name,
+                              title = NULL,
+                              nrow = 5, height = 8, width = 10,
+                              plot_subset = FALSE, genes_plot = NULL){
 
+  cu = c("dodgerblue", "midnightblue", "red", "firebrick",  "#FFBB78FF", "#FF7F0EFF")
   if(plot_subset == TRUE) {
     p = ggplot(merged_av_data %>% filter(gene %in% genes_plot), aes(x = group, y = count, fill = interaction(timepoint, group ))) +
       geom_boxplot() +
       facet_wrap(~gene, scales = "free_y", nrow = nrow) +
       theme_bw(base_size = 10.5)+
       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-      # scale_fill_brewer(palette = 'Paired') +
       scale_fill_manual(values = cu) +
-      # theme(strip.background = element_rect(color="black", fill="white", size=0.5, linetype="solid")) +
       theme(strip.background = element_blank()) +
       theme(strip.text = element_text(face = "bold",family = "Helvetica")) +
       theme(axis.text.x =  element_blank()) +
@@ -834,11 +847,8 @@ PlotGeneDistCohort = function(merged_av_data, save_path, save_name, title = NULL
       facet_wrap(~gene, scales = "free_y", nrow = nrow) +
       theme_bw(base_size = 10.5)+
       theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-      # scale_fill_viridis_d() +
-      # scale_fill_brewer(palette = 'Paired') +
       scale_fill_manual(values = cu) +
       theme(strip.background = element_blank()) +
-      # theme(strip.background = element_rect(color="black", fill="white", size=0.5, linetype="solid")) +
       theme(strip.text = element_text(face = "bold",family = "Helvetica")) +
       theme(axis.text.x =  element_blank()) +
       theme(axis.text.y =  element_text(size = 6)) +
@@ -849,126 +859,71 @@ PlotGeneDistCohort = function(merged_av_data, save_path, save_name, title = NULL
 }
 
 
-### match order of 2 lists of data frames based on "celltype" column to match fgsea result lists
-MatchfgseaResultIndex = function(list_to_reference, list_to_reorder){
-
-  print("cell type names must match")
-
-  result.list1 = list_to_reference
-  result.list2 = list_to_reorder
-
-  ct = sapply(result.list1, function(x){ unique(x$celltype)}) %>% unname
-  print("list 1 order of results by cell type")
-  print(ct)
-  ct2 = sapply(result.list2, function(x){ unique(x$celltype) }) %>% unname
-  print("list 2 order of results by cell type")
-  print(ct2)
-
-  if (!(length(ct) == length(ct2))) {
-    print("the celltype result lists are unequal length and will be merged by the intersection")
-  }
-
-  ct2 = ct2[ct2 %in% ct]
-  ct = ct[ct %in% ct2]
-
-  reorder_2_match1 = ct2[order(match(ct2, ct))]
-
-  result.list2 = result.list2[reorder_2_match1]
-  return(result.list2)
-}
-
-
-
-# Make volcano plot for each celltype
-VolcanoPlotTop = function(contrast.result.list, contrast.name, save.path, size = 3, fig.height, fig.width) {
-  require(ggrepel)
-  for (i in 1:length(contrast.result.list)) {
-    #format result list for volcano plot
-    contrast.result.list[[i]] = contrast.result.list[[i]] %>%
-      arrange(adj.P.Val)  %>%
-      mutate(nlp = -log10(adj.P.Val)) %>%
-      mutate(color =
-      if_else(nlp > 1 & LogFC > 0.2, true = "1",
-      if_else(nlp > 1 & LogFC < -0.2,  true = "2",
-      if_else(nlp > 1 & LogFC < 0.2 & LogFC > - 0.2,  true = "3", false = "0"))))
-
-    # volcano plot
-    p = ggplot(data = contrast.result.list[[i]], aes(x = LogFC, y = nlp, label = gene, color = color)) +
-      geom_point(show.legend = FALSE) +
-      theme_bw() +
-      geom_text_repel(data= contrast.result.list[[i]] %>%
-                        filter(nlp > 1.3) %>%
-                        filter(abs(LogFC) > 0.2),
-                      aes(label=gene, color = color), size = size ,show.legend = FALSE) +
-      geom_vline(xintercept = 0.2, linetype = "dashed") +
-      geom_vline(xintercept =  - 0.2, linetype = "dashed") +
-      geom_hline(yintercept = 1.3, linetype = "dashed") +
-      labs(x = "Log FC", y = "-log10 adjusted p value") +
-      scale_color_manual(values = c("black", "red", "blue", "black")) +
-      theme(text =  element_text(colour = "black", family = "Helvetica",size = 12)) +
-      ggtitle(names(contrast.result.list[i]))
-
-    # save plot
-    ggsave(plot = p,
-           filename = paste0(contrast.name, names(contrast.result.list)[i],".pdf"),
-           path = save.path,
-           width = fig.width, height = fig.height)
-  }
-}
-
-
-#############
-# retired functions
-
-## #For plotting fGSEA results in a heatmap, this is copied from Yuri, can also use bubble plot next section to not plot non significant enrichments.
-# MergeGseaResultListFDR = function(gsea.result.list, contrast.name, FDR.threshold, positive.enrich.only = TRUE) {
-#   res.all = data.frame()
-#   for (i in 1:length(gsea.result.list)) {
-#     if (positive.enrich.only == TRUE) {
-#       df = gsea.result.list[[i]] %>%
-#         filter(NES > 0) %>%
-#         select(pathway, padj, celltype) %>%
-#         mutate(contrast = rep(contrast.name))
-#       res.all = rbind(res.all, df)
-#     } else {
-#       df = gsea.result.list[[i]] %>%
-#         select(pathway, padj, celltype) %>%
-#         mutate(contrast = rep(contrast.name))
-#       res.all = rbind(res.all, df)
-#     }
+# retued utils
+#
+# # Make volcano plot for each celltype
+# VolcanoPlotTop = function(contrast.result.list, contrast.name, save.path, size = 3, fig.height, fig.width) {
+#   require(ggrepel)
+#   for (i in 1:length(contrast.result.list)) {
+#     #format result list for volcano plot
+#     contrast.result.list[[i]] = contrast.result.list[[i]] %>%
+#       arrange(adj.P.Val)  %>%
+#       mutate(nlp = -log10(adj.P.Val)) %>%
+#       mutate(color =
+#       if_else(nlp > 1 & LogFC > 0.2, true = "1",
+#       if_else(nlp > 1 & LogFC < -0.2,  true = "2",
+#       if_else(nlp > 1 & LogFC < 0.2 & LogFC > - 0.2,  true = "3", false = "0"))))
+#
+#     # volcano plot
+#     p = ggplot(data = contrast.result.list[[i]], aes(x = LogFC, y = nlp, label = gene, color = color)) +
+#       geom_point(show.legend = FALSE) +
+#       theme_bw() +
+#       geom_text_repel(data= contrast.result.list[[i]] %>%
+#                         filter(nlp > 1.3) %>%
+#                         filter(abs(LogFC) > 0.2),
+#                       aes(label=gene, color = color), size = size ,show.legend = FALSE) +
+#       geom_vline(xintercept = 0.2, linetype = "dashed") +
+#       geom_vline(xintercept =  - 0.2, linetype = "dashed") +
+#       geom_hline(yintercept = 1.3, linetype = "dashed") +
+#       labs(x = "Log FC", y = "-log10 adjusted p value") +
+#       scale_color_manual(values = c("black", "red", "blue", "black")) +
+#       theme(text =  element_text(colour = "black", family = "Helvetica",size = 12)) +
+#       ggtitle(names(contrast.result.list[i]))
+#
+#     # save plot
+#     ggsave(plot = p,
+#            filename = paste0(contrast.name, names(contrast.result.list)[i],".pdf"),
+#            path = save.path,
+#            width = fig.width, height = fig.height)
 #   }
-#   threshold = FDR.threshold
-#   df.pw =
-#     res.all %>%
-#     group_by(pathway) %>%
-#     summarise(min.p = min(padj, na.rm=T)) %>%
-#     ungroup() %>%
-#     dplyr::filter(min.p < threshold)
-#   df.res =
-#     res.all %>%
-#     filter(pathway %in% df.pw$pathway)
-#   pl = df.res %>% spread(key = celltype, value = padj)
-#   pl = pl %>% select(-contrast)
-#   plot = pl %>% column_to_rownames("pathway") %>% as.matrix()
-#   plot = -log10(plot)
-#   plot[is.na(plot)] = 0
-#   return(plot)
 # }
-
-
-# MergeGseaResultListNES = function(gsea.result.list, contrast.name, FDR.threshold) {
 #
-#   df = lapply(gsea.result.list, function(x){ x = x %>% select(pathway, padj, NES, celltype) %>% mutate(contrast = rep(contrast.name)) })
-#   df = do.call(rbind, df)
-#   df = df %>% filter(padj < FDR.threshold)
-#   df  = df %>% select(pathway, celltype, NES)
 #
-#   pl = df %>% spread(key = celltype, value = NES) %>% column_to_rownames("pathway") %>% as.matrix()
-#   # plot = -log10(plot)
-#   pl[is.na(pl)] = 0
-#   return(pl)
+#
+# ### match order of 2 lists of data frames based on "celltype" column useful to e.g. match separately run models by fgsea result lists
+# MatchfgseaResultIndex = function(list_to_reference, list_to_reorder){
+#
+#   print("cell type names must match")
+#
+#   result.list1 = list_to_reference
+#   result.list2 = list_to_reorder
+#
+#   ct = sapply(result.list1, function(x){ unique(x$celltype)}) %>% unname
+#   print("list 1 order of results by cell type")
+#   print(ct)
+#   ct2 = sapply(result.list2, function(x){ unique(x$celltype) }) %>% unname
+#   print("list 2 order of results by cell type")
+#   print(ct2)
+#
+#   if (!(length(ct) == length(ct2))) {
+#     print("the celltype result lists are unequal length and will be merged by the intersection")
+#   }
+#
+#   ct2 = ct2[ct2 %in% ct]
+#   ct = ct[ct %in% ct2]
+#
+#   reorder_2_match1 = ct2[order(match(ct2, ct))]
+#
+#   result.list2 = result.list2[reorder_2_match1]
+#   return(result.list2)
 # }
-
-
-
-

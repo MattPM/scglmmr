@@ -16,10 +16,24 @@ PlotHypergeometric(
 )
 }
 \arguments{
-\item{width}{}
+\item{hyperg_result}{result returned by `RunHypergeometricTest`}
+
+\item{p.adjust.filter}{filter results}
+
+\item{genenumber_filter}{number of genes within an enrichment minimum.}
+
+\item{savepath}{save oath}
+
+\item{savename}{name of object saved to save_path}
+
+\item{title}{title of plot}
+
+\item{height}{ggsave param}
+
+\item{width}{ggsave param}
 }
 \value{
-
+nothing
 }
 \description{
 PlotHypergeometric - plot results returned by RunHypergeometricTest

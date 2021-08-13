@@ -14,7 +14,7 @@ GetLeadingEdgeGenes(gsea.result.list, celltype.index, module.name)
 \item{module.name}{name of module}
 }
 \value{
-
+a vector of genes
 }
 \description{
 GetLeadingEdgeGenes get the leading edge genes from a single cell type / module combination

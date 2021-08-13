@@ -13,14 +13,19 @@ TopGenesTidySampleExprs(
 )
 }
 \arguments{
-\item{top_n_genes}{}
+\item{av.exprs.list}{object returned by `PseudobulkList` summed or average counts}
+
+\item{result.list}{object returned by object returned by `GetContrastResultsRaw()` or `GetContrastResults()`}
+
+\item{P.Value.filter}{filter results}
+
+\item{logFC.filter}{filter results}
+
+\item{top_n_genes}{instead of stat thresholds above, get expression of n genes specified by this param, subsets each celltype by the top n genes  ranked by t statistic.}
 }
 \value{
-
+a list of tidy dataframes by celltype
 }
 \description{
 TopGenesTidySampleExprs convert a PseudobulkList into a tidy dataframe for each sample across cell types of the top differentially expressed genes for a contrast
-}
-\examples{
-topav = GetTopAvg(av.exprs.list = av,result.list = d1time, P.Value.filter = 0.01,logFC.filter = 1.2)
 }

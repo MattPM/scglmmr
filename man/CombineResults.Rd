@@ -2,19 +2,25 @@
 % Please edit documentation in R/downstream_analysis_functions.r
 \name{CombineResults}
 \alias{CombineResults}
-\title{CombineResults - For all cell types merge the GeneSetEnrichment leading edge genes coefficieint and p value from limma}
+\title{CombineResults - For all cell types merge the gsea leading edge genes with their contrast model coefficieint and p value from limma / dream}
 \usage{
 CombineResults(gsealist, contrastlist, gseafdr, genefdr)
 }
 \arguments{
-\item{genefdr}{}
+\item{gsealist}{list of results returned by `RunFgseaOnRankList()`}
+
+\item{contrastlist}{list of results returned by `GetContrastResults()` or `GetContrastResultsRaw()`}
+
+\item{gseafdr}{the adjusted p value threshold to filter out results (gsea)}
+
+\item{genefdr}{the adjusted p value threshold to filter out individual genes recommend keep this high.}
 }
 \value{
-
+a tidy dataframe
 }
 \description{
-CombineResults - For all cell types merge the GeneSetEnrichment leading edge genes coefficieint and p value from limma
+CombineResults - For all cell types merge the gsea leading edge genes with their contrast model coefficieint and p value from limma / dream
 }
 \examples{
-test = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.1)
+test = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.2)
 }

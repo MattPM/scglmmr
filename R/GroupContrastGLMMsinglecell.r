@@ -1,4 +1,8 @@
-#' GroupContrastGLMMsinglecell - within each cell type contrast difference in fold change between groups, baseline difference, and fold change across groups of module scores.
+# source: https://github.com/MattPM/scglmmr
+# author: Matt Mulè
+# email: mattmule@gmail.com
+
+#' SCGroupContrastGLMM - within each cell type contrast difference in fold change between groups, baseline difference, and fold change across groups of module scores.
 #'
 #' @param module_data_frame data for each cell to model -- designed to be scores for modules (columns) returned by scglmmr::WeightedModuleScore
 #' @param lme4metadata metadata for model fit
@@ -21,21 +25,8 @@
 #' @export
 #'
 #' @examples
-#' #### CALCULATE MIXED MODEL SCORE FOR 2 GROUP CONTRAST TIME DELTA AND BASELINE DELTA
-#' # set up module data frame
-#' `module_data_frame` are any data for ech cell to model -- designed to be scores for each model
-#'  module_df = h1@meta.data %>%
-#'   select(barcode_check, celltype_joint, module_n)
-#'   # add metadata for lme4 model
-#'
-#'  # format metadata as factors for lme4 ordered for contrast contrast_fit = contrast(emm1, method = list( (c21 - c20) - (c11 - c10) ))
-#   md = h1@meta.data %>%
-#   # high vs low time effect difference factor levels: example
-#   mutate(group_id = factor(adjmfc.time,  levels = c('d0 low', 'd1 low', 'd0 high', 'd1 high'))) %>%
-#   mutate_if(is.character, as.factor) %>%
-#   select(barcode_check, sampleid, timepoint, group_id, gender, celltype_joint)
-GroupContrastGLMMsinglecell = function(module_data_frame, celltype_column = 'celltype', metadata,
-                                        fixed_effects = NULL, lmer_formula = NULL, plotdatqc = TRUE, figpath){
+SCGroupContrastGLMM = function(module_data_frame, celltype_column = 'celltype', metadata,
+                               fixed_effects = NULL, lmer_formula = NULL, plotdatqc = TRUE, figpath){
 
 
   # specify custom contrasts difference in treatment between groups, treatment effect across groups, per-treatment difference between groups.

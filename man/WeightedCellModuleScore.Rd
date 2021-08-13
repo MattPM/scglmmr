@@ -5,18 +5,14 @@
 \title{WeightedCellModuleScore - calculate the average or weighted aveage +/- scaling return dataframe of cells by average module score}
 \usage{
 WeightedCellModuleScore(
-  seurat_object = NULL,
   gene_matrix = NULL,
   module_list,
-  threshold = 0.1,
+  threshold = 0,
   cellwise_scaling = FALSE,
-  return_weighted = TRUE,
-  Seurat_version = NULL
+  return_weighted = FALSE
 )
 }
 \arguments{
-\item{seurat_object}{- a Seurat object - if using version 2 specify `version` = "2", if no seurat object specified, gene_matrix and cell_metadata must be specified}
-
 \item{gene_matrix}{- normalized genes (rows) by cells (columns)}
 
 \item{module_list}{- names list of gene modules - each element a vector of gene names.}
@@ -26,11 +22,9 @@ WeightedCellModuleScore(
 \item{cellwise_scaling}{- T/F scale across cells ?}
 
 \item{return_weighted}{- T/F weight the averae by multiplying by gene representation?}
-
-\item{Seurat_version}{- if seurat_object is not NULL, and seurat object version < 3 input "2"}
 }
 \value{
-
+dataframe of cells barcodes (rownames) by gene module scores (columns)
 }
 \description{
 WeightedCellModuleScore - calculate the average or weighted aveage +/- scaling return dataframe of cells by average module score

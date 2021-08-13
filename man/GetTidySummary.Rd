@@ -14,7 +14,7 @@ GetTidySummary(av.exprs.list, celltype.index, genes.use)
 \item{genes.use}{- subet of genes to use}
 }
 \value{
-
+a tidy dataframe
 }
 \description{
 GetTidySummary - tidy data summary for a single cell type

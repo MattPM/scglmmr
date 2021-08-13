@@ -6,21 +6,28 @@
 \usage{
 SCMixedPoisson(
   gene_data,
-  lme4metadata,
+  metadata,
   model_formula = "gene ~ offset(log(nUMI)) + timepoint + (1|subjectid)",
-  celltype_genes_test = NULL
+  test_variable = NULL,
+  covariate_variables = NULL,
+  celltype_genes_test = NULL,
+  save_path
 )
 }
 \arguments{
 \item{gene_data}{matrix of raw single cell UMI counts genes as COLUMNS and cells as ROWS; i.e. a transpose t() of Bioconductor or Seurat raw.data slots if genes_test is specified, columns must contain all genes from genes_test i.e. umi_matrix = t(seurat_raw_counts[unique(unlist((genes_test)), ])}
 
-\item{lme4metadata}{metadata for each cell and cell barcodes as}
+\item{metadata}{metadata for each cell used for fitting model}
 
-\item{model_formula}{defaults to 'gene ~ offset(log(nUMI)) + timepoint + (1|subjectid)' the variable 'timepoint' can be altered to be any treatment or perturbation effect being tested. Other variables should be kept the same.}
+\item{model_formula}{example: 'gene ~ offset(log(nUMI)) + timepoint + (1|subjectid)' the 'gene~' and '(1|subjectid)' variables should be kept the same. The variable 'timepoint' can be altered to be any treatment or perturbation effect being tested. User can also specify 'covariate_variables' to make formula gene~offset(nUMI) + covariate1 + covariate2 + test_variable + (1|subjectid) automatically.}
 
-\item{celltype_genes_test}{A R list indexed by cell type of the subset of genes to test for each cell type.}
+\item{test_variable}{the column of metadata coding the perturbation variable. e.g. 'timepoint' for formula: gene ~ timepoint + (1|subjectid)'}
 
-\item{reduced_model_formula}{identical formula as `full_model_formula` without the treatment or perturbation variable term. Defaults to 'gene ~ offset(log(nUMI)) + (1|subjectid)'}
+\item{covariate_variables}{a vector of variables in metadata to add to the model as covariates; this is only used if model_formula is NULL; otherwise speify directly}
+
+\item{celltype_genes_test}{An R list indexed by cell type: the subset of genes to test for each cell type.}
+
+\item{save_path}{file path to save intermediate results for each cell type.}
 }
 \value{
 a results matrix for all genes across all cell types tested.

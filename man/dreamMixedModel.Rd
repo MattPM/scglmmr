@@ -15,8 +15,7 @@ dreamMixedModel(
   cell_metadata,
   lme4_formula = "~ 0 + cohort_timepoint + (1|sampleid)",
   plotsavepath,
-  ncores = 4,
-  version = "2"
+  ncores = 4
 )
 }
 \arguments{
@@ -39,8 +38,6 @@ dreamMixedModel(
 \item{plotsavepath}{a path to save created plot of contrasts}
 
 \item{ncores}{number of cores for doParallel}
-
-\item{version}{if using R 3.5 bioc < 3.8 make version '1' otherwse leave default 2 runs bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package}
 }
 \value{
 list of model fits indexed by celltype

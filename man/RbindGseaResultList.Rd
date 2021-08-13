@@ -7,10 +7,14 @@
 RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
 }
 \arguments{
-\item{padj_filter}{}
+\item{gsea_result_list}{result returned by RunFgseaOnRankList}
+
+\item{NES_filter}{filter out results below this NES}
+
+\item{padj_filter}{filter out results above this adjusted p threshold}
 }
 \value{
-
+a dataframe of subsetted gsea results for all celltypes
 }
 \description{
 RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot

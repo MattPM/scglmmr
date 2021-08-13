@@ -16,7 +16,7 @@ BulkDesignMatrix(metadata, sample_column, variable_column, pseudobulklist)
 \item{pseudobulklist}{the list created with PseudobulkList}
 }
 \value{
-
+a design matrix
 }
 \description{
 BulkDesignMatrix - designmatrix for the main experiment factor

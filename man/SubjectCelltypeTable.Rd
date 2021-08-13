@@ -7,7 +7,7 @@
 SubjectCelltypeTable(metadata, celltype_column, sample_column)
 }
 \arguments{
-\item{metadata}{metadata cells-rows variables-columns i.e. ColData or seuratmeta.data}
+\item{metadata}{metadata cells-rows variables-columns i.e. ColData or seurat meta.data}
 
 \item{celltype_column}{quoted character e.g. "celltype" - the celltypes / clusters for which to create bulk libraries}
 

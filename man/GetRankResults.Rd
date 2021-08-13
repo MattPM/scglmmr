@@ -9,10 +9,12 @@ GetRankResults(limma.fit.object.list, coefficient.number, contrast.name)
 \arguments{
 \item{limma.fit.object.list}{the results returned by RunLimmaVoom. Use GetRankResultsRaw for results returned by dreamMixedModel}
 
-\item{contrast.name}{}
+\item{coefficient.number}{the coefficient from the custom contrasts , check with head(result@coefficients)}
+
+\item{contrast.name}{this can be arbitrary and does not have to match the result coefficient name but is designed to force user to know which coefficient they are using from the fitted contrast model.}
 }
 \value{
-
+list of gene ranks by t stat -- use as argument to `RunFgseaOnRankList`
 }
 \description{
 GetRankResults get list of gene ranks by t stat for fGSEA

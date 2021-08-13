@@ -24,7 +24,7 @@ GetGeneMatrix(
 \item{logfcfilter}{filter genes to retain in the matrix by the logFC}
 }
 \value{
-
+a matrix
 }
 \description{
 GetGeneMatrix get a gene matric for plotting genes by celltypes statistic from pseudobulk model results e.g. using heatmap pheatmap or complexheatmap

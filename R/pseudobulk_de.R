@@ -1,12 +1,11 @@
-## DE pipeline scripts
-# qs: mattmule AT gmail.com
-#suppressMessages(require(tidyverse))
-'%ni%' = Negate('%in%')
-
+# scglmmr pseudobulk differential expression pipeline
+# source: https://github.com/MattPM/scglmmr
+# author: Matt Mulè
+# email: mattmule@gmail.com
 
 #' SubjectCelltypeTable - make a QC contingency table of cells by samples beore making pseudobulk data.
 #'
-#' @param metadata metadata cells-rows variables-columns i.e. ColData or seuratmeta.data
+#' @param metadata metadata cells-rows variables-columns i.e. ColData or seurat meta.data
 #' @param celltype_column quoted character e.g. "celltype" - the celltypes / clusters for which to create bulk libraries
 #' @param sample_column  quoted character e.g. "sample" the subject level sample variable - if multiple timepoints should be subjectID_timepoint i.e. s1_0, s1_1
 #'
@@ -47,9 +46,9 @@ SubjectCelltypeTable = function(metadata, celltype_column, sample_column) {
 #'
 #' @param rawcounts the raw count UMI data for assay to sum or average for each celtype and sample.
 #' @param metadata dataframe of meta data for cells-rows variables-columns i.e. ColData or seuratmeta.data
-#' @param sample_col quoted character e.g. "sample" the subject level sample variable - if multiple timepoints should be subjectID_timepoint i.e. s1_0, s1_1
+#' @param sample_col quoted character e.g. "sample" the subject level sample variable - if multiple timepoints helps to code as subjectID_timepoint i.e. s1_0, s1_1
 #' @param celltype_col quoted character e.g. "celltype" - the celltypes / clusters for which to create bulk libraries
-#' @param avg_or_sum whether to compute default 'sum' or 'average' or average library for each samplexcelltype
+#' @param avg_or_sum whether to compute default 'sum' or 'average' library for each sample within each celltype (recommend sum)
 #'
 #' @return a R list of standard R matrices indexed by celltype
 #' @import Matrix
@@ -94,12 +93,14 @@ PseudobulkList = function(rawcounts, metadata, sample_col, celltype_col, avg_or_
   clist = lapply(X = split(cmt, f = cmt$celltype), function(x) {
     x %>% select(-celltype) %>%
       tibble::remove_rownames() %>%
-      tibble::column_to_rownames("sample") %>% t()
+      tibble::column_to_rownames("sample") %>%
+      t()
   })
   # check column names match
   if (isTRUE(all(duplicated.default(lapply(clist, colnames)[-1])))) {
     stop(paste('samples not identical for all celltypes.',
-               ' remove celltypes with 0 cells in some samples from counts and metadata'))
+               ' remove celltypes with 0 cells in some samples from counts and metadata'
+               ))
   }
   return(clist)
 }
@@ -112,7 +113,7 @@ PseudobulkList = function(rawcounts, metadata, sample_col, celltype_col, avg_or_
 #' @param variable_column the main experiment variable of interest e.g. timepoint or if implementing custom contrasts for difference in foldchange between groups, a combined factor of group_time, e.g. pooroutcome_t0, pooroutcome_t1, goodoutcome_t0, goodoutcome_t1 additional covariates can be specified in dreamMixedModel
 #' @param pseudobulklist the list created with PseudobulkList
 #'
-#' @return
+#' @return a design matrix
 #' @import Matrix
 #' @export
 #'
@@ -143,9 +144,9 @@ BulkDesignMatrix = function(metadata, sample_column, variable_column, pseudobulk
 #' NormalizePseudobulk
 #'
 #' @param pseudobulklist object created with PseudobulkList only use this function if argument to PseudobulkList avg_or_sum was 'sum' computes normalization for pseudobulk libraries
-#' @param normalization.method see edgeR function calcNormFactors
-#' @param design_matrix the design matrix created with BulkDesignMatrix
-#' @param minimum.gene.count see edgeR function filterbyExpr
+#' @param normalization.method see edgeR function calcNormFactors, this is the argument to `method`
+#' @param design_matrix the design matrix created with `BulkDesignMatrix`
+#' @param minimum.gene.count see edgeR function `filterbyExpr` thie is the argument to `min.count`
 #'
 #' @return a list of dgeList indexed by celltype
 #' @importFrom edgeR calcNormFactors filterByExpr
@@ -186,12 +187,18 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
   print("to implement random intercept for repeated measures (e.g. time) from same donor use dreamMixedModel")
 
   # get voom observational weights
-  v = lapply(dgelists, function(x){limma::voom(counts = x, design = design_matrix,
-                                               normalize.method = "none",save.plot = T, plot = F)})
+  v = lapply(dgelists, function(x){
+    limma::voom(counts = x, design = design_matrix,
+                normalize.method = "none",save.plot = T, plot = F)
+    })
   # fit model and apply custom contrasts if specified
-  fit = lapply(v, function(x) limma::lmFit(x, design = design_matrix))
+  fit = lapply(v, function(x){
+    limma::lmFit(x, design = design_matrix)
+    })
     if (do_contrast_fit == TRUE) {
-      c_fit = lapply(fit, function(x){limma::contrasts.fit(x, contrasts = my_contrast_matrix)})
+      c_fit = lapply(fit, function(x){
+        limma::contrasts.fit(x, contrasts = my_contrast_matrix)
+        })
       eb_c_fit = lapply(c_fit, limma::eBayes)
     } else {
       eb_c_fit = lapply(fit, limma::eBayes)
@@ -202,12 +209,11 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 }
 
 
-
 #' dreamMixedModel - run dream mixed model
 #' note due to this issue must require variancepartition https://github.com/GabrielHoffman/variancePartition/issues/17
 #' @param dge_lists list of dgelists created with NormalizePseudobulk
 #' @param apriori_contrasts one of TRUE or FALSE, whether to fit a priori contrasts
-#' @param version if using R 3.5 bioc < 3.8 make version '1' otherwse leave default 2 runs bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package
+
 #' @param contrast_matrix contrast matrix created with make.contrasts
 #' @param design_matrix design matrix created with BulkDesignMatrix
 #' @param plotsavepath a path to save created plot of contrasts
@@ -218,7 +224,7 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #' @param lme4_formula symbolic model formula the default is '~ 0 + cohort_timepoint + (1|sampleid)'
 #'
 #' @return list of model fits indexed by celltype
-#' @importFrom variancePartition voomWithDreamWeights dream plotContrasts
+#' @importFrom variancePartition voomWithDreamWeights plotContrasts dream
 #' @importFrom limma voom
 #' @importFrom parallel makeCluster
 #' @importFrom ggplot2 theme ggsave
@@ -231,16 +237,26 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #' # run dream mixed model
 # dream method Hoffman et.al. 2020  https://doi.org/10.1093/bioinformatics/btaa687
 # biorxiv version 1 and 2 implemented below.
-dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, sample_column, contrast_matrix = NULL, design_matrix,
-                           fixed_effects, cell_metadata, lme4_formula = '~ 0 + cohort_timepoint + (1|sampleid)', plotsavepath,
-                           ncores= 4,  version = "2") {
+dreamMixedModel = function(dge_lists,
+                           apriori_contrasts = FALSE,
+                           sample_column,
+                           contrast_matrix = NULL,
+                           design_matrix,
+                           fixed_effects,
+                           cell_metadata,
+                           lme4_formula = '~ 0 + cohort_timepoint + (1|sampleid)',
+                           plotsavepath,
+                           ncores = 4
+                           # version = "2"
+                           ) {
+  #@param version if using R 3.5 bioc < 3.8 make version '1' otherwse leave default 2 runs bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package
   # sub-optimal, but *must load* directly due to namespace bug in variancepartition until Bioc update https://github.com/GabrielHoffman/variancePartition/issues/17
-  require(variancePartition)
+  # require(variancePartition)
   # parallelize function
   cl = parallel::makeCluster(ncores)
   doParallel::registerDoParallel(cl = ncores)
 
-  if(isFALSE(colnames(cell_metadata) %in% 'sampleid')){
+  if(isFALSE('sampleid' %in% colnames(cell_metadata))){
     stop("metadata must have a column 'sampleid' to fit a varying intercept model with subjectIDs")
   }
 
@@ -258,21 +274,27 @@ dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, sample_column, 
   model_md = base::as.data.frame(model_md)
   rownames(model_md) = model_md[[sample_column]]
   print("dream data argument for model "); print(model_md)
-  # check row index of model metadata matches dgelist columns and show spesified symbolic formula
+  # check row index of model metadata matches dgelist columns and show symbolic formula
   stopifnot(isTRUE(all.equal(target = colnames(dge_lists[[1]]), current = rownames(model_md))))
+
   print('model specified (change with argument to lme4_formula) '); print(lme4_formula)
 
   # calculate voom observational level weights
-  if (version == "1"){
-    print("implementing dream v1.10.4 bioc 3.7 and R 3.5, to implement bioc > 3.7 R3.6 change set argument `version` = '2'")
+  # if (version == "1"){
+  #   print("implementing dream v1.10.4 bioc 3.7 and R 3.5, to implement bioc > 3.7 R3.6 change set argument `version` = '2'")
+  #   v1 = lapply(dge_lists, function(x){
+  #     limma::voom(counts = x, design = design_matrix,
+  #                 normalize.method = "none", save.plot = T, plot = T) })
+  # } else{
     v1 = lapply(dge_lists, function(x){
-      limma::voom(counts = x, design = design_matrix,
-                  normalize.method = "none", save.plot = T, plot = T) })
-  } else{
-    v1 = lapply(dge_lists, function(x){
-    variancePartition::voomWithDreamWeights(counts = x, data = model_md, formula = lme4_formula,
-                                            normalize.method = "none", save.plot = T, plot = T) })
-  }
+    design = NULL
+    variancePartition::voomWithDreamWeights(counts = x,
+                                            data = model_md,
+                                            formula = lme4_formula,
+                                            normalize.method = "none",
+                                            save.plot = T, plot = T)
+    })
+  # }
   # if custom a priori contrasts are specified fit mixed model and estimate contrast coefficients
   if(isTRUE(apriori_contrasts)) {
 
@@ -283,7 +305,10 @@ dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, sample_column, 
 
     # fit mixed model
     fit1 = lapply(v1, function(x){
-      variancePartition::dream(exprObj = x, formula = lme4_formula, data = model_md, L = as.matrix(contrast_matrix))
+      variancePartition::dream(exprObj = x,
+                               formula = lme4_formula,
+                               data = model_md,
+                               L = as.matrix(contrast_matrix))
     })
   } else {
     # fit model without custom contrasts
@@ -333,8 +358,8 @@ calc_avg_module_zscore = function(module.list, average.data.frame) {
     av = av[mod.genes, ]
 
     # scale genes for each subject, get average of z score
-    x = av %>% t %>% scale %>% t
-    x = colMeans(x, na.rm=T) %>% t %>% as.data.frame()
+    x = av %>% t() %>% scale() %>% t()
+    x = colMeans(x, na.rm=T) %>% t() %>% as.data.frame()
     res = rbind(res, x)
   }
   rownames(res) = names(module.list)
@@ -378,7 +403,7 @@ AverageSampleModuleZscore = function(average.metacell.list,
 }
 
 
-################# AJM functions
+################# AJM function
 
 # RunVoomLimma_covar - Note:
 # removed celltypes vector argument to match updated function above; argument was not needed.
@@ -391,43 +416,45 @@ AverageSampleModuleZscore = function(average.metacell.list,
 #' @param design_matrix design matrix created with BulkDesignMatrix
 #' @param co_variable_genes co variable genes
 #' @param grouptable group table
+#' @param grouptable argument to gsva
 #' @param do_contrast_fit do contrasts
 #' @param my_contrast_matrix contrast matrix
 #' @param my_model_metadata model metadata
 #' @param celltypes.vector vector of celltypes assign as names of dgeList
 #'
 #' @return
-#' @import GSVA
-#' @import limma
+#' @importFrom GSVA gsva
+#' @importFrom limma lmFit contrasts.fit eBayes voom
+#' @importFrom stats model.matrix
 #' @export
 #'
 #' @examples
 RunVoomLimma_covar = function(dgelists, design_matrix, co_variable_genes = NULL, grouptable,
-                        do_contrast_fit, my_contrast_matrix, my_model_metadata, celltypes.vector = NULL){
+                        do_contrast_fit, my_contrast_matrix, my_model_metadata, celltypes.vector = NULL, parallel.sz = 4){
 
   v = cor = fit = c_fit = eb_c_fit = dt = gt = dm2 = list()
   for (i in 1:length(dgelists)) {
       # voom call 1 get logcpm observational weights to feed into dup cor
-      v[[i]] <- voom(counts = dgelists[[i]], normalize.method = "none", design = design_matrix, save.plot = T, plot = F)
+      v[[i]] <- limma::voom(counts = dgelists[[i]], normalize.method = "none", design = design_matrix, save.plot = T, plot = F)
 
       # covariable genes GSVA
-      cor[[i]] = as.numeric(gsva(v[[i]]$E, list(covar = co_variable_genes), parallel.sz = 8))
+      cor[[i]] = as.numeric(GSVA::gsva(v[[i]]$E, list(covar = co_variable_genes), parallel.sz = parallel.sz))
 
       gt[[i]] <- grouptable
 
       gt[[i]]$gsva <- cor[[i]]
 
       # make designmatrix2
-      dm2[[i]] = model.matrix(~0+gsva+group, data=gt[[i]])
+      dm2[[i]] = stats::model.matrix(~0+gsva+group, data=gt[[i]])
 
       # Fit model and contrasts
-      fit[[i]] = lmFit(v[[i]], design = dm2[[i]])
+      fit[[i]] = limma::lmFit(v[[i]], design = dm2[[i]])
 
       if (do_contrast_fit == TRUE) {
-      c_fit[[i]] = contrasts.fit(fit = fit[[i]], contrasts = my_contrast_matrix)
-      eb_c_fit[[i]] = eBayes(c_fit[[i]])
+      c_fit[[i]] = limma::contrasts.fit(fit = fit[[i]], contrasts = my_contrast_matrix)
+      eb_c_fit[[i]] = limma::eBayes(c_fit[[i]])
     } else {
-      eb_c_fit[[i]] = eBayes(fit[[i]])
+      eb_c_fit[[i]] = limma::eBayes(fit[[i]])
     }
   }
   # if (is.null(celltypes.vector)) {
@@ -440,42 +467,41 @@ return(eb_c_fit)
 }
 
 
-## metacell method (AJM)
-MakeMetaCellperSampleList = function(seurat.object, cluster.Res, sample_column, num.pcs=20, assays, CITEprots, vector.of.samples, numthreads = 1) {
-  sl = list()
-  distlist = list()
-  MetaCelllist = list()
-  samples = vector.of.samples
-  Idents(seurat.object) <- sample_column
-  for (i in 1:length(samples)) {
-    sl[[i]] = seurat.object %>%
-      subset(idents = samples[i]) %>%
-      FindVariableFeatures(nfeatures=2000) %>%
-      ScaleData(assay="RNA") %>%
-      RunPCA(assay="RNA", slot = "scale.data")
-    distlist[[i]] <- parDist(t(rbind(GetAssayData(sl[[i]][["CITE"]])[CITEprots,],t(Embeddings(sl[[i]], reduction="pca")[,num.pcs]))), threads = numthreads)
-
-    sl[[i]][["FiltCATres_snn"]] <- FindNeighbors(distlist[[i]])$snn
-    sl[[i]] <- FindClusters(sl[[i]], resolution = cluster.Res, graph.name = "FiltCATres_snn", algorithm = 1)
-  }
-  for (j in 1:length(samples)) {
-    MetaCelllist[[j]] = AverageExpression3(sl[[j]], assays = assays, features = NULL, return.seurat = TRUE,
-                                           slot = "counts", use.counts=TRUE, verbose = TRUE)
-  }
-  names(MetaCelllist) = samples
-  return(MetaCelllist)
-}
 
 
-
+############## functions with seurat versioning dependency
+# AJM function for metacells
+# MakeMetaCellperSampleList = function(seurat.object, cluster.Res, sample_column,
+#                                      num.pcs=20, assays, CITEprots, vector.of.samples,
+#                                      numthreads = 1) {
+#   sl = list()
+#   distlist = list()
+#   MetaCelllist = list()
+#   samples = vector.of.samples
+#   Idents(seurat.object) <- sample_column
+#   for (i in 1:length(samples)) {
+#     sl[[i]] = seurat.object %>%
+#       subset(idents = samples[i]) %>%
+#       FindVariableFeatures(nfeatures=2000) %>%
+#       ScaleData(assay="RNA") %>%
+#       RunPCA(assay="RNA", slot = "scale.data")
+#     distlist[[i]] <- parDist(t(rbind(GetAssayData(sl[[i]][["CITE"]])[CITEprots,],t(Embeddings(sl[[i]], reduction="pca")[,num.pcs]))), threads = numthreads)
+#
+#     sl[[i]][["FiltCATres_snn"]] <- FindNeighbors(distlist[[i]])$snn
+#     sl[[i]] <- FindClusters(sl[[i]], resolution = cluster.Res, graph.name = "FiltCATres_snn", algorithm = 1)
+#   }
+#   for (j in 1:length(samples)) {
+#     MetaCelllist[[j]] = AverageExpression3(sl[[j]], assays = assays, features = NULL, return.seurat = TRUE,
+#                                            slot = "counts", use.counts=TRUE, verbose = TRUE)
+#   }
+#   names(MetaCelllist) = samples
+#   return(MetaCelllist)
+# }
 
 
 ##################################
 # RETIRED FUNCTIONS             #
 #################################
-
-
-
 
 
 ####################

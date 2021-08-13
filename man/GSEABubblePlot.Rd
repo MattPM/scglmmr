@@ -16,12 +16,18 @@ GSEABubblePlot(
 \arguments{
 \item{rbind_gsea_result_dataframe}{dataframe returned by RbindGseaResultList}
 
+\item{save_path}{file path to save results}
+
 \item{include_negative}{TRUE/FALSE whether to include negative enrichment in the plot.}
 
-\item{height}{}
+\item{save_name}{name of file saved to save_path}
+
+\item{width}{ggpsave param}
+
+\item{height}{ggsave param}
 }
 \value{
-
+nothing
 }
 \description{
 GSEABubblePlot plot gsea results for all cell types

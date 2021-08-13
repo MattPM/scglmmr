@@ -16,10 +16,24 @@ GSEABarPlot(
 )
 }
 \arguments{
-\item{height}{}
+\item{rbind_gsea_result_dataframe}{result returned from RbindGseaResultList}
+
+\item{celltype_name}{name of celltype to be plotted}
+
+\item{save_path}{file path to save results}
+
+\item{title}{title of plot}
+
+\item{save_name}{name of file saved to save_path}
+
+\item{fill_color}{color of bar}
+
+\item{width}{ggsave param}
+
+\item{height}{ggsave param}
 }
 \value{
-
+nothing
 }
 \description{
 GSEABarPlot - plot gsea results for a single cell type

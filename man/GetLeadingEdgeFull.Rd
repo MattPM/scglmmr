@@ -14,7 +14,7 @@ GetLeadingEdgeFull(gsea.list, padj.filter, NES.filter)
 \item{NES.filter}{filter results}
 }
 \value{
-
+a list
 }
 \description{
 GetLeadingEdgeFull Get a tidy dataframe of ALL Leading Edge Genes from gene set enrichment for all cell types

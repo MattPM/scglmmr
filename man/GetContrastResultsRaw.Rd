@@ -14,7 +14,7 @@ GetContrastResultsRaw(limma.fit.object.list, coefficient.number, contrast.name)
 \item{contrast.name}{this does not have to match the exact contrast name used in the contrast matrix, it is here to force / remind the user to choose the correct contrast.}
 }
 \value{
-
+a list of dataframes with contrast results indexed by cell type
 }
 \description{
 GetContrastResultsRaw - calculate p values and return contrast results from modelfit with dreamMixedModel

@@ -34,7 +34,7 @@ LeadEdgeSampleHeatmap(
 \item{returnmat}{instead of making an annotated heatmap just return the matrix of averge values per sample of the module subset}
 }
 \value{
-
+a pheatmap object
 }
 \description{
 LeadEdgeSampleHeatmap make a heatmap of average expression for top or leading edge genes returned by LeadEdgeTidySampleExprs

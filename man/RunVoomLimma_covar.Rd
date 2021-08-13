@@ -12,7 +12,8 @@ RunVoomLimma_covar(
   do_contrast_fit,
   my_contrast_matrix,
   my_model_metadata,
-  celltypes.vector = NULL
+  celltypes.vector = NULL,
+  parallel.sz = 4
 )
 }
 \arguments{
@@ -22,7 +23,7 @@ RunVoomLimma_covar(
 
 \item{co_variable_genes}{co variable genes}
 
-\item{grouptable}{group table}
+\item{grouptable}{argument to gsva}
 
 \item{do_contrast_fit}{do contrasts}
 

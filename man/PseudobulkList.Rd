@@ -17,11 +17,11 @@ PseudobulkList(
 
 \item{metadata}{dataframe of meta data for cells-rows variables-columns i.e. ColData or seuratmeta.data}
 
-\item{sample_col}{quoted character e.g. "sample" the subject level sample variable - if multiple timepoints should be subjectID_timepoint i.e. s1_0, s1_1}
+\item{sample_col}{quoted character e.g. "sample" the subject level sample variable - if multiple timepoints helps to code as subjectID_timepoint i.e. s1_0, s1_1}
 
 \item{celltype_col}{quoted character e.g. "celltype" - the celltypes / clusters for which to create bulk libraries}
 
-\item{avg_or_sum}{whether to compute default 'sum' or 'average' or average library for each samplexcelltype}
+\item{avg_or_sum}{whether to compute default 'sum' or 'average' library for each sample within each celltype (recommend sum)}
 }
 \value{
 a R list of standard R matrices indexed by celltype

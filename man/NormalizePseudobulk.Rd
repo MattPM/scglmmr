@@ -14,11 +14,11 @@ NormalizePseudobulk(
 \arguments{
 \item{pseudobulklist}{object created with PseudobulkList only use this function if argument to PseudobulkList avg_or_sum was 'sum' computes normalization for pseudobulk libraries}
 
-\item{normalization.method}{see edgeR function calcNormFactors}
+\item{normalization.method}{see edgeR function calcNormFactors, this is the argument to `method`}
 
-\item{design_matrix}{the design matrix created with BulkDesignMatrix}
+\item{design_matrix}{the design matrix created with `BulkDesignMatrix`}
 
-\item{minimum.gene.count}{see edgeR function filterbyExpr}
+\item{minimum.gene.count}{see edgeR function `filterbyExpr` thie is the argument to `min.count`}
 }
 \value{
 a list of dgeList indexed by celltype
