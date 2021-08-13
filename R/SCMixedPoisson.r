@@ -156,6 +156,6 @@ SCMixedPoisson = function(gene_data,
     res_celltype[[u]] = cbind(celltype = cts[u], resdf)
     data.table::fwrite(x = res_celltype[[u]], file = paste0(save_path, cts[u],'result.csv'))
   }
-  resdf_full = as.data.frame(data.table::rbindlist(res_celltype))
+  resdf_full = as.data.frame(data.table::rbindlist(res_celltype), fill = TRUE)
   return(resdf_full)
 }
