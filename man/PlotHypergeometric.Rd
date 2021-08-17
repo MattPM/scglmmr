@@ -38,3 +38,20 @@ nothing
 \description{
 PlotHypergeometric - plot results returned by RunHypergeometricTest
 }
+\examples{
+\dontrun{
+load(termdf) # this term2gene dataframe is included in the package see clusterProfiler
+hyp = scglmmr::RunHypergeometricTest(result_list = fit_res,
+                                     TERM2GENE_dataframe = termdf,
+                                     pval_threshold = 0.1,
+                                     logFC_threshold = 0,
+                                     usefdr_threshold = FALSE)
+# plot results
+scglmmr::PlotHypergeometric(hyperg_result = hyp,
+                            p.adjust.filter = 0.1,
+                            genenumber_filter = 2,
+                            savepath = figpath,
+                            savename = "name",
+                            title = "title")
+ }
+}

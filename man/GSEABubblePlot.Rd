@@ -32,3 +32,8 @@ nothing
 \description{
 GSEABubblePlot plot gsea results for all cell types
 }
+\examples{
+\dontrun{
+cglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
+}
+}

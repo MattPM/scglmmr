@@ -19,3 +19,16 @@ a tidy dataframe
 \description{
 GetTidySummary - tidy data summary for a single cell type
 }
+\examples{
+#' @examples
+\dontrun{
+gene_highlight =  c("IRF1","TNFRSF17","ABL1")
+mono = GetTidyCohort(av.exprs.list = av, celltype.index = 7, genes.use = gene_highlight)
+PlotGeneDistCohort(merged_av_data = mono,
+                   save_name = "mono_highlight_512",
+                   save_path = figpath,
+                   title = paste0(names(av[7]), "genesub" ),
+                   height = 3.8, width = 4.5,
+                   nrow = 2)
+ }
+}

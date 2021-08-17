@@ -22,5 +22,18 @@ a list of linear model fits for each celltype
 RunVoomLimma
 }
 \examples{
+\dontrun{
+c_mat = makeContrasts(
+foldchange_difference = (group_timepoint1_1 - group_timepoint1_0) - (group_timepoint0_1 - group_timepoint0_0),
+time1_foldchange = (group_timepoint1_1 + group_timepoint0_1) / 2  - (group_timepoint1_0 + group_timepoint0_0) / 2,
+baseline_groups = (group_timepoint1_0 - group_timepoint0_0),
+levels = colnames(designmat)
+)
+# fit simple linear model for the baseline group level contrast
+bl = scglmmr::RunVoomLimma(dgelists = dge,
+design_matrix = designmat,
+do_contrast_fit = T,
+my_contrast_matrix = c_mat[ ,3])
+}
 # run limma using voom observational weights for non mixed effects models using emperical bayes
 }

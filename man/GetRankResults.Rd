@@ -19,3 +19,8 @@ list of gene ranks by t stat -- use as argument to `RunFgseaOnRankList`
 \description{
 GetRankResults get list of gene ranks by t stat for fGSEA
 }
+\examples{
+\dontrun{
+test = scglmmr::GetRankResults(limma.fit.object.list = bl, coefficient.number = 1, "test")
+}
+}

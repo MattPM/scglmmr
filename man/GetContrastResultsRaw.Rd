@@ -19,3 +19,11 @@ a list of dataframes with contrast results indexed by cell type
 \description{
 GetContrastResultsRaw - calculate p values and return contrast results from modelfit with dreamMixedModel
 }
+\examples{
+\dontrun{
+fit_res = scglmmr::GetContrastResultsRaw(limma.fit.object.list = fit,
+                                        coefficient.number = 1,
+                                        contrast.name = "foldchangedifference")
+
+}
+}

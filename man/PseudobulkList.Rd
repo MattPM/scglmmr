@@ -30,5 +30,9 @@ a R list of standard R matrices indexed by celltype
 PseudobulkList - make a pseudobuk summed or average dataset for each samplexcelltype
 }
 \examples{
+\dontrun{
+pb = scglmmr::PseudobulkList(rawcounts = umi, metadata = meta, sample_col = "sample",
+        celltype_col = "lineage", avg_or_sum = "sum")
+}
 # for each celltype aggregate raw counts for ech sample (subject timepoint combination)
 }

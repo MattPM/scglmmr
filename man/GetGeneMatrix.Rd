@@ -29,3 +29,18 @@ a matrix
 \description{
 GetGeneMatrix get a gene matric for plotting genes by celltypes statistic from pseudobulk model results e.g. using heatmap pheatmap or complexheatmap
 }
+\examples{
+\dontrun{
+le = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1, NES.filter = -Inf)
+genesub = do.call(rbind, le) \%$\% gene \%>\% unique
+mtx2 = scglmmr::GetGeneMatrix(result.list = res,
+                              stat_for_matrix = "logFC",
+                              gene_subset = genesub,
+                              pvalfilter = -Inf,
+                              logfcfilter = 0.1)
+
+pheatmap::pheatmap(mtx2,
+                   breaks =seq(from = 0, to = 2,length.out = 99),
+                   filename = paste0(figpath,"LEgenes_heatmap.pdf"))
+}
+}

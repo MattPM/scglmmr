@@ -25,6 +25,43 @@
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' # load data from single cell data object
+#' Seurat = readRDS("my_seurat_object.rds")
+#'
+#' # add cellwise module score for each signature
+#' mod_scores = WeightedCellModuleScore(seurat_object = Seurat,
+#'                                      module_list = btm,
+#'                                      threshold = 0.1,
+#'                                      return_weighted = FALSE, cellwise_scaling = FALSE,
+#'                                      Seurat_version = "2")
+#' Seurat = AddMetaData(Seurat,metadata = mod_scores)
+#' module_n = names(sig_test)
+#'
+#' # set up module data frame
+#' module_df = Seurat@meta.data %>% select(barcode_check, celltype_joint, module_n)
+#'
+#' # format metadata as factors group_id is order leveled for contrast_fit = contrast(emm1, method = list( (c21 - c20) - (c11 - c10) ))
+#' md = Seurat@meta.data %>%
+#'   mutate(group_id = factor(treat_time,  levels = c('pre_low', 'post_low', 'pre_high', 'post_high'))) %>%
+#'   mutate(sampleid = factor(sampleid)) %>%
+#'   select(barcode_check, celltype_joint, sampleid,  age, group_id)
+#'
+#' # Fit mixed model
+#' plot_savepath = paste0(my_figure_save_path, "/marginalmeans/"); dir.create(plot_savepath)
+#'
+#' # specify any random intercept model e.g.
+#' f1 = 'modulescore ~ age + group_id + (1|sampleid)'
+#'
+#' # fit sc mod mixed model on ewighted module scores.
+#' mm_res = SCGroupContrastGLMM(module_data_frame = module_df,
+#'                            celltype_column = 'celltype',
+#'                              metadata = md,
+#'                              fixed_effects = NULL,
+#'                              lmer_formula = f1,
+#'                              plotdatqc = TRUE,
+#'                              figpath = 'your/file/path')
+#'}
 SCGroupContrastGLMM = function(module_data_frame, celltype_column = 'celltype', metadata,
                                fixed_effects = NULL, lmer_formula = NULL, plotdatqc = TRUE, figpath){
 
@@ -209,3 +246,148 @@ SCGroupContrastGLMM = function(module_data_frame, celltype_column = 'celltype', 
 }
 
 
+
+# Fit mixed model
+# mm_res = FitModuleMixModel(module_data_frame = module_df, lme4metadata = md, f1 = f1, contrast_list = contrast_2, plot_savepath = plot_savepath)
+# module mized model function
+#' WilcoxWithinCluster
+#'
+#' @param module_data_frame
+#' @param lme4metadata
+#' @param plot_savepath
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#'\dontrun{
+#' weighted_score = WeightedCellModuleScore(seurat_object = s, module_list = sig,
+#'                                          threshold = 0.1, cellwise_scaling = FALSE,
+#'                                          return_weighted = TRUE,
+#'                                          Seurat_version = "3")
+#'
+#' # set module dataframe
+#' module_df = cbind(celltype_joint = as.character(s@meta.data$seurat_clusters),
+#'                   barcode_check = s@meta.data$barcode_full,
+#'                   weighted_score) %>%
+#'   droplevels()
+#'
+#' # format lme4 metadata (note here just wilcox so group IDS do not have to be lme4 factors
+#' meta_data = s@meta.data %>%
+#'   droplevels() %>%
+#'   select(celltype_joint = seurat_clusters,  barcode_check = barcode_full, sample, group_id = IRAE) %>%
+#'   filter(group_id %in% c("poor_outcome", "good_outcome")) %>%
+#'   mutate(group_id = factor(group_id, levels = c("poor_outcome", "good_outcome")))
+#'
+#' # Fit wilcox test and do bonferonni correction
+#' plot_savepath2 = file.path(figpath, "module_distribution/"); dir.create(plot_savepath2)
+#' m2 = module_df %>% filter(barcode_check %in% meta_data$barcode_check )
+#' cvnc = WilcoxWithinCluster(module_data_frame = m2, lme4metadata = meta_data, plot_savepath = plot_savepath2)
+#' cvnc$padj = p.adjust(p = cvnc$p.value.t0.wilcox, method = "BH")
+#'}
+
+WilcoxWithinCluster = function(module_data_frame, lme4metadata, plot_savepath = NULL){
+  # require(lme4); require(emmeans);
+  '%ni%' = Negate('%in%')
+  # emm_options(lmerTest.limit = Inf)
+  # emm_options(pbkrtest.limit = Inf)
+
+  # minimal required metadata
+  #stopifnot(is.factor(lme4metadata$group_id)) ;
+  #stopifnot(is.factor(lme4metadata$sampleid))
+  # print data format note
+  # print("group_id level1 must be group 1 baseline (intercept) e.g. md %>% mutate(group_id = factor(group_timepoint,  levels = c('0_0', '0_1', '1_0', '1_1')))")
+  print("module_data_frame columns: 1 = cell barcode 2 = celltype 3-nmodules = name of each module")
+  print("celltype column of lme4metadata and module_data_frame mmust be 'celltype_joint' ")
+
+  # Test
+  #  module_data_frame = m2
+  #lme4metadata = md_colitis_vs_nocolitis
+  # f1 = f1
+  # contrast_list = contrast_2
+  # plot_savepath = plot_savepath
+  # cts = unique(module_data_frame$celltype_joint)[c(1,2)]
+
+  # init storage
+  res_celltype = res_list = list()
+
+  # define module names
+  module_names = names(module_data_frame)
+  module_names = module_names[-c(1:2)]
+
+  # define celltypes
+  cts = unique(module_data_frame$celltype_joint) %>% as.character()
+
+  # show what is being tested
+  print("testing the following modules in these clusters and comparing ")
+  #print(contrast_list);
+  print(cts); print(module_names)
+
+  # indexed over cell type
+  for (u in 1:length(cts)) {
+    suppressMessages(gc())
+    # celltype indexed
+    print(paste0("fitting models for ", cts[u]))
+    mod_df = module_data_frame %>% filter(celltype_joint == cts[u]) %>% select(-celltype_joint)
+    met = lme4metadata %>% filter(celltype_joint %in% cts[u])
+    # definee columns of lme4 metadata for use in next section; combine meta and module score
+    meta_fit = colnames(lme4metadata)
+    dat = full_join(x = met, y = mod_df, by = "barcode_check")
+    # indexed over modules
+    for (i in 1:length(module_names)) {
+      # module indexed ; select each module and fit model
+      module = module_names[i]; print(module)
+      dat_fit = dat %>% select(modulescore = module, meta_fit)
+      # baseline simple DE test with paired wilcox test
+      baseline_data = dat_fit
+
+      # %>% filter(group_id %in% levels(dat_fit$group_id[c(1,3)]))
+      wt = wilcox.test(modulescore ~ group_id, data = baseline_data
+                       #%>% filter(group_id %in% levels(dat_fit$group_id)[c(1,3)])
+      ) %>%
+        broom::tidy() %>%
+        rename(p.value.t0.wilcox = p.value)
+
+      # contrast df
+      # contrastdf = cbind(contrastdf, wt)
+      contrastdf = wt
+      t0p = formatC(contrastdf$p.value.t0.wilcox, format = "e", digits = 4)
+
+      # plot marginal and violin
+      if( !is.null(plot_savepath) ){
+
+        # reformat minimal marginal means
+
+        titleplot = paste0(cts[u],module)
+        p3 = ggplot(baseline_data, aes(x = group_id, y = modulescore, fill = group_id)) +
+          geom_jitter(shape = 16, alpha = 0.5, size = 0.5, show.legend = FALSE) +
+          geom_violin(show.legend = FALSE) +
+          scale_fill_manual(values = c("darkorange2", "dodgerblue3"))+
+          theme_bw() +
+          theme(axis.title.y = element_text(size = 13)) +
+          theme(axis.text.x = element_text(size = 13), axis.title.x = element_blank()) +
+          theme(axis.text.y = element_text(size = 13)) +
+          theme(axis.line = element_line(colour = 'black', size = 0.2)) +
+          ggtitle(paste0(cts[u], " ", module, "\n", "baseline wilcox p = ", t0p))
+        ggsave(p3, filename = paste0(plot_savepath,"VLN ", titleplot, ".pdf"), width = 3.3, height = 3.3)
+        ggsave(p3, filename = paste0(plot_savepath,"VLN ", titleplot, ".png"), width = 3.3, height = 3.3)
+        #ggsave(p3, filename = paste0(testpath, "test2.pdf"), width = 3, height = 3)
+
+      }
+
+      # merge into result list
+      res_list[[i]] =
+        cbind(contrastdf) %>%
+        mutate(modulename = module) %>%
+        select(modulename, everything())
+    }
+
+    # remove all module / celltypes without model fit; bind to df; add to cellype list.
+    res_list = res_list[!is.na(res_list)]
+    resdf = bind_rows(res_list)
+    # indexed over celltype store celltype 1 values in resdfct[[u]]
+    res_celltype[[u]] = resdf %>% mutate(celltype = cts[u]) %>% select(celltype, everything())
+  }
+  resdf_full = bind_rows(res_celltype)
+  return(resdf_full)
+}

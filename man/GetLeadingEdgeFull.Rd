@@ -20,5 +20,7 @@ a list
 GetLeadingEdgeFull Get a tidy dataframe of ALL Leading Edge Genes from gene set enrichment for all cell types
 }
 \examples{
-y = GetLeadingEdgeFull(gsea, padj.filter = 0.1, NES.filter = -Inf)
+\dontrun{
+lefull = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1,NES.filter = -Inf)
+}
 }

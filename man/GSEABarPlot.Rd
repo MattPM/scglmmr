@@ -38,3 +38,8 @@ nothing
 \description{
 GSEABarPlot - plot gsea results for a single cell type
 }
+\examples{
+\dontrun{
+scglmmr::GSEABarPlot(d, celltype_name = 'celltype1', save_path = figpath, title = 'ct2', fill_color = 'dodgerblue' save_name = "plot.pdf")
+}
+}

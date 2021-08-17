@@ -19,3 +19,8 @@ a list of dataframes with contrast results indexed by cell type
 \description{
 GetContrastResults - return results from a contrast fit on list of celltypes from RunVoomLimma using topTable
 }
+\examples{
+\dontrun{
+res = scglmmr::GetContrastResults(limma.fit.object.list = bl, coefficient.number = 1, contrast.name = "test")
+}
+}

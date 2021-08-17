@@ -247,8 +247,8 @@ Recommended: The function accepts an argument 'celltype_genes_test' this is a na
 First we load a single cell object an define highly variable genes within each celltype, this can be done many different ways. 
 ```{r, eval = FALSE}
 # Single cell mixed model. 
-suppressMessages(library(tidyverse))
 library(scglmmr)
+suppressMessages(library(magrittr))
 set.seed(1990)
 
 datapath = 'your_path_to_save_results'
@@ -387,7 +387,7 @@ module_df = Seurat@meta.data %>% select(barcode_check, celltype_joint, module_n)
 
 # format metadata as factors group_id is order leveled for contrast_fit = contrast(emm1, method = list( (c21 - c20) - (c11 - c10) ))
 md = Seurat@meta.data %>% 
-  mutate(group_id = factor(adjmfc.time,  levels = c('d0 low', 'd1 low', 'd0 high', 'd1 high'))) %>%
+  mutate(group_id = factor(treat_time,  levels = c('pre_low', 'post_low', 'pre_high', 'post_high'))) %>%
   mutate(sampleid = factor(sampleid)) %>% 
   select(barcode_check, celltype_joint, sampleid,  age, group_id)
 
@@ -398,13 +398,13 @@ plot_savepath = paste0(my_figure_save_path, "/marginalmeans/"); dir.create(plot_
 f1 = 'modulescore ~ age + group_id + (1|sampleid)'
 
 # fit sc mod mixed model on ewighted module scores. 
-mm_res = FitModuleMixModel(module_data_frame = module_df, 
-                           celltype_column = 'celltype',
-                           metadata = md,
-                           fixed_effects = NULL,
-                           lmer_formula = f1,
-                           plotdatqc = TRUE,
-                           figpath = 'your/file/path')
+mm_res = SCGroupContrastGLMM(module_data_frame = module_df, 
+                             celltype_column = 'celltype',
+                             metadata = md,
+                             fixed_effects = NULL,
+                             lmer_formula = f1,
+                             plotdatqc = TRUE,
+                             figpath = 'your/file/path')
 
 ### This function returns p values, effect sizes for baseline and difference in fld changes between the groups 
 colnames(mmres)

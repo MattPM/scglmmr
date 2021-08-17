@@ -18,5 +18,8 @@ see AverageSampleModuleZscore
 calc_avg_module_zscore calculate average module z score of list of modules on a PseudobulkList
 }
 \examples{
+\dontrun{
+results = calc_avg_module_zscore(module.list = btm, average.data.frame = av_df)
+}
 # Average Module sample Z score
 }

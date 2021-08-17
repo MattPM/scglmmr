@@ -39,3 +39,10 @@ RunVoomLimma_covar(
 \description{
 RunVoomLimma_covar RunLimmaVoom with an option to adjust for a covariate within mRNA.
 }
+\examples{
+\dontrun{
+RunVoomLimma_covar(dgelists = dge_lists, design_matrix = design, co_variable_genes = NULL, grouptable = grouptable ,do_contrast_fit = TRUE,
+ my_contrast_matrix = c_mat, my_model_metadata = md, celltypes.vector = NULL, parallel.sz = 4)
+
+}
+}

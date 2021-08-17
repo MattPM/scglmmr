@@ -21,11 +21,38 @@
 #' @importFrom data.table fwrite rbindlist
 #'
 #' @examples
-#' results = SCMixedPoisson(gene_data = gene_data,
-#'   lme4metadata = meta_data,
-#'   model_formula = 'gene ~ offset(log(nUMI)) + timepoint + (1|sampleid)',
-#'   celltype_genes_test = celltype_indexed_gene_vector
-#' )
+#'\dontrun{
+# set.seed(1990)
+#
+# datapath = 'your_path_to_save_results'
+# s = readRDS('path_to_seurat_or_SingleCellExperimentObject')
+
+# s@meta.data$subjectid = factor(as.character(s@meta.data$sampleid))
+#
+# # create metadata for lme4
+# md = s@meta.data %>%
+#   droplevels() %>%
+#   dplyr::select(barcode_check, batch, subjectid, treatment, celltype_joint, nUMI) %>%
+#   mutate(treatment = factor(treatment, levels = c("pre_treatment", "post_treatment"))) %>%
+#   rename(celltype = celltype_joint) %>%
+#   column_to_rownames('barcode_check')
+#
+# # get gene data
+# gene_data = Matrix::t(s@raw.data[gene_union, ])
+#
+# # we can now remove whatever single cell object was loaded in the environment.
+# rm(s); gc()
+#
+# ## specify model formula
+# f1 = 'gene ~ offset(log(nUMI)) + treatment + (1|subjectid)'
+#
+# results = scglmmr::SCMixedPoisson(gene_data = gene_data,
+#                                   metadata = md,
+#                                   model_formula = f1,
+#                                   test_variable = 'treatment',
+#                                   celltype_genes_test = genes_test,
+#                                   save_path = datapath)
+#'}
 #'
 #'
 #'
@@ -36,16 +63,6 @@ SCMixedPoisson = function(gene_data,
                           covariate_variables = NULL,
                           celltype_genes_test = NULL,
                           save_path){
-
-  ############# test function
-  model_formula = 'gene ~ 0 + offset(log(nUMI)) + timepoint + (1|subjectid)'
-  #model_formula = NULL
-  gene_data = gene_data
-  metadata = md
-  celltype_genes_test = genes_test
-  #covariate_variables = 'batch'
-  test_variable = 'timepoint'
-  #############
 
   # specify and unify model formula and metadata for emmeans call
   if(!is.null(model_formula)){
@@ -149,13 +166,13 @@ SCMixedPoisson = function(gene_data,
     }
     # rbind fitted model results for each gene for celltype u
     res_list = res_list[!is.na(res_list)]
-    resdf = as.data.frame(data.table::rbindlist(l = res_list, fill = TRUE))
+    resdf = as.data.frame(data.table::rbindlist(l = res_list, fill = TRUE), stringsAsFactors = FALSE)
     resdf$contrast_padj = p.adjust(p = resdf$p.value, method = "BH")
 
     # make new list indexed by celltype for final rbind to return complete results.
     res_celltype[[u]] = cbind(celltype = cts[u], resdf)
     data.table::fwrite(x = res_celltype[[u]], file = paste0(save_path, cts[u],'result.csv'))
   }
-  resdf_full = as.data.frame(data.table::rbindlist(res_celltype), fill = TRUE)
+  resdf_full = as.data.frame(data.table::rbindlist(res_celltype, fill = TRUE), stringsAsFactors = FALSE )
   return(resdf_full)
 }

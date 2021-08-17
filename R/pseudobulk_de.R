@@ -3,7 +3,7 @@
 # author: Matt Mulè
 # email: mattmule@gmail.com
 
-#' SubjectCelltypeTable - make a QC contingency table of cells by samples beore making pseudobulk data.
+#' SubjectCelltypeTable - make a QC contingency table of cells by samples; this function sets up the workflow and is run prior to running PseudobulkList
 #'
 #' @param metadata metadata cells-rows variables-columns i.e. ColData or seurat meta.data
 #' @param celltype_column quoted character e.g. "celltype" - the celltypes / clusters for which to create bulk libraries
@@ -14,6 +14,28 @@
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' datapath = "mypath/"
+#'
+#' # load seurat or sce object etc.
+#' s = readRDS("path/seuratobject.rds")
+#'
+#' # define counts and metadata and subset to cells above rm seurat object from workspace
+#' # meta = s@meta.data
+#' # umi = s@assays$RNA@counts
+#' # rm(s); gc()
+#'
+#' # QC contingency of cells by subject for each celltype
+#' tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "lineage", sample_column = "sample")
+#' tab$celltypes_remove; tab$`low representation celltypes`; tab$table
+#'
+#' # remove cells prior to pseudobulk analysis
+#' meta = meta[!meta$celltype_label_3 %in% tab$celltypes_remove, ]
+#'
+#' # subset data
+#' umi = umi[ ,rownames(meta)]
+#' # proceed to PseudobulkList
+#' }
 SubjectCelltypeTable = function(metadata, celltype_column, sample_column) {
 
   # make contingency table
@@ -57,6 +79,10 @@ SubjectCelltypeTable = function(metadata, celltype_column, sample_column) {
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#'pb = scglmmr::PseudobulkList(rawcounts = umi, metadata = meta, sample_col = "sample",
+#'         celltype_col = "lineage", avg_or_sum = "sum")
+#' }
 #' # for each celltype aggregate raw counts for ech sample (subject timepoint combination)
 # store in a list of matrices
 PseudobulkList = function(rawcounts, metadata, sample_col, celltype_col, avg_or_sum = 'sum') {
@@ -118,6 +144,10 @@ PseudobulkList = function(rawcounts, metadata, sample_col, celltype_col, avg_or_
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' designmat = scglmmr::BulkDesignMatrix(metadata = meta, sample_column = "sample",
+#' variable_column = "cohort_timepoint", pseudobulklist = pb)
+#' }
 BulkDesignMatrix = function(metadata, sample_column, variable_column, pseudobulklist){
 
   # create design matrix from aggregated contingency table of cells
@@ -153,6 +183,9 @@ BulkDesignMatrix = function(metadata, sample_column, variable_column, pseudobulk
 #' @export
 #'
 #' @examples
+#' #' #'\dontrun{
+# 'dge = scglmmr::NormalizePseudobulk(pseudobulklist = pb, design_matrix = designmat, minimum.gene.count = 5)
+#' }
 #' # normalize the pseudobulk data made with MakePseudobulkList
 NormalizePseudobulk = function(pseudobulklist, normalization.method = "RLE",
                                design_matrix, minimum.gene.count = 1) {
@@ -182,6 +215,19 @@ NormalizePseudobulk = function(pseudobulklist, normalization.method = "RLE",
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#'c_mat = makeContrasts(
+#'foldchange_difference = (group_timepoint1_1 - group_timepoint1_0) - (group_timepoint0_1 - group_timepoint0_0),
+#'time1_foldchange = (group_timepoint1_1 + group_timepoint0_1) / 2  - (group_timepoint1_0 + group_timepoint0_0) / 2,
+#'baseline_groups = (group_timepoint1_0 - group_timepoint0_0),
+#'levels = colnames(designmat)
+#')
+#'# fit simple linear model for the baseline group level contrast
+#'bl = scglmmr::RunVoomLimma(dgelists = dge,
+#'design_matrix = designmat,
+#'do_contrast_fit = T,
+#'my_contrast_matrix = c_mat[ ,3])
+#' }
 #' # run limma using voom observational weights for non mixed effects models using emperical bayes
 RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_matrix){
   print("to implement random intercept for repeated measures (e.g. time) from same donor use dreamMixedModel")
@@ -210,7 +256,6 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 
 
 #' dreamMixedModel - run dream mixed model
-#' note due to this issue must require variancepartition https://github.com/GabrielHoffman/variancePartition/issues/17
 #' @param dge_lists list of dgelists created with NormalizePseudobulk
 #' @param apriori_contrasts one of TRUE or FALSE, whether to fit a priori contrasts
 
@@ -234,6 +279,25 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#'c_mat = makeContrasts(
+#'foldchange_difference = (group_timepoint1_1 - group_timepoint1_0) - (group_timepoint0_1 - group_timepoint0_0),
+#'time1_foldchange = (group_timepoint1_1 + group_timepoint0_1) / 2  - (group_timepoint1_0 + group_timepoint0_0) / 2,
+#'baseline_groups = (group_timepoint1_0 - group_timepoint0_0),
+#'levels = colnames(designmat)
+#')
+#'# fit mixed model for the multi timepoint contrasts
+#'fit = scglmmr::dreamMixedModel(dge_lists = dge,
+#'apriori_contrasts = TRUE,
+#'sample_column = 'sample',
+#'cell_metadata = meta,
+#'contrast_matrix = c_mat,
+#'design_matrix = designmat,
+#'lme4_formula =  '~ 0 + age + gender + cohort_timepoint + (1|sampleid)',
+#'fixed_effects = c('age', 'gender', 'cohort_timepoint'),
+#'plotsavepath = figpath,
+#'ncores = 4)
+#' }
 #' # run dream mixed model
 # dream method Hoffman et.al. 2020  https://doi.org/10.1093/bioinformatics/btaa687
 # biorxiv version 1 and 2 implemented below.
@@ -319,20 +383,6 @@ dreamMixedModel = function(dge_lists,
   return(fit1)
 }
 
-# Example contrast for baseline, time, and group fold change difference
-# contrast_matrix  = limma::makeContrasts(fold_change_group_delta = (cohort_timepoint1_1 - cohort_timepoint1_0) - (cohort_timepoint0_1 - cohort_timepoint0_0),
-#                                  fold_change = (cohort_timepoint1_1 + cohort_timepoint0_1) / 2  - (cohort_timepoint1_0 + cohort_timepoint0_0) / 2,
-#                                  baseline_difference = (cohort_timepoint1_0 - cohort_timepoint0_0),
-#                                  levels = colnames(met))
-
-#                       fold_change_group_delta fold_change baseline_difference
-# cohort_timepoint0_0                       1        -0.5                  -1
-# cohort_timepoint0_1                      -1         0.5                   0
-# cohort_timepoint1_0                      -1        -0.5                   1
-# cohort_timepoint1_1                       1         0.5                   0
-
-
-
 #' calc_avg_module_zscore calculate average module z score of list of modules on a PseudobulkList
 #'
 #' @param module.list list of modules
@@ -342,6 +392,9 @@ dreamMixedModel = function(dge_lists,
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' results = calc_avg_module_zscore(module.list = btm, average.data.frame = av_df)
+#' }
 #' # Average Module sample Z score
 # the method below is equivalent to Yuri's function used in baseline paper Kotliarov et. al. Nat Med 2020
 # it is adopted below to run on 'pseudobulk lists' (average "averagemetacell.list" or pseudobulk list created by PseudobulkList)
@@ -378,8 +431,14 @@ calc_avg_module_zscore = function(module.list, average.data.frame) {
 #' @export
 #'
 #' @examples
-#' #
-# if we use option of only analyzing thresholded modules, u in function above is the length of the number of modules passing threshold.
+#'\dontrun{
+#'AverageSampleModuleZscore = function(
+#'  average.metacell.list = av,
+#'  module.list = btm ,
+#'  use.module.subset = FALSE,
+#'  )
+#'
+#' }
 AverageSampleModuleZscore = function(average.metacell.list,
                                      module.list,
                                      use.module.subset = TRUE,
@@ -429,6 +488,11 @@ AverageSampleModuleZscore = function(average.metacell.list,
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' RunVoomLimma_covar(dgelists = dge_lists, design_matrix = design, co_variable_genes = NULL, grouptable = grouptable ,do_contrast_fit = TRUE,
+#'  my_contrast_matrix = c_mat, my_model_metadata = md, celltypes.vector = NULL, parallel.sz = 4)
+#'
+#' }
 RunVoomLimma_covar = function(dgelists, design_matrix, co_variable_genes = NULL, grouptable,
                         do_contrast_fit, my_contrast_matrix, my_model_metadata, celltypes.vector = NULL, parallel.sz = 4){
 

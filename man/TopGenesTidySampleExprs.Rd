@@ -29,3 +29,16 @@ a list of tidy dataframes by celltype
 \description{
 TopGenesTidySampleExprs convert a PseudobulkList into a tidy dataframe for each sample across cell types of the top differentially expressed genes for a contrast
 }
+\examples{
+\dontrun{
+av = scglmmr::PseudobulkList(rawcounts = umi,
+                             metadata = meta,
+                             sample_col = "sample",
+                             celltype_col = "celltype",
+                             avg_or_sum = 'average')
+fit_res = scglmmr::GetContrastResultsRaw(limma.fit.object.list = fit,
+                                        coefficient.number = 1,
+                                        contrast.name = "foldchangedifference")
+le_expr = scglmmr::TopGenesTidySampleExprs(av.exprs.list = av, result.list = fit_res, P.Value.filter = 0.2, logFC.filter=0.1, top_n_genes = 20)
+}
+}

@@ -2,8 +2,7 @@
 % Please edit documentation in R/pseudobulk_de.R
 \name{dreamMixedModel}
 \alias{dreamMixedModel}
-\title{dreamMixedModel - run dream mixed model
-note due to this issue must require variancepartition https://github.com/GabrielHoffman/variancePartition/issues/17}
+\title{dreamMixedModel - run dream mixed model}
 \usage{
 dreamMixedModel(
   dge_lists,
@@ -44,8 +43,26 @@ list of model fits indexed by celltype
 }
 \description{
 dreamMixedModel - run dream mixed model
-note due to this issue must require variancepartition https://github.com/GabrielHoffman/variancePartition/issues/17
 }
 \examples{
+\dontrun{
+c_mat = makeContrasts(
+foldchange_difference = (group_timepoint1_1 - group_timepoint1_0) - (group_timepoint0_1 - group_timepoint0_0),
+time1_foldchange = (group_timepoint1_1 + group_timepoint0_1) / 2  - (group_timepoint1_0 + group_timepoint0_0) / 2,
+baseline_groups = (group_timepoint1_0 - group_timepoint0_0),
+levels = colnames(designmat)
+)
+# fit mixed model for the multi timepoint contrasts
+fit = scglmmr::dreamMixedModel(dge_lists = dge,
+apriori_contrasts = TRUE,
+sample_column = 'sample',
+cell_metadata = meta,
+contrast_matrix = c_mat,
+design_matrix = designmat,
+lme4_formula =  '~ 0 + age + gender + cohort_timepoint + (1|sampleid)',
+fixed_effects = c('age', 'gender', 'cohort_timepoint'),
+plotsavepath = figpath,
+ncores = 4)
+}
 # run dream mixed model
 }

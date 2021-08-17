@@ -21,3 +21,9 @@ a design matrix
 \description{
 BulkDesignMatrix - designmatrix for the main experiment factor
 }
+\examples{
+\dontrun{
+designmat = scglmmr::BulkDesignMatrix(metadata = meta, sample_column = "sample",
+variable_column = "cohort_timepoint", pseudobulklist = pb)
+}
+}

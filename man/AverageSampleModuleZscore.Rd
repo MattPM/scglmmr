@@ -27,5 +27,12 @@ returns a dataframe of module scores for each celltype
 AverageSampleModuleZscore apply the function  calc_avg_module_zscore to a pseudobulklist.
 }
 \examples{
-#
+\dontrun{
+AverageSampleModuleZscore = function(
+ average.metacell.list = av,
+ module.list = btm ,
+ use.module.subset = FALSE,
+ )
+
+}
 }

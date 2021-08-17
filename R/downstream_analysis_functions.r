@@ -15,6 +15,9 @@
 #'
 #'
 #' @examples
+#'\dontrun{
+#'res = scglmmr::GetContrastResults(limma.fit.object.list = bl, coefficient.number = 1, contrast.name = "test")
+#' }
 GetContrastResults = function(limma.fit.object.list, coefficient.number, contrast.name){
   print("this function returns results from RunVoomLimma, to get coefficient from dreamMixedModel, use GetContrastResultsRaw
         GetContrastResults uses emperican Bayes shrinkage see https://github.com/GabrielHoffman/variancePartition/issues/4 ")
@@ -46,11 +49,17 @@ GetContrastResults = function(limma.fit.object.list, coefficient.number, contras
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#'fit_res = scglmmr::GetContrastResultsRaw(limma.fit.object.list = fit,
+#'                                         coefficient.number = 1,
+#'                                         contrast.name = "foldchangedifference")
+#'
+#' }
 GetContrastResultsRaw =  function(limma.fit.object.list, coefficient.number, contrast.name){
   print("this function returns results from dreamMixedModel, to get coefficient from RunVoomLimma, use GetContrastResults
         GetContrastResults uses emperican Bayes shrinkage see https://github.com/GabrielHoffman/variancePartition/issues/4 ")
   ## pt 1 return ONLY gene, logFC, AveExpr, contrast, celltype from eBayes call to format data and add raw p values from lme4, correct with BH.
-  pvals = lapply(limma.fit.object.list, function(x){ data.frame(P.Value = x$p.value[ ,coefficient.number], gene = rownames(x))})
+  pvals = lapply(limma.fit.object.list, function(x){ data.frame(P.Value = x$p.value[ ,coefficient.number], gene = rownames(x$p.value))})
   lapply(pvals, function(x) rownames(x) = NULL)
 
   # parameters to run ordinary t statistic
@@ -95,6 +104,19 @@ GetContrastResultsRaw =  function(limma.fit.object.list, coefficient.number, con
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' le = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1, NES.filter = -Inf)
+#' genesub = do.call(rbind, le) %$% gene %>% unique
+#' mtx2 = scglmmr::GetGeneMatrix(result.list = res,
+#'                               stat_for_matrix = "logFC",
+#'                               gene_subset = genesub,
+#'                               pvalfilter = -Inf,
+#'                               logfcfilter = 0.1)
+#'
+#' pheatmap::pheatmap(mtx2,
+#'                    breaks =seq(from = 0, to = 2,length.out = 99),
+#'                    filename = paste0(figpath,"LEgenes_heatmap.pdf"))
+#' }
 GetGeneMatrix = function(result.list, gene_subset = NULL, stat_for_matrix = "logFC", pvalfilter, logfcfilter){
 
   if (is.null(gene_subset)) {
@@ -132,6 +154,9 @@ GetGeneMatrix = function(result.list, gene_subset = NULL, stat_for_matrix = "log
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#'test = scglmmr::GetRankResults(limma.fit.object.list = bl, coefficient.number = 1, "test")
+#' }
 GetRankResults = function(limma.fit.object.list, coefficient.number, contrast.name){
   print(" returning ranks based on emperical bayes moderated t statistic")
   ranks = list()
@@ -162,6 +187,12 @@ GetRankResults = function(limma.fit.object.list, coefficient.number, contrast.na
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' fit_res = scglmmr::GetContrastResultsRaw(limma.fit.object.list = fit,
+#'                                          coefficient.number = 1,
+#'                                          contrast.name = "foldchangedifference")
+#' fit_rank = scglmmr::GetRankResultsRaw(contrast.result.raw.list = fit_res)
+#' }
 GetRankResultsRaw = function(contrast.result.raw.list){
   print("returning genes ranked by t statistic for each cell type based on mixed model results")
   ranks = list()
@@ -194,9 +225,11 @@ GetRankResultsRaw = function(contrast.result.raw.list){
 #' @export
 #'
 #' @examples
-#' # usage:
+#'\dontrun{
 #' t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = ebf, coefficient.number = 1, contrast.name = "time_1_highvslow")
-#' gsea = RunFgseaOnRankList(rank.list.celltype = t1hvl_rank, )
+#' gsea = RunFgseaOnRankList(rank.list.celltype = t1hvl_rank)
+#' }
+#' # usage:
 RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSize = 9,
                               nperm = 250000, positive.enrich.only = FALSE) {
   #require(fgsea)
@@ -230,6 +263,9 @@ RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSi
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#'d = scglmmr::RbindGseaResultList(gsea_result_list = gsea1,NES_filter = -Inf,padj_filter = 0.2)
+#' }
 RbindGseaResultList = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1){
   score = lapply(gsea_result_list, function(x){
     x = x %>%
@@ -256,6 +292,9 @@ RbindGseaResultList = function(gsea_result_list, NES_filter = -Inf, padj_filter 
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#'scglmmr::GSEABarPlot(d, celltype_name = 'celltype1', save_path = figpath, title = 'ct2', fill_color = 'dodgerblue' save_name = "plot.pdf")
+#' }
 GSEABarPlot = function(rbind_gsea_result_dataframe, celltype_name, save_path, title, save_name, fill_color, width = 8.5, height = 7.2) {
   # filter to single cell type
   dplot = rbind_gsea_result_dataframe[ rbind_gsea_result_dataframe$celltype == celltype_name, ]
@@ -294,6 +333,9 @@ GSEABarPlot = function(rbind_gsea_result_dataframe, celltype_name, save_path, ti
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#'cglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
+#' }
 GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path, include_negative = TRUE, save_name, width = 8.5, height = 7.2) {
 
   # apply same aes for both includeneg with exception
@@ -341,7 +383,10 @@ GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path, include_negati
 #' @export
 #'
 #' @examples
-#' y = GetLeadingEdgeFull(gsea, padj.filter = 0.1, NES.filter = -Inf)
+#'\dontrun{
+#'lefull = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1,NES.filter = -Inf)
+#' }
+
 GetLeadingEdgeFull = function(gsea.list, padj.filter, NES.filter){
   gseasub = lapply(gsea.list, function(x){
     x %>%
@@ -389,6 +434,9 @@ GetLeadingEdgeFull = function(gsea.list, padj.filter, NES.filter){
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' le_mono = GetLeadingEdgeGenes(gsea.result.list = gsea1, celltype.index = 4, module.name = 'my_modulename_from_gsearesults')
+#' }
 GetLeadingEdgeGenes = function(gsea.result.list, celltype.index, module.name) {
 
   celltype = gsea.result.list[[celltype.index]]
@@ -417,7 +465,9 @@ GetLeadingEdgeGenes = function(gsea.result.list, celltype.index, module.name) {
 #' @export
 #'
 #' @examples
-#' test = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.2)
+#'\dontrun{
+#' combined_results = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.2)
+#' }
 CombineResults = function(gsealist, contrastlist, gseafdr, genefdr){
 
 
@@ -470,7 +520,6 @@ CombineResults = function(gsealist, contrastlist, gseafdr, genefdr){
   return(result.dataframe)
 }
 
-
 #' LeadEdgeTidySampleExprs - convert a PseudobulkList into a tidy dataframe for each sample across cell types of the leading edge genes from a gsea list
 #'
 #' @param av.exprs.list object returned by `PseudobulkList` summed or average counts
@@ -486,7 +535,18 @@ CombineResults = function(gsealist, contrastlist, gseafdr, genefdr){
 #' @export
 #'
 #' @examples
-#' pos_enr = GetLeadingEdgeAverage(av.exprs.list = pb_average, gsea.list = gsea1, padj.filter = 0.1, NES.filter = 0)
+#'\dontrun{
+# make tidy average data for visualization of weighted pb results
+#' av = scglmmr::PseudobulkList(rawcounts = umi,
+#'                              metadata = meta,
+#'                              sample_col = "sample",
+#'                              celltype_col = "celltype",
+#'                              avg_or_sum = 'average')
+#' le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = av,
+#'                                            gsea.list = hlmk_ctm0,
+#'                                            padj.filter = 0.1,
+#'                                            NES.filter = -Inf)
+#' }
 LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, NES.filter){
   gseasub = lapply(gsea.list, function(x){x = x %>%
     dplyr::filter(NES > NES.filter & padj < padj.filter) %>%
@@ -545,6 +605,18 @@ LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, NES.fi
 #' @export
 #'
 #' @examples
+#'\dontrun{
+# make tidy average data for visualization of weighted pb results
+#' av = scglmmr::PseudobulkList(rawcounts = umi,
+#'                              metadata = meta,
+#'                              sample_col = "sample",
+#'                              celltype_col = "celltype",
+#'                              avg_or_sum = 'average')
+#' fit_res = scglmmr::GetContrastResultsRaw(limma.fit.object.list = fit,
+#'                                         coefficient.number = 1,
+#'                                         contrast.name = "foldchangedifference")
+#' le_expr = scglmmr::TopGenesTidySampleExprs(av.exprs.list = av, result.list = fit_res, P.Value.filter = 0.2, logFC.filter=0.1, top_n_genes = 20)
+#'}
 TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, logFC.filter, top_n_genes = NULL){
 
   resultsub = lapply(result.list, function(x){
@@ -601,6 +673,17 @@ TopGenesTidySampleExprs = function(av.exprs.list, result.list, P.Value.filter, l
 #' @export
 #'
 #' @examples
+#'\dontrun{
+#' scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr,
+#'                                modulename = "MODULENAME",
+#'                                elltype_plot = "TCELL",
+#'                                metadata = meta,
+#'                                metadata_annotate = c('group', 'timepoint', 'age', 'gender'),
+#'                                sample_column = 'sample',
+#'                               returnmat = F,
+#'                                savepath = figpath,
+#'                               savename = "filename")
+#'}
 LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot,
                                  metadata, metadata_annotate, sample_column, returnmat = FALSE,
                                  plotwidth = 5, plotheight = 8, savepath , savename ){
@@ -651,7 +734,22 @@ LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot,
 #' @export
 #'
 #' @examples
-#' hyp_hvl = RunHypergeometricTest(result_list = d1red, TERM2GENE_dataframe = term_df_btm, pval_threshold = 0.1, logFC_threshold = 0, usefdr_threshold = FALSE)
+#'\dontrun{
+### Hypergeometric erichment
+#' load(termdf) # this term2gene dataframe is included in the package see clusterProfiler
+#' hyp = scglmmr::RunHypergeometricTest(result_list = fit_res,
+#'                                      TERM2GENE_dataframe = termdf,
+#'                                      pval_threshold = 0.1,
+#'                                      logFC_threshold = 0,
+#'                                      usefdr_threshold = FALSE)
+#' # plot results
+#' scglmmr::PlotHypergeometric(hyperg_result = hyp,
+#'                             p.adjust.filter = 0.1,
+#'                             genenumber_filter = 2,
+#'                             savepath = figpath,
+#'                             savename = "name",
+#'                             title = "title")
+#'  }
 RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshold = 0.05,
                                  logFC_threshold = 0.5, usefdr_threshold = FALSE){
 
@@ -744,6 +842,22 @@ RunHypergeometricTest = function(result_list, TERM2GENE_dataframe, pval_threshol
 #' @export
 #'
 #' @examples
+#'\dontrun{
+### Hypergeometric erichment
+#' load(termdf) # this term2gene dataframe is included in the package see clusterProfiler
+#' hyp = scglmmr::RunHypergeometricTest(result_list = fit_res,
+#'                                      TERM2GENE_dataframe = termdf,
+#'                                      pval_threshold = 0.1,
+#'                                      logFC_threshold = 0,
+#'                                      usefdr_threshold = FALSE)
+#' # plot results
+#' scglmmr::PlotHypergeometric(hyperg_result = hyp,
+#'                             p.adjust.filter = 0.1,
+#'                             genenumber_filter = 2,
+#'                             savepath = figpath,
+#'                             savename = "name",
+#'                             title = "title")
+#'  }
 PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_filter = 0,
                               savepath = figpath, savename , title, height = 10, width = 8 ){
 
@@ -786,6 +900,17 @@ PlotHypergeometric = function(hyperg_result, p.adjust.filter = 0.05, genenumber_
 #' @export
 #'
 #' @examples
+#' #' @examples
+#'\dontrun{
+#' gene_highlight =  c("IRF1","TNFRSF17","ABL1")
+#' mono = GetTidyCohort(av.exprs.list = av, celltype.index = 7, genes.use = gene_highlight)
+#' PlotGeneDistCohort(merged_av_data = mono,
+#'                    save_name = "mono_highlight_512",
+#'                    save_path = figpath,
+#'                    title = paste0(names(av[7]), "genesub" ),
+#'                    height = 3.8, width = 4.5,
+#'                    nrow = 2)
+#'  }
 GetTidySummary = function(av.exprs.list, celltype.index, genes.use){
   gene.index.1 = genes.use[1]
   gene.index.2 = genes.use[length(genes.use)]
@@ -801,7 +926,7 @@ GetTidySummary = function(av.exprs.list, celltype.index, genes.use){
 
 
 # plot the tidy gene x sample summary by cohort.
-#' Title
+#' PlotGeneDistCohort
 #'
 #' @param merged_av_data data returned for a single cell type by `GetTidySummary`
 #' @param save_path file path to save results
@@ -819,6 +944,17 @@ GetTidySummary = function(av.exprs.list, celltype.index, genes.use){
 #' @export
 #'
 #' @examples
+#' @examples
+#'\dontrun{
+#' gene_highlight =  c("IRF1","TNFRSF17","ABL1")
+#' mono = GetTidyCohort(av.exprs.list = av, celltype.index = 7, genes.use = gene_highlight)
+#' PlotGeneDistCohort(merged_av_data = mono,
+#'                    save_name = "mono_highlight_512",
+#'                    save_path = figpath,
+#'                    title = paste0(names(av[7]), "genesub" ),
+#'                    height = 3.8, width = 4.5,
+#'                    nrow = 2)
+#'  }
 PlotGeneDistCohort = function(merged_av_data,
                               save_path, save_name,
                               title = NULL,
@@ -859,8 +995,36 @@ PlotGeneDistCohort = function(merged_av_data,
 }
 
 
-# retued utils
+# retired util functions
+
+# ### match order of 2 lists of data frames based on "celltype" column useful to e.g. match separately run models by fgsea result lists
+# MatchfgseaResultIndex = function(list_to_reference, list_to_reorder){
 #
+#   print("cell type names must match")
+#
+#   result.list1 = list_to_reference
+#   result.list2 = list_to_reorder
+#
+#   ct = sapply(result.list1, function(x){ unique(x$celltype)}) %>% unname
+#   print("list 1 order of results by cell type")
+#   print(ct)
+#   ct2 = sapply(result.list2, function(x){ unique(x$celltype) }) %>% unname
+#   print("list 2 order of results by cell type")
+#   print(ct2)
+#
+#   if (!(length(ct) == length(ct2))) {
+#     print("the celltype result lists are unequal length and will be merged by the intersection")
+#   }
+#
+#   ct2 = ct2[ct2 %in% ct]
+#   ct = ct[ct %in% ct2]
+#
+#   reorder_2_match1 = ct2[order(match(ct2, ct))]
+#
+#   result.list2 = result.list2[reorder_2_match1]
+#   return(result.list2)
+# }
+
 # # Make volcano plot for each celltype
 # VolcanoPlotTop = function(contrast.result.list, contrast.name, save.path, size = 3, fig.height, fig.width) {
 #   require(ggrepel)
@@ -899,31 +1063,3 @@ PlotGeneDistCohort = function(merged_av_data,
 # }
 #
 #
-#
-# ### match order of 2 lists of data frames based on "celltype" column useful to e.g. match separately run models by fgsea result lists
-# MatchfgseaResultIndex = function(list_to_reference, list_to_reorder){
-#
-#   print("cell type names must match")
-#
-#   result.list1 = list_to_reference
-#   result.list2 = list_to_reorder
-#
-#   ct = sapply(result.list1, function(x){ unique(x$celltype)}) %>% unname
-#   print("list 1 order of results by cell type")
-#   print(ct)
-#   ct2 = sapply(result.list2, function(x){ unique(x$celltype) }) %>% unname
-#   print("list 2 order of results by cell type")
-#   print(ct2)
-#
-#   if (!(length(ct) == length(ct2))) {
-#     print("the celltype result lists are unequal length and will be merged by the intersection")
-#   }
-#
-#   ct2 = ct2[ct2 %in% ct]
-#   ct = ct[ct %in% ct2]
-#
-#   reorder_2_match1 = ct2[order(match(ct2, ct))]
-#
-#   result.list2 = result.list2[reorder_2_match1]
-#   return(result.list2)
-# }

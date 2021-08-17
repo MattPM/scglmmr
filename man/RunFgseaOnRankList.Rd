@@ -33,7 +33,9 @@ results from fgsea package indexed by celltype
 RunFgseaOnRankList - wrapper around fast gene set enrichment analysis with the fgsea R package https://bioconductor.org/packages/release/bioc/html/fgsea.html
 }
 \examples{
-# usage:
+\dontrun{
 t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = ebf, coefficient.number = 1, contrast.name = "time_1_highvslow")
-gsea = RunFgseaOnRankList(rank.list.celltype = t1hvl_rank, )
+gsea = RunFgseaOnRankList(rank.list.celltype = t1hvl_rank)
+}
+# usage:
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/downstream_analysis_functions.r
 \name{PlotGeneDistCohort}
 \alias{PlotGeneDistCohort}
-\title{Title}
+\title{PlotGeneDistCohort}
 \usage{
 PlotGeneDistCohort(
   merged_av_data,
@@ -39,5 +39,17 @@ PlotGeneDistCohort(
 nothing
 }
 \description{
-Title
+PlotGeneDistCohort
+}
+\examples{
+\dontrun{
+gene_highlight =  c("IRF1","TNFRSF17","ABL1")
+mono = GetTidyCohort(av.exprs.list = av, celltype.index = 7, genes.use = gene_highlight)
+PlotGeneDistCohort(merged_av_data = mono,
+                   save_name = "mono_highlight_512",
+                   save_path = figpath,
+                   title = paste0(names(av[7]), "genesub" ),
+                   height = 3.8, width = 4.5,
+                   nrow = 2)
+ }
 }

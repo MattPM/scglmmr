@@ -19,3 +19,8 @@ a vector of genes
 \description{
 GetLeadingEdgeGenes get the leading edge genes from a single cell type / module combination
 }
+\examples{
+\dontrun{
+le_mono = GetLeadingEdgeGenes(gsea.result.list = gsea1, celltype.index = 4, module.name = 'my_modulename_from_gsearesults')
+}
+}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/pseudobulk_de.R
 \name{SubjectCelltypeTable}
 \alias{SubjectCelltypeTable}
-\title{SubjectCelltypeTable - make a QC contingency table of cells by samples beore making pseudobulk data.}
+\title{SubjectCelltypeTable - make a QC contingency table of cells by samples; this function sets up the workflow and is run prior to running PseudobulkList}
 \usage{
 SubjectCelltypeTable(metadata, celltype_column, sample_column)
 }
@@ -17,5 +17,29 @@ SubjectCelltypeTable(metadata, celltype_column, sample_column)
 a list with index 1 = contingency table of cells by sample, 2 = low representation celltypes < 10 cels, 3 celltypes to remove with 0 cells for some samples.
 }
 \description{
-SubjectCelltypeTable - make a QC contingency table of cells by samples beore making pseudobulk data.
+SubjectCelltypeTable - make a QC contingency table of cells by samples; this function sets up the workflow and is run prior to running PseudobulkList
+}
+\examples{
+\dontrun{
+datapath = "mypath/"
+
+# load seurat or sce object etc.
+s = readRDS("path/seuratobject.rds")
+
+# define counts and metadata and subset to cells above rm seurat object from workspace
+# meta = s@meta.data
+# umi = s@assays$RNA@counts
+# rm(s); gc()
+
+# QC contingency of cells by subject for each celltype
+tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "lineage", sample_column = "sample")
+tab$celltypes_remove; tab$`low representation celltypes`; tab$table
+
+# remove cells prior to pseudobulk analysis
+meta = meta[!meta$celltype_label_3 \%in\% tab$celltypes_remove, ]
+
+# subset data
+umi = umi[ ,rownames(meta)]
+# proceed to PseudobulkList
+}
 }

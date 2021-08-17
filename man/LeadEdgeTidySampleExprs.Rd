@@ -22,5 +22,15 @@ a list of tidy dataframes by celltype
 LeadEdgeTidySampleExprs - convert a PseudobulkList into a tidy dataframe for each sample across cell types of the leading edge genes from a gsea list
 }
 \examples{
-pos_enr = GetLeadingEdgeAverage(av.exprs.list = pb_average, gsea.list = gsea1, padj.filter = 0.1, NES.filter = 0)
+\dontrun{
+av = scglmmr::PseudobulkList(rawcounts = umi,
+                             metadata = meta,
+                             sample_col = "sample",
+                             celltype_col = "celltype",
+                             avg_or_sum = 'average')
+le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = av,
+                                           gsea.list = hlmk_ctm0,
+                                           padj.filter = 0.1,
+                                           NES.filter = -Inf)
+}
 }

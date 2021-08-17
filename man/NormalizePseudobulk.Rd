@@ -27,5 +27,7 @@ a list of dgeList indexed by celltype
 NormalizePseudobulk
 }
 \examples{
+#' #'\dontrun{
+}
 # normalize the pseudobulk data made with MakePseudobulkList
 }

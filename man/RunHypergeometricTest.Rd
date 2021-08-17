@@ -30,5 +30,19 @@ tidy hypergeometric test results dataframe
 RunHypergeometricTest - run a hypergeometric test on results returned by GetContrastResults or GetContrastResultsRaw
 }
 \examples{
-hyp_hvl = RunHypergeometricTest(result_list = d1red, TERM2GENE_dataframe = term_df_btm, pval_threshold = 0.1, logFC_threshold = 0, usefdr_threshold = FALSE)
+\dontrun{
+load(termdf) # this term2gene dataframe is included in the package see clusterProfiler
+hyp = scglmmr::RunHypergeometricTest(result_list = fit_res,
+                                     TERM2GENE_dataframe = termdf,
+                                     pval_threshold = 0.1,
+                                     logFC_threshold = 0,
+                                     usefdr_threshold = FALSE)
+# plot results
+scglmmr::PlotHypergeometric(hyperg_result = hyp,
+                            p.adjust.filter = 0.1,
+                            genenumber_filter = 2,
+                            savepath = figpath,
+                            savename = "name",
+                            title = "title")
+ }
 }

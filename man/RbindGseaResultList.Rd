@@ -19,3 +19,8 @@ a dataframe of subsetted gsea results for all celltypes
 \description{
 RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot
 }
+\examples{
+\dontrun{
+d = scglmmr::RbindGseaResultList(gsea_result_list = gsea1,NES_filter = -Inf,padj_filter = 0.2)
+}
+}

@@ -39,3 +39,16 @@ a pheatmap object
 \description{
 LeadEdgeSampleHeatmap make a heatmap of average expression for top or leading edge genes returned by LeadEdgeTidySampleExprs
 }
+\examples{
+\dontrun{
+scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr,
+                               modulename = "MODULENAME",
+                               elltype_plot = "TCELL",
+                               metadata = meta,
+                               metadata_annotate = c('group', 'timepoint', 'age', 'gender'),
+                               sample_column = 'sample',
+                              returnmat = F,
+                               savepath = figpath,
+                              savename = "filename")
+}
+}

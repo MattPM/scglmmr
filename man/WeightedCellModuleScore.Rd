@@ -29,3 +29,7 @@ dataframe of cells barcodes (rownames) by gene module scores (columns)
 \description{
 WeightedCellModuleScore - calculate the average or weighted aveage +/- scaling return dataframe of cells by average module score
 }
+\examples{
+\dontrun{
+}
+}

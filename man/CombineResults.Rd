@@ -22,5 +22,7 @@ a tidy dataframe
 CombineResults - For all cell types merge the gsea leading edge genes with their contrast model coefficieint and p value from limma / dream
 }
 \examples{
-test = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.2)
+\dontrun{
+combined_results = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.2)
+}
 }

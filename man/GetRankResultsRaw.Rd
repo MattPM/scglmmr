@@ -15,3 +15,11 @@ list of gene ranks by t stat -- use as argument to `RunFgseaOnRankList`
 \description{
 GetRankResultsRaw get list of gene ranks by t stat for fGSEA. for results returned by dreamMixedModel
 }
+\examples{
+\dontrun{
+fit_res = scglmmr::GetContrastResultsRaw(limma.fit.object.list = fit,
+                                         coefficient.number = 1,
+                                         contrast.name = "foldchangedifference")
+fit_rank = scglmmr::GetRankResultsRaw(contrast.result.raw.list = fit_res)
+}
+}
