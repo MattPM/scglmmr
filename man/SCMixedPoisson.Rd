@@ -36,9 +36,9 @@ a results matrix for all genes across all cell types tested.
 SCMixedPoisson
 }
 \examples{
-\dontrun{
-}
-
-
-
+results = SCMixedPoisson(gene_data = gene_data,
+  lme4metadata = meta_data,
+  model_formula = 'gene ~ offset(log(nUMI)) + timepoint + (1|sampleid)',
+  celltype_genes_test = celltype_indexed_gene_vector
+)
 }
