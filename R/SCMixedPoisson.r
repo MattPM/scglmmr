@@ -18,44 +18,13 @@
 #' @importFrom lme4 glmer
 #' @importFrom emmeans emmeans
 #' @importFrom stringr str_replace
-#' @importFrom data.table fwrite rbindlist
 #'
 #' @examples
-#'\dontrun{
-# set.seed(1990)
-#
-# datapath = 'your_path_to_save_results'
-# s = readRDS('path_to_seurat_or_SingleCellExperimentObject')
-
-# s@meta.data$subjectid = factor(as.character(s@meta.data$sampleid))
-#
-# # create metadata for lme4
-# md = s@meta.data %>%
-#   droplevels() %>%
-#   dplyr::select(barcode_check, batch, subjectid, treatment, celltype_joint, nUMI) %>%
-#   mutate(treatment = factor(treatment, levels = c("pre_treatment", "post_treatment"))) %>%
-#   rename(celltype = celltype_joint) %>%
-#   column_to_rownames('barcode_check')
-#
-# # get gene data
-# gene_data = Matrix::t(s@raw.data[gene_union, ])
-#
-# # we can now remove whatever single cell object was loaded in the environment.
-# rm(s); gc()
-#
-# ## specify model formula
-# f1 = 'gene ~ offset(log(nUMI)) + treatment + (1|subjectid)'
-#
-# results = scglmmr::SCMixedPoisson(gene_data = gene_data,
-#                                   metadata = md,
-#                                   model_formula = f1,
-#                                   test_variable = 'treatment',
-#                                   celltype_genes_test = genes_test,
-#                                   save_path = datapath)
-#'}
-#'
-#'
-#'
+#' results = SCMixedPoisson(gene_data = gene_data,
+#'   lme4metadata = meta_data,
+#'   model_formula = 'gene ~ offset(log(nUMI)) + timepoint + (1|sampleid)',
+#'   celltype_genes_test = celltype_indexed_gene_vector
+#' )
 SCMixedPoisson = function(gene_data,
                           metadata,
                           model_formula = 'gene ~ offset(log(nUMI)) + timepoint + (1|subjectid)',
@@ -102,8 +71,7 @@ SCMixedPoisson = function(gene_data,
     stop(" 'gene' must be specified in LHS of formula e.g. 'gene ~ ...'")
   }
   # init storage
-  res_celltype = res_list = list()
-  gene_names = colnames(gene_data)
+  res_celltype = list()
   cts = as.character(unique(metadata$celltype))
   nct = length(cts)
   if(!is.null(celltype_genes_test)){
@@ -113,28 +81,29 @@ SCMixedPoisson = function(gene_data,
   # Indexed over celltype create data subset for celltype u
   for (u in 1:length(cts)) {
     suppressMessages(gc())
-    # subset metadata and gene data by the barcodes for celltype u
-    metsub = metadata[metadata$celltype == cts[u], ]
-    df_ = as.matrix(gene_data[rownames(metsub), ])
-    df_ = df_[match(rownames(df_), rownames(metsub)), ]
-
+    res_list = list() # clear the list for u + 1
     if(is.null(celltype_genes_test)){
-      gene_names = colnames(gene_data)
+      gene_names = as.character(unique(colnames(gene_data)))
       print(paste0("fitting mixed model within ", print(cts[u])," for ",  length(gene_names), " genes" ))
     }
     if(!is.null(celltype_genes_test)){
-      gene_names = celltype_genes_test[[u]]
-      print(paste0("fitting mixed model within ", print(cts[u])," for ",  length(gene_names), " genes" ))
+      gene_names = as.character(unique(celltype_genes_test[[u]]))
+      ngene = length(gene_names)
+      print(paste0("fitting models within ", print(cts[u])," for ", ngene, " genes" ))
     }
-    ngene = length(gene_names)
-    .dataenv <- environment()
-    # 2) Indexed over genes within celltype u, run Poisson GLMM
-    for (i in 1:length(gene_names)) {
 
+    # subset metadata and gene data by gene subset and cell barcodes for celltype u
+    metsub = metadata[metadata$celltype == cts[u], ]
+    df_ = as.matrix(gene_data[rownames(metsub), gene_names])
+    df_ = df_[match(rownames(df_), rownames(metsub)), ]
+
+    # 2) Indexed over genes within celltype u, run Poisson GLMM
+    .dataenv <- environment()
+    for (i in 1:length(gene_names)) {
       print(paste0('fitting ', gene_names[i], " ", i, ' of ', ngene,
                    ' genes for celltype ', u,' of ', nct, " ", cts[u]))
 
-      dat_fit = cbind(metsub, gene = df_[ ,gene_names[i]])
+      dat_fit = cbind(metsub, gene = df_[ ,gene_names[i] ])
       dat_fit <- as.data.frame(dat_fit, env = .dataenv)
 
       m1 = tryCatch(
@@ -145,34 +114,57 @@ SCMixedPoisson = function(gene_data,
         emmeans::emmeans(object = m1, specs = revpairwise ~ perturbation)$contrast,
         error = function(e) return(NA)
       )
-
-      # error checking on model fit and marginal means
-      if( suppressWarnings(is.na(m1))) {
+      # error handling on model fit and marginal means
+      if(suppressWarnings(is.na(m1))) {
         res_list[[i]] = NA
       }
       if(suppressWarnings(is.na(emm1))) {
         res_list[[i]] = NA
-      }else{
-        res_list[[i]] =
-          cbind.data.frame(
-            'gene' = as.character(gene_names[i]),
-            as.data.frame(emm1[1, ]),
-            'model' = f1,
-            'message' = ifelse(is.null(m1@optinfo$conv$lme4$messages[1]),
-                               yes = '0', no = m1@optinfo$conv$lme4$messages[1]),
+      }
+      else{
+        # extract convergence error messsages and enforce same data frame structure on messages
+        messages = m1@optinfo$conv$lme4$messages
+        mdf = data.frame()
+        if (is.null(messages)) {
+          mdf = data.frame('message 1' = 'none', 'message 2' = 'none')
+        }
+        # note genes with singular fits
+        if (length(messages) == 1){
+          mdf = data.frame('message 1'= as.character(m1@optinfo$conv$lme4$messages[[1]]),
+                           'message 2' = 'none',
+                           stringsAsFactors = FALSE)
+        }
+        # Flag genes with convergence errors related to Hessian gradient
+        if (length(messages) > 1) {
+          mdf = data.frame(
+            'message 1'= as.character(m1@optinfo$conv$lme4$messages[[1]]),
+            'message 2' = as.character(m1@optinfo$conv$lme4$messages[[2]]),
             stringsAsFactors = FALSE
           )
+        }
+        # extract results onto a single line
+        res_list[[i]] = cbind.data.frame(
+          'gene' = as.character(gene_names[i]),
+          'celltype' = as.character(cts[u]),
+          as.data.frame(emm1[1, ]),
+          'model' = f1,
+          mdf,
+          stringsAsFactors = FALSE
+        )
       }
     }
-    # rbind fitted model results for each gene for celltype u
+    # rbind fitted model results for each gene within celltype u
     res_list = res_list[!is.na(res_list)]
-    resdf = as.data.frame(data.table::rbindlist(l = res_list, fill = TRUE), stringsAsFactors = FALSE)
-    resdf$contrast_padj = p.adjust(p = resdf$p.value, method = "BH")
-
-    # make new list indexed by celltype for final rbind to return complete results.
-    res_celltype[[u]] = cbind(celltype = cts[u], resdf)
-    data.table::fwrite(x = res_celltype[[u]], file = paste0(save_path, cts[u],'result.csv'))
+    res_list = res_list[!is.null(res_list)]
+    d = as.data.frame(do.call(rbind, res_list))
+    # calculate adjusted p values
+    d$contrast_padj = p.adjust(p = d$p.value, method = "BH")
+    saveRDS(object = d, file = paste0(save_path, cts[u], 'result.rds'))
+    # store for celltype u
+    res_celltype[[u]] = d
   }
-  resdf_full = as.data.frame(data.table::rbindlist(res_celltype, fill = TRUE), stringsAsFactors = FALSE )
+  # rbind fitted model results for all u celltypes
+  resdf_full = as.data.frame(do.call(rbind, res_celltype))
+  saveRDS(object = resdf_full, file = paste0(save_path, 'SCMixedPoisson_full_result.rds'))
   return(resdf_full)
 }
