@@ -210,14 +210,12 @@ GetRankResultsRaw = function(contrast.result.raw.list){
 }
 
 
-#' RunFgseaOnRankList - wrapper around fast gene set enrichment analysis with the fgsea R package https://bioconductor.org/packages/release/bioc/html/fgsea.html
+#' FgseaList - wrapper around fast gene set enrichment analysis with the fgsea R package https://bioconductor.org/packages/release/bioc/html/fgsea.html
 #'
 #' @param rank.list.celltype results returned by GetRankResultsRaw or GetRankResults
 #' @param pathways modules / gene sets as a named list each a single vector of unique gene IDS
 #' @param maxSize see fgsea package
 #' @param minSize see fgsea package
-#' @param nperm recommended to keep set at 25000 based on optomization and p value stabilization
-#' @param positive.enrich.only include negative enrichments in results? TRUE/FALSE
 #'
 #' @return results from fgsea package indexed by celltype
 #' @importFrom fgsea fgsea
@@ -226,27 +224,23 @@ GetRankResultsRaw = function(contrast.result.raw.list){
 #'
 #' @examples
 #'\dontrun{
-#' t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = ebf, coefficient.number = 1, contrast.name = "time_1_highvslow")
+#' t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = ebf,
+#' coefficient.number = 1,
+#' contrast.name = "time_1_highvslow")
 #' gsea = RunFgseaOnRankList(rank.list.celltype = t1hvl_rank)
 #' }
 #' # usage:
-RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSize = 9,
-                              nperm = 250000, positive.enrich.only = FALSE) {
-  #require(fgsea)
-  gsea = list()
-  for (i in 1:length(rank.list.celltype)) {
-    gsea[[i]] =
-      suppressMessages(fgsea::fgsea(pathways = pathways,
-                                    stats = rank.list.celltype[[i]],
-                                    maxSize = maxSize,
-                                    minSize = minSize,
-                                    nperm = nperm)) %>%
+FgseaList = function(..., rank.list.celltype, pathways,
+                     maxSize = 500, minSize = 9) {
+  gsea = lapply(rank.list.celltype, function(x){
+    fgsea::fgsea(...,
+                 pathways = pathways,
+                 stats = rank.list.celltype[[i]],
+                 maxSize = maxSize,
+                 minSize = minSize) %>%
       dplyr::mutate(celltype = names(rank.list.celltype)[i]) %>%
       dplyr::arrange(pval)
-    if (positive.enrich.only == TRUE) {
-      gsea[[i]] = gsea[[i]] %>% dplyr::filter(ES > 0)
-    }
-  }
+  })
   names(gsea) = names(rank.list.celltype)
   return(gsea)
 }
