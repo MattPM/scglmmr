@@ -411,9 +411,9 @@ GSEABarPlot = function(rbind_gsea_result_dataframe, celltype_name, save_path, ti
 #'
 #' @examples
 #'\dontrun{
-#'cglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
+#'scglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
 #' }
-GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path, include_negative = TRUE, save_name, width = 8.5, height = 7.2) {
+GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path,  include_negative = TRUE, save_name, width = 8.5, height = 7.2) {
 
   # apply same aes for both includeneg with exception
   plot_param = list (
@@ -441,9 +441,47 @@ GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path, include_negati
   p = ggplot(rbind_gsea_result_dataframe, aes(y = pathway, x = celltype, fill = n_logp, size = NES)) +
     plot_param +
     scale_fill_viridis_c()
+  if (isTRUE(returnplot)) {
+    return(p)
+  }
   ggsave(p, filename = paste0(save_path,save_name,".pdf"), width = width, height = height)
   print(p)
   }
+}
+
+
+#' PlotFgseaList identical to GSEABubblePlot, returns plot for manual adjustment or saving.
+#'
+#' @param rbind_gsea_result_dataframe dataframe returned by RbindGseaResultList
+#' @return ggplot object
+#' @import ggplot2
+#' @export
+#'
+#' @examples
+#'\dontrun{
+#'scglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
+#' }
+PlotFgseaList = function(gsea_result_dataframe) {
+
+  # apply same aes for both includeneg with exception
+  plot_param = list (
+    geom_point(shape = 21),
+    theme_bw(),
+    scale_x_discrete(position = "top"),
+    theme(axis.text.x=element_text(angle = 45, hjust = 0)),
+    theme(axis.title.y = element_blank()),
+    labs(fill = 'Normalized \n Enrichment \n Score', size = '-log10(padj)'),
+    theme(legend.title = element_text(colour = "black", size = 8)),
+    theme(axis.text.y = element_text(size = 8, color = "black")),
+    theme(axis.text.x = element_text(size = 8.5, color = "black")),
+    guides(shape = guide_legend(override.aes = list(size = 5))),
+    guides(color = guide_legend(override.aes = list(size = 5))),
+    theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8))
+  )
+  p = ggplot(rbind_gsea_result_dataframe, aes(y = pathway, x = celltype, fill = NES, size = n_logp)) +
+    plot_param +
+    scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "red3",midpoint = 0)
+    return(p)
 }
 
 
