@@ -2,7 +2,7 @@
 % Please edit documentation in R/downstream_analysis_functions.r
 \name{GetRankResultsRaw}
 \alias{GetRankResultsRaw}
-\title{GetRankResultsRaw get list of gene ranks by t stat for fGSEA. for results returned by dreamMixedModel}
+\title{GetRankResultsRaw get list of gene ranks by raw t statistic for fGSEA. for results returned by dreamMixedModel}
 \usage{
 GetRankResultsRaw(contrast.result.raw.list)
 }
@@ -13,7 +13,7 @@ GetRankResultsRaw(contrast.result.raw.list)
 list of gene ranks by t stat -- use as argument to `RunFgseaOnRankList`
 }
 \description{
-GetRankResultsRaw get list of gene ranks by t stat for fGSEA. for results returned by dreamMixedModel
+GetRankResultsRaw get list of gene ranks by raw t statistic for fGSEA. for results returned by dreamMixedModel
 }
 \examples{
 \dontrun{

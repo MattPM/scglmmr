@@ -177,7 +177,7 @@ GetRankResults = function(limma.fit.object.list, coefficient.number, contrast.na
 }
 
 
-#' GetRankResultsRaw get list of gene ranks by t stat for fGSEA. for results returned by dreamMixedModel
+#' GetRankResultsRaw get list of gene ranks by raw t statistic for fGSEA. for results returned by dreamMixedModel
 #'
 #' @param contrast.result.raw.list results returned by dreamMixedModel
 #'
@@ -210,7 +210,7 @@ GetRankResultsRaw = function(contrast.result.raw.list){
 }
 
 
-#' FgseaList - wrapper around fast gene set enrichment analysis with the fgsea R package https://bioconductor.org/packages/release/bioc/html/fgsea.html
+#' FgseaList - wrapper around fast gene set enrichment analysis with the fgsea R package https://bioconductor.org/packages/release/bioc/html/fgsea.html to implement on a list of ranks indexec by cell type.
 #'
 #' @param rank.list.celltype results returned by GetRankResultsRaw or GetRankResults
 #' @param pathways modules / gene sets as a named list each a single vector of unique gene IDS
@@ -224,27 +224,65 @@ GetRankResultsRaw = function(contrast.result.raw.list){
 #'
 #' @examples
 #'\dontrun{
-#' t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = ebf,
+#' t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = dreamfit,
 #' coefficient.number = 1,
-#' contrast.name = "time_1_highvslow")
-#' gsea = RunFgseaOnRankList(rank.list.celltype = t1hvl_rank)
+#' contrast.name = "contrastName")
+#' register(SnowParam(4))
+#' pparam = SnowParam(workers = 4, type = "SOCK", progressbar = TRUE)
+#' gsealist = FgseaList(rank.list.celltype = t1hvl_rank, pathways = btm,  BPPARAM = pparam)
 #' }
 #' # usage:
 FgseaList = function(..., rank.list.celltype, pathways,
                      maxSize = 500, minSize = 9) {
-  gsea = lapply(rank.list.celltype, function(x){
-    fgsea::fgsea(...,
-                 pathways = pathways,
-                 stats = x,
-                 maxSize = maxSize,
-                 minSize = minSize) %>%
-      dplyr::mutate(celltype = names(rank.list.celltype)[i]) %>%
+  print(paste0(' fgsea: parallelize with `BPPARAM` '))
+  # init storage
+  gsea = list()
+  ct = names(rank.list.celltype)
+
+  # run fgsea on all pathways for each list element
+  for (i in 1:length(rank.list.celltype)) {
+    print(paste0('fgsea: ', ct[i], " ", i, ' of ', length(ct),
+                 ' Testing ', length(pathways), ' pathways '))
+    gsea[[i]] = fgsea::fgsea(...,
+                             stats = rank.list.celltype[[i]],
+                             pathways = pathways,
+                             maxSize = maxSize,
+                             minSize = minSize) %>%
+      dplyr::mutate(celltype = ct[i]) %>%
       dplyr::arrange(pval)
-  })
-  names(gsea) = names(rank.list.celltype)
+  }
+  names(gsea) = ct
   return(gsea)
 }
 
+#' LeadingEdgeIndexed - extract leading edge genes from FgseaList results, return a new embedded list of named modules, indexed by celltype
+#' @param gsea.result.list results from FgseaList or RunFgseaOnRankList
+#' @param padj.threshold within each cell type return list of leading edge genes with padj less than this parameter value.
+#' @return embedded list - each list level 1 indexed by cell type, contains a new list level 2, the leading edge genes from the gsea results filtered by padj.
+#' @importFrom dplyr filter select
+#' @export
+#'
+#' @examples
+#'\dontrun{
+#' t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = ebf,
+#' coefficient.number = 1,
+#' contrast.name = "time_1_highvslow")
+#' gsea = FgseaList(rank.list.celltype = t1hvl_rank)
+#' celltype.indexed.modules.leadingedge = LeadingEdgeIndexed(gsea, 0.05)
+#' }
+LeadingEdgeIndexed = function(gsea.result.list, padj.threshold = 0.05){
+  x = gsea.result.list
+  newlist = list()
+  for (i in 1:length(x)) {
+    y = x[[i]] %>%
+      dplyr::filter(padj < padj.threshold) %>%
+      dplyr::select(pathway, leadingEdge)
+    newlist[[i]] = y$leadingEdge
+    names(newlist[[i]]) = y$pathway
+  }
+  names(newlist) = names(x)
+  return(newlist)
+}
 
 #' RunFgseaOnRankList - wrapper around fast gene set enrichment analysis with the fgsea R package https://bioconductor.org/packages/release/bioc/html/fgsea.html
 #'
