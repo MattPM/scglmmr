@@ -4,7 +4,7 @@
 \alias{PlotFgseaList}
 \title{PlotFgseaList identical to GSEABubblePlot, returns plot for manual adjustment or saving.}
 \usage{
-PlotFgseaList(gsea_result_dataframe)
+PlotFgseaList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
 }
 \arguments{
 \item{rbind_gsea_result_dataframe}{dataframe returned by RbindGseaResultList}

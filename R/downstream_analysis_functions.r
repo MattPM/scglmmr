@@ -329,7 +329,7 @@ RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSi
 
 
 
-#' RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot
+#' RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot; called by PlotFgseaList
 #'
 #' @param gsea_result_list result returned by RunFgseaOnRankList
 #' @param NES_filter filter out results below this NES
@@ -461,7 +461,10 @@ GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path,  include_negat
 #'\dontrun{
 #'scglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
 #' }
-PlotFgseaList = function(gsea_result_dataframe) {
+PlotFgseaList = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1) {
+
+  # combine into dataframe
+  d = RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
 
   # apply same aes for both includeneg with exception
   plot_param = list (
@@ -478,7 +481,7 @@ PlotFgseaList = function(gsea_result_dataframe) {
     guides(color = guide_legend(override.aes = list(size = 5))),
     theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8))
   )
-  p = ggplot(rbind_gsea_result_dataframe, aes(y = pathway, x = celltype, fill = NES, size = n_logp)) +
+  p = ggplot(d, aes(y = pathway, x = celltype, fill = NES, size = n_logp)) +
     plot_param +
     scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "red3",midpoint = 0)
     return(p)
