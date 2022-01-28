@@ -450,23 +450,41 @@ GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path,  include_negat
 }
 
 
-#' PlotFgseaList identical to GSEABubblePlot, returns plot for manual adjustment or saving.
+#' PlotFgsea identical to GSEABubblePlot, returns plot for manual adjustment or saving and also clusters the map.
 #'
 #' @param rbind_gsea_result_dataframe dataframe returned by RbindGseaResultList
 #' @return ggplot object
 #' @import ggplot2
+#' @importFrom dplyr select
+#' @importFrom tidyr spread
+#' @importFrom tibble column_to_rownames
+#' @importFrom pheatmap pheatmap
 #' @export
 #'
 #' @examples
 #'\dontrun{
 #'scglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
 #' }
-PlotFgseaList = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1) {
+PlotFgsea = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1) {
 
   # combine into dataframe
   d = RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
 
-  # apply same aes for both includeneg with exception
+  # cluster results
+  hcdat = d %>%
+    dplyr::select(celltype, pathway,NES) %>%
+    tidyr::spread(celltype, NES) %>%
+    tibble::column_to_rownames("pathway") %>%
+    as.matrix()
+  hcdat[is.na(hcdat)] = 0
+  xx = pheatmap::pheatmap(hcdat, silent = TRUE, clustering_method = "average")
+  module_order = xx$tree_row$labels[xx$tree_row$order]
+  celltype_order = xx$tree_col$labels[xx$tree_col$order]
+  d$celltype = factor(d$celltype, levels = celltype_order)
+  d$pathway = factor(d$pathway, levels = module_order)
+
+
+  # plot aes
   plot_param = list (
     geom_point(shape = 21),
     theme_bw(),
@@ -482,7 +500,7 @@ PlotFgseaList = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
     theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8))
   )
   p = ggplot(d, aes(y = pathway, x = celltype, fill = NES, size = n_logp)) +
-    plot_param +
+    plot_param + xlab("") +
     scale_fill_gradient2(low = "dodgerblue", mid = "white", high = "red3",midpoint = 0)
     return(p)
 }

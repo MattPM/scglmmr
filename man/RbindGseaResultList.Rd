@@ -2,7 +2,7 @@
 % Please edit documentation in R/downstream_analysis_functions.r
 \name{RbindGseaResultList}
 \alias{RbindGseaResultList}
-\title{RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot}
+\title{RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot; called by PlotFgseaList}
 \usage{
 RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
 }
@@ -17,7 +17,7 @@ RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
 a dataframe of subsetted gsea results for all celltypes
 }
 \description{
-RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot
+RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot; called by PlotFgseaList
 }
 \examples{
 \dontrun{
