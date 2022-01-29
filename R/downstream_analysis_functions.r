@@ -313,7 +313,7 @@ LeadingEdgeIndexed = function(gsea.result.list, padj.threshold = 0.05){
 #'   write_delim(d,file = paste0(datapath, 'g0jaccard.csv'),delim = ',')
 #' }
 #'
-EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, figpath){
+EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, returnJaccardMtx = FALSE, figpath){
 
   # dat input check
   # remove enrichments from cell types without more than 2 modules enriched
@@ -324,6 +324,7 @@ EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, figp
   indexedgenes = indexedgenes[subs]
   # confirm order of celltypes (lists) are the same
   stopifnot(isTRUE(all.equal(names(gsealist), names(indexedgenes))))
+  jmat = list()
   for (i in 1:length(indexedgenes)) {
     print(names(indexedgenes)[i])
     #calculate pairwise jaccard index matrix
@@ -332,21 +333,29 @@ EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, figp
     mean_ji = rowMeans(jaccard_matrix)
     if (isTRUE(saveplot)) {
       ph = pheatmap::pheatmap(jaccard_matrix, silent = TRUE, clustering_method = 'complete',
-                              fontsize_row = 6, fontsize_col = 6, width = 10, height = 10,
+                              fontsize_col = 5, fontsize_row = 5, width = 15, height = 15,
                               filename = paste0(figpath, names(indexedgenes)[i], '.pdf'))
     } else {
       ph = pheatmap::pheatmap(jaccard_matrix, silent = TRUE, clustering_method = 'complete')
     }
+    jmat[[i]] = ph
     #cluster modules
     clustered_mods = ph$tree_row$labels[ph$tree_row$order]
     gsealist[[i]] = gsealist[[i]][match(clustered_mods, gsealist[[i]]$pathway), ]
     gsealist[[i]]$av_jaccard = mean_ji
   }
-
+  # return format
   d2 = do.call(rbind, gsealist2[names(subs[subs==FALSE])])
   d = do.call(rbind,gsealist)
   d = rbind(d,d2, fill=TRUE)
+  # format jaccard matrix pheatmap output
+  names(jmat) = names(gsealist)
+  if(isTRUE(returnJaccardMtx)){
+    ret = list('sortedgsea' = d, 'jaccard_matrix_list' = jmat)
+    return(ret)
+    } else{
   return(d)
+    }
 }
 
 

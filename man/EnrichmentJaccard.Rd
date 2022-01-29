@@ -4,7 +4,14 @@
 \alias{EnrichmentJaccard}
 \title{EnrichmentJaccard - using gsea list and LeadingEdgeIndexed result, compute pairwise jaccard index of leadingedge genes within celltypes. saves a heatmap of modules for each cell type in savpath if saveplot = TRUE. Returns a gsea result dataframe with all celltypes combined and module annotated with average within celltype jaccard index and leadingedge genes.}
 \usage{
-EnrichmentJaccard(..., gsealist, indexedgenes, saveplot = FALSE, figpath)
+EnrichmentJaccard(
+  ...,
+  gsealist,
+  indexedgenes,
+  saveplot = FALSE,
+  returnJaccardMtx = FALSE,
+  figpath
+)
 }
 \arguments{
 \item{gsealist}{results from FgseaList or RunFgseaOnRankList (recommend first lapply filter(padj < 0.05 e.g.) )}
