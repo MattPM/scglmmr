@@ -15,7 +15,7 @@
 #' @export
 ExtractResult = function(model.fit.list, what = c('statistics', 'gene.t.ranks')[1], coefficient.number, coef.name){
   #init
-  celltypes = names(limma.fit.object.list)
+  celltypes = names(model.fit.list)
 
   # check user input data
   model_type = model.fit.list[[1]]$method
@@ -23,26 +23,26 @@ ExtractResult = function(model.fit.list, what = c('statistics', 'gene.t.ranks')[
   message2 = 'emperical Bayes moderated t statistic reported for model with only fixed effects'
   messageprint = ifelse(model_type == 'lmer', message1, mesage2)
   print(paste0('returning results of ', model_type, ' model: ', messageprint))
-  print(paste0('coefficients available from model fit object: ', model.fit.list[[1]]$coefficients))
+  coefs = colnames(model.fit.list[[1]]$coefficients)
+  print('coefficients available from model fit object: ');print(coefs)
   # ensure user is estimating the contrast that
   stopifnot(all.equal(
-    as.character(coef.name)),
-    as.character(names(model.fit.list[[1]]$coefficients)[coefficient.number]
-                 ))
+    as.character(coef.name), as.character(coefs[coefficient.number])
+  ))
 
   # extract results
   test = ret = list()
-  for (i in 1:length(limma.fit.object.list)) {
-  test[[i]] =
-    limma::topTable(fit = limma.fit.object.list[[i]], coef = coefficient.number, number = Inf, sort.by = 't') %>%
-    tibble::rownames_to_column("gene") %>%
-    dplyr::mutate(contrast = rep(contrast.name)) %>%
-    dplyr::mutate(celltype = celltypes[i])
-    arrange(desc(t))
+  for (i in 1:length(model.fit.list)) {
+    test[[i]] =
+      limma::topTable(fit = model.fit.list[[i]], coef = coefficient.number, number = Inf, sort.by = 't') %>%
+      tibble::rownames_to_column("gene") %>%
+      dplyr::mutate(contrast = rep(coef.name)) %>%
+      dplyr::mutate(celltype = celltypes[i]) %>%
+      arrange(desc(t))
 
     if (what == 'gene.t.ranks') {
       ret[[i]] = test[[i]] %>%
-        dplyr::select(gene, t) %>%
+        dplyr::select(c('gene', 't')) %>%
         tibble::column_to_rownames("gene") %>%
         t() %>%
         unlist(use.names = T)
@@ -51,9 +51,9 @@ ExtractResult = function(model.fit.list, what = c('statistics', 'gene.t.ranks')[
       ret[[i]] = test[[i]]
     }
   }
-  names(ret) = names(limma.fit.object.list)
+  names(ret) = names(model.fit.list)
   return(ret)
-  }
+}
 
 
 #' GetContrastResults - return results from a contrast fit on list of celltypes from RunVoomLimma using topTable
