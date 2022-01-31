@@ -21,7 +21,7 @@ ExtractResult = function(model.fit.list, what = c('statistics', 'gene.t.ranks')[
   model_type = model.fit.list[[1]]$method
   message1 = 'raw t statistic reported for unequal degrees of freedom'
   message2 = 'emperical Bayes moderated t statistic reported for model with only fixed effects'
-  messageprint = ifelse(model_type == 'lmer', message1, mesage2)
+  messageprint = ifelse(model_type == 'lmer', message1, message2)
   print(paste0('returning results of ', model_type, ' model: ', messageprint))
   coefs = colnames(model.fit.list[[1]]$coefficients)
   print('coefficients available from model fit object: ');print(coefs)
