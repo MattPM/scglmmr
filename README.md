@@ -12,6 +12,15 @@ devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
 library(scglmmr)
 ```
 
+## readme updates TO DO:
+
+add TOC  
+add makeContrastsDream  
+change the workflow to represent the most up to dat PB workflow  
+Add Enrichmentjaccard  
+add new single cell models module and gene
+level
+
 ## Single cell within cluster perturbation response differential expression
 
 The purpose of this software is to analyze single cell genomics data
@@ -90,12 +99,12 @@ but not repeated pre/post treatment measurements, see the
 `RunVoomLimma()`
 function.
 
-| sample         |    sampleid    |      timepoint | Group          |     gender     |
+| sample         |    sampleid    |      timepoint | Group          |      sex       |
 | :------------- | :------------: | -------------: | :------------- | :------------: |
-| 101\_t0        |      101       |             d0 | low            |       F        |
-| 101\_t1        |      101       |             d1 | high           |       F        |
-| 102\_t0        |      102       |             d0 | low            |       M        |
-| 102\_t1        |      102       |             d1 | high           |       M        |
+| 101\_t0        |      101       |             d0 | good           |       F        |
+| 101\_t1        |      101       |             d1 | poor           |       F        |
+| 102\_t0        |      102       |             d0 | good           |       M        |
+| 102\_t1        |      102       |             d1 | poor           |       M        |
 | … (x n donors) | … (x n donors) | … (x n donors) | … (x n donors) | … (x n donors) |
 
 ### 1\. “Pseudobulk” mixed effects model
@@ -158,6 +167,10 @@ c_mat = makeContrasts(
   baseline_groups = (group_timepoint1_0 - group_timepoint0_0),
   levels = colnames(designmat)
 )
+
+#### REPLACE THE ABOVE WITH makeContrastsDream see v3aso3 contrast model in fsc. 
+
+
   
 # fit mixed model for the multi timepoint contrasts 
 fit = scglmmr::dreamMixedModel(dge_lists = dge, 

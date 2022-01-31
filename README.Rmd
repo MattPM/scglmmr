@@ -48,12 +48,12 @@ The scglmmr package considers each cluster/ cell type as a separate 'experiment'
 **Experiment designs (within each cluster / celltype) supported by scglmmr**
 Below is a 2 group repeated measures experiment. A random intercept model is required to account for autocorrelation in each donors post perturbation response with their baseline level of expression. This data can be accomodated by scglmmr. More simple experiment designs are also supported, for example data with 2 groups but not repeated pre/post treatment measurements, see the `RunVoomLimma()` function.
 
-| sample        | sampleid      | timepoint    |   Group        | gender            
+| sample        | sampleid      | timepoint    |   Group        | sex            
 | :------------- | :----------: | -----------: | :------------- | :----------: | 
-|  101_t0     | 101           | d0           |  low            | F            | 
-|  101_t1     | 101           | d1           |  high           | F            | 
-|  102_t0     | 102           | d0           |  low            | M           | 
-|  102_t1     | 102           | d1           |  high           | M             | 
+|  101_t0     | 101           | d0           |  good            | F            | 
+|  101_t1     | 101           | d1           |  poor           | F            | 
+|  102_t0     | 102           | d0           |  good            | M           | 
+|  102_t1     | 102           | d1           |  poor           | M             | 
 |  ... (x n donors)    | ... (x n donors)           | ... (x n donors)           |  ... (x n donors)           | ... (x n donors)             | 
 
 
@@ -99,6 +99,10 @@ c_mat = makeContrasts(
   baseline_groups = (group_timepoint1_0 - group_timepoint0_0),
   levels = colnames(designmat)
 )
+
+#### REPLACE THE ABOVE WITH makeContrastsDream see v3aso3 contrast model in fsc. 
+
+
   
 # fit mixed model for the multi timepoint contrasts 
 fit = scglmmr::dreamMixedModel(dge_lists = dge, 
