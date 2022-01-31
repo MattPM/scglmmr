@@ -22,6 +22,14 @@ library(scglmmr)
 ```
 
 
+## readme updates TO DO:  
+add TOC  
+add makeContrastsDream  
+change the workflow to represent the most up to dat PB workflow  
+Add Enrichmentjaccard  
+add new single cell models module and gene level model  
+
+
 ## Single cell within cluster perturbation response differential expression 
 
 The purpose of this software is to analyze single cell genomics data with pre and post perturbation measurements from the same individuals, including complex designs wehre individuals with repeated measurements are nested within in multiple response groups. The focus is on implementing flexible generalized linear multilevel models to derive group (i.e. good or poor clinical outcome, high or low rug response) and treatment associated effects *within cell types* defined either by protein (e.g. with CITE-seq data) or transcriptome based clustering followed by downstream enrichment testing and visualization. 

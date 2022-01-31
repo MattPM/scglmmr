@@ -18,8 +18,8 @@ add TOC
 add makeContrastsDream  
 change the workflow to represent the most up to dat PB workflow  
 Add Enrichmentjaccard  
-add new single cell models module and gene
-level
+add new single cell models module and gene level
+model
 
 ## Single cell within cluster perturbation response differential expression
 
