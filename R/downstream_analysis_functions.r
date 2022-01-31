@@ -2,6 +2,60 @@
 # author: Matt Mulè
 # email: mattmule@gmail.com
 
+
+#' ExtractResult - convenience function to return statistics for downstream analysis functions such as FgseaList. Returns results from list of dream or lmFit results from those functions natively (use model.fit.list = list(fit)) or from scglmmr::RunVoomLimma and scglmmr::dreamMixedModel
+#' @param model.fit.list list of model results indexed by celltypes returned by `scglmmr::dreamMixedModel`,  `scglmmr::RunVoomLimma`, or manually by `lmFit` or `dream`.
+#' @param what what to return what = c('statistics', 'gene.t.ranks')[1] defaults to statistics for each cell type, e.g. avg exprs, logFC, t statistic, pval, adj.P.Val etc. If gene.t.ranks, ranks genes based on t statistic and returns a named numeric vector for FgseaList.
+#' @param coefficient.number what coefficient to return -- this needs to be one of model.fit.list$coefficients: check the order of the coefficients. Results returned from dream include statistical contrasts and estimated coefficients from the model. If limma::contrasts.fit was used (e.g. if using do_contrast_fit = TRUE in RunVoomLimma), these 'coefficients' are results of the statistical contrast.
+#' @param coef.name the name of the estimated coefficient for which results are being returned; if returning results from a statistical contrast e.g. limma::contrasts.fit() this will be the name of the contrast. If returning a model fit with the dream function, can also be contrast specified by from variancePartition::makeContrastsDream() or a fixed effect parameter that was included in the model.
+#' @return a list of dataframes with contrast results indexed by cell type or a list of genes ranked b t statistic in format ready for FgseaList.
+#' @importFrom limma topTable
+#' @importFrom tibble rownames_to_column column_to_rownames
+#' @importFrom dplyr mutate select
+#' @export
+ExtractResult = function(model.fit.list, what = c('statistics', 'gene.t.ranks')[1], coefficient.number, coef.name){
+  #init
+  celltypes = names(limma.fit.object.list)
+
+  # check user input data
+  model_type = model.fit.list[[1]]$method
+  message1 = 'raw t statistic reported for unequal degrees of freedom'
+  message2 = 'emperical Bayes moderated t statistic reported for model with only fixed effects'
+  messageprint = ifelse(model_type == 'lmer', message1, mesage2)
+  print(paste0('returning results of ', model_type, ' model: ', messageprint))
+  print(paste0('coefficients available from model fit object: ', model.fit.list[[1]]$coefficients))
+  # ensure user is estimating the contrast that
+  stopifnot(all.equal(
+    as.character(coef.name)),
+    as.character(names(model.fit.list[[1]]$coefficients)[coefficient.number]
+                 ))
+
+  # extract results
+  test = ret = list()
+  for (i in 1:length(limma.fit.object.list)) {
+  test[[i]] =
+    limma::topTable(fit = limma.fit.object.list[[i]], coef = coefficient.number, number = Inf, sort.by = 't') %>%
+    tibble::rownames_to_column("gene") %>%
+    dplyr::mutate(contrast = rep(contrast.name)) %>%
+    dplyr::mutate(celltype = celltypes[i])
+    arrange(desc(t))
+
+    if (what == 'gene.t.ranks') {
+      ret[[i]] = test[[i]] %>%
+        dplyr::select(gene, t) %>%
+        tibble::column_to_rownames("gene") %>%
+        t() %>%
+        unlist(use.names = T)
+      ret[[i]] = ret[[i]][1, ]
+    } else{
+      ret[[i]] = test[[i]]
+    }
+  }
+  names(ret) = names(limma.fit.object.list)
+  return(ret)
+  }
+
+
 #' GetContrastResults - return results from a contrast fit on list of celltypes from RunVoomLimma using topTable
 #'
 #' @param limma.fit.object.list the results returned by RunVoomLimma, to get coefficiennt from dreamMixedModel use GetContrastResultsRaw
@@ -19,6 +73,8 @@
 #'res = scglmmr::GetContrastResults(limma.fit.object.list = bl, coefficient.number = 1, contrast.name = "test")
 #' }
 GetContrastResults = function(limma.fit.object.list, coefficient.number, contrast.name){
+  print('this function will be deprecated by ExtractResult')
+
   print("this function returns results from RunVoomLimma, to get coefficient from dreamMixedModel, use GetContrastResultsRaw
         GetContrastResults uses emperican Bayes shrinkage see https://github.com/GabrielHoffman/variancePartition/issues/4 ")
   # init store
@@ -56,6 +112,7 @@ GetContrastResults = function(limma.fit.object.list, coefficient.number, contras
 #'
 #' }
 GetContrastResultsRaw =  function(limma.fit.object.list, coefficient.number, contrast.name){
+  print('this function will be deprecated by ExtractResult')
   print("this function returns results from dreamMixedModel, to get coefficient from RunVoomLimma, use GetContrastResults
         GetContrastResults uses emperican Bayes shrinkage see https://github.com/GabrielHoffman/variancePartition/issues/4 ")
   ## pt 1 return ONLY gene, logFC, AveExpr, contrast, celltype from eBayes call to format data and add raw p values from lme4, correct with BH.
@@ -158,6 +215,7 @@ GetGeneMatrix = function(result.list, gene_subset = NULL, stat_for_matrix = "log
 #'test = scglmmr::GetRankResults(limma.fit.object.list = bl, coefficient.number = 1, "test")
 #' }
 GetRankResults = function(limma.fit.object.list, coefficient.number, contrast.name){
+  print('this function will be deprecated by ExtractResult')
   print(" returning ranks based on emperical bayes moderated t statistic")
   ranks = list()
   for (i in 1:length(limma.fit.object.list)) {
@@ -194,6 +252,7 @@ GetRankResults = function(limma.fit.object.list, coefficient.number, contrast.na
 #' fit_rank = scglmmr::GetRankResultsRaw(contrast.result.raw.list = fit_res)
 #' }
 GetRankResultsRaw = function(contrast.result.raw.list){
+  print('this function will be deprecated by ExtractResult')
   print("returning genes ranked by t statistic for each cell type based on mixed model results")
   ranks = list()
   for (i in 1:length(contrast.result.raw.list)) {
