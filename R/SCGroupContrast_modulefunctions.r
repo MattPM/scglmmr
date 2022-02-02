@@ -92,14 +92,12 @@ SCGroupContrastGLMM = function(module_data_frame, celltype_column = 'celltype', 
   # checks on minimal required metadata and formatting of group levels
   print('model specified:'); print(f1)
   stopifnot(is.factor(metadata$group_id))
-  cat("check levels, testing: \n",
+  cat("predictor / perturbation variable must be a correctly ordered factor, testing: \n",
       "1: difference in treatmant effect between groups: ",
-      levels(metadata$group_id)[3:4], " fold change  vs: ",
-      levels(metadata$group_id)[1:2], "fold change  \n",
+      levels(metadata$group_id)[3:4], " fold change  vs: ", levels(metadata$group_id)[1:2], "fold change  \n",
       "2: pre treatment baseline difference between groups: ",
       levels(metadata$group_id)[c(1,3)], " fold change \n",
-      "3: treatment effect across both groups combined \n",
-      "a prori contrasts across `ggroup_id` variable: "
+      "3: treatment effect across both groups combined \n", "a prori contrasts across `ggroup_id` variable: "
   )
   print(contrast_list)
 
@@ -142,9 +140,14 @@ SCGroupContrastGLMM = function(module_data_frame, celltype_column = 'celltype', 
       # fit models
       gvar = rlang::sym('group_id')
       m1 = tryCatch(lme4::lmer(formula = f1, data = dat_fit), error = function(e)  return(NA))
-      emm1 = tryCatch(emmeans::emmeans(object = m1, specs = ~ {{ group_id }}, data = dat_fit, lmer.df = "asymptotic"), error = function(e) return(NA))
 
-      # error checking
+      # calculate least squares means
+      emm1 = tryCatch(
+        emmeans::emmeans(object = m1, specs = ~ {{ group_id }}, data = dat_fit, lmer.df = "asymptotic"),
+        error = function(e) return(NA)
+        )
+
+      # error checking on model convergence and least squares means
       if( suppressWarnings(is.na(m1))) {
         print(paste0(" could not fit  model for ", module_names[i]))
         res_list[[i]] = NA
@@ -342,9 +345,7 @@ WilcoxWithinCluster = function(module_data_frame, lme4metadata, plot_savepath = 
       baseline_data = dat_fit
 
       # %>% filter(group_id %in% levels(dat_fit$group_id[c(1,3)]))
-      wt = wilcox.test(modulescore ~ group_id, data = baseline_data
-                       #%>% filter(group_id %in% levels(dat_fit$group_id)[c(1,3)])
-      ) %>%
+      wt = wilcox.test(modulescore ~ group_id, data = baseline_data) %>%
         broom::tidy() %>%
         rename(p.value.t0.wilcox = p.value)
 
