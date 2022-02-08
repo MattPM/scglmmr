@@ -252,7 +252,7 @@ GSEABubblePlot = function(rbind_gsea_result_dataframe, save_path,  include_negat
 #' t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = ebf, coefficient.number = 1, contrast.name = "time_1_highvslow")
 #' gsea = RunFgseaOnRankList(rank.list.celltype = t1hvl_rank, )
 RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSize = 9,
-                              nperm = 250000, positive.enrich.only = FALSE) {
+                              nperm = 250000, positive.enrich.only = FALSE, ...) {
 
   .Deprecated("FgseaList")
 
@@ -260,7 +260,7 @@ RunFgseaOnRankList = function(rank.list.celltype, pathways, maxSize = 500, minSi
   gsea = list()
   for (i in 1:length(rank.list.celltype)) {
     gsea[[i]] =
-      suppressMessages(fgsea::fgsea(pathways = pathways,
+      suppressMessages(fgsea::fgsea(pathways = pathways, ...,
                                     stats = rank.list.celltype[[i]],
                                     maxSize = maxSize,
                                     minSize = minSize,
