@@ -5,6 +5,7 @@
 \title{RunFgseaOnRankList - wrapper around fast gene set enrichment analysis with the fgsea R package https://bioconductor.org/packages/release/bioc/html/fgsea.html}
 \usage{
 RunFgseaOnRankList(
+  ...,
   rank.list.celltype,
   pathways,
   maxSize = 500,
