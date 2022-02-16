@@ -53,30 +53,11 @@
 #                              plotdatqc = TRUE,
 #                              figpath = 'your/file/path')
 #'}
-WeightedCellModuleScore = function(gene_matrix = NULL,
-                                   module_list,
-                                   threshold = 0,
-                                   cellwise_scaling = FALSE,
-                                   return_weighted = FALSE){
+WeightedCellModuleScore = function(gene_matrix = NULL,module_list,threshold = 0,
+                                   cellwise_scaling = FALSE,return_weighted = FALSE){
 
 
   mtx = gene_matrix
-  # require(Seurat)
-  # if(!is.null(seurat_object) & !is.null(gene_matrix)){
-  #   stop("If gene_matrix is specified, set seurat_object and Seurat_version to NULL  ")
-  # }
-  # if(!is.null(seurat_object)) {
-  #   message("extracting gene expression from seurat object")
-  #   if(Seurat_version == "2" & !is.null(seurat_object@data)) {
-  #     mtx = seurat_object@data
-  #   } else if(!is.null(seurat_object@assays$RNA@data)) {
-  #     mtx = seurat_object@assays$RNA@data
-  #   }
-  # }
-  # if(!is.null(gene_matrix)){
-  #   mtx = gene_matrix
-  # }
-
   score_keep = list()
   for (i in 1:length(module_list)) {
     # init storage

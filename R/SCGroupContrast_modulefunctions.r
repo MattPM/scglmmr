@@ -2,7 +2,7 @@
 # author: Matt Mulè
 # email: mattmule@gmail.com
 
-#' SCGroupContrastGLMM - within each cell type contrast difference in fold change between groups, baseline difference, and fold change across groups of module scores.
+#' FitLmerContrast - for data with pre post treatment and 2 response groups; within each cell type contrast difference in fold change between groups, baseline difference, and fold change across groups of module scores.
 #'
 #' @param module_data_frame data for each cell to model -- designed to be scores for modules (columns) returned by scglmmr::WeightedModuleScore
 #' @param lme4metadata metadata for model fit
@@ -54,7 +54,7 @@
 #' f1 = 'modulescore ~ age + group_id + (1|sampleid)'
 #'
 #' # fit sc mod mixed model on ewighted module scores.
-#' mm_res = SCGroupContrastGLMM(module_data_frame = module_df,
+#' mm_res = FitLmerContrast(module_data_frame = module_df,
 #'                            celltype_column = 'celltype',
 #'                              metadata = md,
 #'                              fixed_effects = NULL,
@@ -62,20 +62,8 @@
 #'                              plotdatqc = TRUE,
 #'                              figpath = 'your/file/path')
 #'}
-SCGroupContrastGLMM = function(module_data_frame, celltype_column = 'celltype', metadata,
+FitLmerContrast = function(module_data_frame, celltype_column = 'celltype', metadata,
                                fixed_effects = NULL, lmer_formula = NULL, plotdatqc = TRUE, figpath){
-
-
-  # specify custom contrasts difference in treatment between groups, treatment effect across groups, per-treatment difference between groups.
-  c00 = c(1,0,0,0)
-  c01 = c(0,1,0,0)
-  c10 = c(0,0,1,0)
-  c11 = c(0,0,0,1)
-  contrast_list = list(
-    "time1vs0_group2vs1" = (c11 - c10) - (c01 - c00),
-    "time1vs0" = (c11 + c01) / 2 - (c10 + c00) / 2,
-    "time0_group2vs1" = c10 - c00
-  )
 
   # specify model formula
   if(!is.null(lmer_formula)){
@@ -98,6 +86,17 @@ SCGroupContrastGLMM = function(module_data_frame, celltype_column = 'celltype', 
       "2: pre treatment baseline difference between groups: ",
       levels(metadata$group_id)[c(1,3)], " fold change \n",
       "3: treatment effect across both groups combined \n", "a prori contrasts across `ggroup_id` variable: "
+  )
+  # specify custom contrasts difference in treatment between groups,
+  # treatment effect across groups, per-treatment difference between groups.
+  c00 = c(1,0,0,0)
+  c01 = c(0,1,0,0)
+  c10 = c(0,0,1,0)
+  c11 = c(0,0,0,1)
+  contrast_list = list(
+    "time1vs0_group2vs1" = (c11 - c10) - (c01 - c00),
+    "time1vs0" = (c11 + c01) / 2 - (c10 + c00) / 2,
+    "time0_group2vs1" = c10 - c00
   )
   print(contrast_list)
 
@@ -212,18 +211,18 @@ SCGroupContrastGLMM = function(module_data_frame, celltype_column = 'celltype', 
 
           p2 = ggplot(dat_fit, aes(x = group_id, y = modulescore)) +
             geom_violin(aes(fill = group_id), show.legend = FALSE) +
-            # geom_boxplot(width=0.14, outlier.shape = NA) +
             stat_summary(fun.y = mean, fun.ymin = mean, fun.ymax = mean, geom = "crossbar", color = "black", size = 0.3) +
-            scale_fill_manual(values = c("#1E90FFD9", "#191970D9", "#FF0000D9", "#CD0000D9")) +
-            ggtitle(paste0(f_store, "\n", cts[u], " ", module, "\n", "baseline wilcox p = ", t0p, "\n",
-                           "lmer 24h Fold Change delta p = ", t1p)) +
+            scale_fill_manual(values = c("#1E90FFB3", "#191970B3", "#FF0000B3", "#CD0000B3")) +
+            ggtitle(paste0(f_store, "\n", cts[u], " ", module, "\n",
+                           "baseline wilcox p = ", t0p, "\n",
+                           "lmer Fold Change Delta p = ", t1p)) +
             theme_bw(base_size = 11) +
-            theme(axis.title.y =  element_text(face = "bold", size = 7)) +
-            theme(plot.title = element_text(size = 7, face = "bold")) +
+            theme(axis.title.y =  element_text(size = 7)) +
+            theme(plot.title = element_text(size = 7)) +
             ylab(paste0(module, "  score  " )) +
-            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 7, face = "bold")) +
+            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 7)) +
             theme(axis.title.x = element_blank()) +
-            theme(plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
+            theme(plot.margin = unit(c(0.15, 0.15, 0.15, 0.15), "cm"))
 
           # combine marginal means and data view
           p3 = egg::ggarrange(plots = list(p2,p1), nrow = 1, widths = c(3,1), draw = FALSE)

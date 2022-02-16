@@ -158,12 +158,16 @@ BulkDesignMatrix = function(metadata, sample_column, variable_column, pseudobulk
   # add labels for variancepartition contrast fit.
   colnames(met) = paste(variable_column,colnames(met), sep = "")
 
-  # QC design matrix rows match the pseudobulk data columns
-  stopifnot(isTRUE(all.equal(target = colnames(pseudobulklist[[1]]), current = rownames(met))))
+  # QC design matrix
+  # rows match the pseudobulk data columns
+  if (isFALSE(all.equal(target = colnames(pseudobulklist[[1]]), current = rownames(met)))) {
+    stop('rows of design matrix do not match column names of pseudobulklist')
+  }
 
-  # QC model matrix - is it full rank and are there any missing values
-  stopifnot(Matrix::rankMatrix(met) == ncol(met))
-  stopifnot(any(colSums(met) == 0) == FALSE)
+  # check if the design matrix is full rank
+  if(isFALSE(Matrix::rankMatrix(met) == ncol(met))){
+    warning('design matrix is not full rank')
+  }
 
   # show and return design matrix
   met
@@ -196,8 +200,10 @@ NormalizePseudobulk = function(pseudobulklist, normalization.method = "RLE",
     edgeR::filterByExpr(x, min.count = minimum.gene.count, design = design_matrix)
   })
   for (i in 1:length(pseudobulklist)) {
+  print(names(pseudobulklist)[i])
+  print('retained genes after filtering:  ')
   dflist[[i]] = dflist[[i]][genes.use1[[i]], keep.lib.sizes=FALSE]
-  print(dim(dflist[[i]]$counts))
+  print(nrow(dflist[[i]]$counts))
   }
   return(dflist)
 }
@@ -273,7 +279,7 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #' @importFrom limma voom
 #' @importFrom parallel makeCluster
 #' @importFrom ggplot2 theme ggsave
-#' @importFrom doParallel registerDoParallel
+#' @importFrom BiocParallel register SnowParam
 #' @importFrom rlang sym
 #' @importFrom dplyr group_by summarize_each
 #' @export
@@ -300,25 +306,15 @@ RunVoomLimma = function(dgelists, design_matrix, do_contrast_fit, my_contrast_ma
 #' }
 #' # run dream mixed model
 # dream method Hoffman et.al. 2020  https://doi.org/10.1093/bioinformatics/btaa687
-# biorxiv version 1 and 2 implemented below.
-dreamMixedModel = function(dge_lists,
-                           apriori_contrasts = FALSE,
-                           sample_column,
-                           contrast_matrix = NULL,
-                           design_matrix,
-                           fixed_effects,
-                           cell_metadata,
+dreamMixedModel = function(dge_lists, apriori_contrasts = FALSE, sample_column, contrast_matrix = NULL,
+                           design_matrix, fixed_effects, cell_metadata,
                            lme4_formula = '~ 0 + cohort_timepoint + (1|sampleid)',
-                           plotsavepath,
-                           ncores = 4
-                           # version = "2"
-                           ) {
-  #@param version if using R 3.5 bioc < 3.8 make version '1' otherwse leave default 2 runs bioc 3.8 and 3.9  this argument is to maintain backwards compatibility with R 3.5 workflows with the VariancePartition package
-  # sub-optimal, but *must load* directly due to namespace bug in variancepartition until Bioc update https://github.com/GabrielHoffman/variancePartition/issues/17
-  # require(variancePartition)
-  # parallelize function
-  cl = parallel::makeCluster(ncores)
-  doParallel::registerDoParallel(cl = ncores)
+                           ncores = 4, ...) {
+
+  BiocParallel::register(BiocParallel::SnowParam(workers = ncores))
+  pparam = BiocParallel::SnowParam(workers = 4, type = "SOCK", progressbar = TRUE)
+  # cl = parallel::makeCluster(ncores)
+  # doParallel::registerDoParallel(cl = ncores)
 
   if(isFALSE('sampleid' %in% colnames(cell_metadata))){
     stop("metadata must have a column 'sampleid' to fit a varying intercept model with subjectIDs")
@@ -342,37 +338,20 @@ dreamMixedModel = function(dge_lists,
   stopifnot(isTRUE(all.equal(target = colnames(dge_lists[[1]]), current = rownames(model_md))))
 
   print('model specified (change with argument to lme4_formula) '); print(lme4_formula)
-
-  # calculate voom observational level weights
-  # if (version == "1"){
-  #   print("implementing dream v1.10.4 bioc 3.7 and R 3.5, to implement bioc > 3.7 R3.6 change set argument `version` = '2'")
-  #   v1 = lapply(dge_lists, function(x){
-  #     limma::voom(counts = x, design = design_matrix,
-  #                 normalize.method = "none", save.plot = T, plot = T) })
-  # } else{
-    v1 = lapply(dge_lists, function(x){
+  v1 = lapply(dge_lists, function(x){
     design = NULL
-    variancePartition::voomWithDreamWeights(counts = x,
-                                            data = model_md,
-                                            formula = lme4_formula,
-                                            normalize.method = "none",
-                                            save.plot = T, plot = T)
+    variancePartition::voomWithDreamWeights(counts = x, data = model_md, formula = lme4_formula,
+                                            normalize.method = "none", save.plot = TRUE, plot = TRUE)
     })
-  # }
-  # if custom a priori contrasts are specified fit mixed model and estimate contrast coefficients
   if(isTRUE(apriori_contrasts)) {
-
-    # visualize custom a priori contrasts
-    contrast_plot = as.matrix(contrast_matrix) %>% as.data.frame()
-    p = variancePartition::plotContrasts(contrast_matrix) + ggplot2::theme(axis.text.x=element_text(angle = -90, hjust = 0))
-    ggplot2::ggsave(p, filename = paste0(plotsavepath, "contrasts_tested.pdf"), width = 7 , height = 5)
-
     # fit mixed model
     fit1 = lapply(v1, function(x){
-      variancePartition::dream(exprObj = x,
+      variancePartition::dream(...,
+                               exprObj = x,
                                formula = lme4_formula,
                                data = model_md,
-                               L = as.matrix(contrast_matrix))
+                               L = as.matrix(contrast_matrix),
+                               BPPARAM = pparam)
     })
   } else {
     # fit model without custom contrasts

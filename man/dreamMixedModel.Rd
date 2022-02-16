@@ -13,8 +13,8 @@ dreamMixedModel(
   fixed_effects,
   cell_metadata,
   lme4_formula = "~ 0 + cohort_timepoint + (1|sampleid)",
-  plotsavepath,
-  ncores = 4
+  ncores = 4,
+  ...
 )
 }
 \arguments{
@@ -34,9 +34,9 @@ dreamMixedModel(
 
 \item{lme4_formula}{symbolic model formula the default is '~ 0 + cohort_timepoint + (1|sampleid)'}
 
-\item{plotsavepath}{a path to save created plot of contrasts}
-
 \item{ncores}{number of cores for doParallel}
+
+\item{plotsavepath}{a path to save created plot of contrasts}
 }
 \value{
 list of model fits indexed by celltype
