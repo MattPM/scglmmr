@@ -19,6 +19,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -31,18 +33,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">scglmmr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="../reference/index.html">Reference</a>
 </li>
@@ -64,8 +60,8 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/MattPM/scglmmr/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+  <a href="https://github.com/MattPM/scglmmr/" class="external-link">
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -85,198 +81,205 @@
       <h1 data-toc-skip>Single cell gene and module level differential expression with nested group repeated measures experiment designs using scglmmr</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MattPM/scglmmr/blob/master/vignettes/scglmmr_singlecell.Rmd"><code>vignettes/scglmmr_singlecell.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MattPM/scglmmr/blob/HEAD/vignettes/scglmmr_singlecell.Rmd" class="external-link"><code>vignettes/scglmmr_singlecell.Rmd</code></a></small>
       <div class="hidden name"><code>scglmmr_singlecell.Rmd</code></div>
 
     </div>
 
     
     
-<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">scglmmr</span>)</pre></body></html></div>
-<div id="single-cell-gene-level-de-testing" class="section level3">
-<h3 class="hasAnchor">
-<a href="#single-cell-gene-level-de-testing" class="anchor"></a>2. Single cell gene level DE testing</h3>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MattPM/scglmmr" class="external-link">scglmmr</a></span><span class="op">)</span></code></pre></div>
+<div class="section level3">
+<h3 id="single-cell-gene-level-de-testing">2. Single cell gene level DE testing<a class="anchor" aria-label="anchor" href="#single-cell-gene-level-de-testing"></a>
+</h3>
 <p>This single cell level models of differential expression pre and post treatment testing of genes by fitting a Poisson mixed glm. You specify a reduced and full model formula to extract p values and effect sizes.</p>
 <p>Recommended: The function accepts an argument ‘celltype_genes_test’ this is a named list indexed by celltypes.</p>
 <p>First we load a single cell object an define highly variable genes within each celltype, this can be done many different ways.</p>
-<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="co"># Single cell mixed model. </span>
-<span class="fu"><a href="https://rdrr.io/r/base/message.html">suppressMessages</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">tidyverse</span>))
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">scglmmr</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">1990</span>)
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Single cell mixed model. </span>
+<span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://tidyverse.tidyverse.org" class="external-link">tidyverse</a></span><span class="op">)</span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MattPM/scglmmr" class="external-link">scglmmr</a></span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1990</span><span class="op">)</span>
 
-<span class="no">datapath</span> <span class="kw">=</span> <span class="st">'your_path_to_save_results'</span>
-<span class="no">s</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">readRDS</a></span>(<span class="st">'path_to_seurat_or_SingleCellExperimentObject'</span>)
+<span class="va">datapath</span> <span class="op">=</span> <span class="st">'your_path_to_save_results'</span>
+<span class="va">s</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">'path_to_seurat_or_SingleCellExperimentObject'</span><span class="op">)</span>
 
 <span class="co"># define highly variable genes within each cell type </span>
-<span class="no">gene_list</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>()
-<span class="kw">for</span> (<span class="no">i</span> <span class="kw">in</span> <span class="fl">1</span>:<span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span>(<span class="no">s</span>@<span class="kw">meta.data</span>$<span class="no">celltype</span>))) {
-  <span class="no">gene_list</span><span class="kw">[[</span><span class="no">i</span>]] <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html">subset</a></span>(<span class="no">s</span>, <span class="no">celltype_joint</span> <span class="kw">==</span> <span class="no">celltype_unique</span>[<span class="no">i</span>]) <span class="kw">%&gt;%</span>
-    <span class="kw pkg">Seurat</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/Seurat/man/FindVariableFeatures.html">FindVariableFeatures</a></span>(<span class="no">x</span><span class="kw">[[</span><span class="no">i</span>]],<span class="kw">top.genes</span> <span class="kw">=</span> <span class="fl">10000</span>)
-  <span class="no">gene_list</span><span class="kw">[[</span><span class="no">i</span>]] <span class="kw">=</span> <span class="kw pkg">Seurat</span><span class="kw ns">::</span><span class="fu">VariableGenes</span>(<span class="no">gene_list</span><span class="kw">[[</span><span class="no">i</span>]])
-}
+<span class="va">gene_list</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>
+<span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">s</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">celltype</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+  <span class="va">gene_list</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">s</span>, <span class="va">celltype_joint</span> <span class="op">==</span> <span class="va">celltype_unique</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> 
+    <span class="fu">Seurat</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Seurat/man/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="va">x</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,top.genes <span class="op">=</span> <span class="fl">10000</span><span class="op">)</span>
+  <span class="va">gene_list</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">=</span> <span class="fu">Seurat</span><span class="fu">::</span><span class="fu">VariableGenes</span><span class="op">(</span><span class="va">gene_list</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>
+<span class="op">}</span>
 
-<span class="co"># one can also use scran trendVar etc. </span></pre></body></html></div>
+<span class="co"># one can also use scran trendVar etc. </span></code></pre></div>
 <p>Now we run the single cell Poisson model by specifying a model formula, the formula must have the LHS equal to <code>gene ~</code> and include a random effect term <code>(1|subjectid)</code>. the variable that corresponds to the perturbation variable as a 2 level factor with pre and post perturbation measurements (repeated measurements for the same subject denoted by <code>subjectid</code> must be identified, for example, if the metadata variable coding for the time post perturbation is called treatment.time, then the model formula could be <code>f1 = 'gene ~ offset(log(nUMI)) + treatment.time + (1|subjectid)'</code> with this model one would set the argument <code>test_variable = treatment.time</code> which should have 2 ordered levels corresponding to pre and post treatment. Within the function, the <code>emmeans</code> package automatically tests the difference in the marginal means of the post vs pre perturbation effect.</p>
-<div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="co"># load subset of genes to test for each celltype </span>
-<span class="no">gene_union</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/unlist.html">unlist</a></span>(<span class="no">genes_test</span>))
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># load subset of genes to test for each celltype </span>
+<span class="va">gene_union</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">genes_test</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># create day 1 metadata dataframe from a single cell object (seurat, SingleCellExperiment etc.)</span>
-<span class="no">s</span>@<span class="kw">meta.data</span>$<span class="no">subjectid</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span>(<span class="no">s</span>@<span class="kw">meta.data</span>$<span class="no">sampleid</span>))
+<span class="va">s</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">subjectid</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">s</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">sampleid</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># create metadata for lme4</span>
-<span class="no">md</span> <span class="kw">=</span> <span class="no">s</span>@<span class="kw">meta.data</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/droplevels.html">droplevels</a></span>() <span class="kw">%&gt;%</span>
-  <span class="kw pkg">dplyr</span><span class="kw ns">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="no">barcode_check</span>, <span class="no">batch</span>, <span class="no">subjectid</span>, <span class="no">timepoint</span>, <span class="no">celltype_joint</span>, <span class="no">nUMI</span>) <span class="kw">%&gt;%</span>
-  <span class="fu">mutate</span>(<span class="kw">timepoint</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span>(<span class="no">timepoint</span>, <span class="kw">levels</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"d0"</span>, <span class="st">"d1"</span>))) <span class="kw">%&gt;%</span>
-  <span class="fu">rename</span>(<span class="kw">celltype</span> <span class="kw">=</span> <span class="no">celltype_joint</span>) <span class="kw">%&gt;%</span>
-  <span class="fu">column_to_rownames</span>(<span class="st">'barcode_check'</span>)
+<span class="va">md</span> <span class="op">=</span> <span class="va">s</span><span class="op">@</span><span class="va">meta.data</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+  <span class="fu"><a href="https://rdrr.io/r/base/droplevels.html" class="external-link">droplevels</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">barcode_check</span>, <span class="va">batch</span>, <span class="va">subjectid</span>, <span class="va">timepoint</span>, <span class="va">celltype_joint</span>, <span class="va">nUMI</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+  <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>timepoint <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">timepoint</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"d0"</span>, <span class="st">"d1"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> 
+  <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/rename.html" class="external-link">rename</a></span><span class="op">(</span>celltype <span class="op">=</span> <span class="va">celltype_joint</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> 
+  <span class="fu"><a href="https://rdrr.io/pkg/tibble/man/rownames.html" class="external-link">column_to_rownames</a></span><span class="op">(</span><span class="st">'barcode_check'</span><span class="op">)</span>
 
 <span class="co"># get gene data </span>
-<span class="no">gene_data</span> <span class="kw">=</span> <span class="kw pkg">Matrix</span><span class="kw ns">::</span><span class="fu">t</span>(<span class="no">s</span>@<span class="kw">raw.data</span>[<span class="no">gene_union</span>, ])
+<span class="va">gene_data</span> <span class="op">=</span> <span class="fu">Matrix</span><span class="fu">::</span><span class="fu">t</span><span class="op">(</span><span class="va">s</span><span class="op">@</span><span class="va">raw.data</span><span class="op">[</span><span class="va">gene_union</span>, <span class="op">]</span><span class="op">)</span>
 
 <span class="co"># we can now remove whatever single cell object was loaded in the environment. </span>
-<span class="fu"><a href="https://rdrr.io/r/base/rm.html">rm</a></span>(<span class="no">s</span>); <span class="fu"><a href="https://rdrr.io/r/base/gc.html">gc</a></span>()
+<span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">s</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/base/gc.html" class="external-link">gc</a></span><span class="op">(</span><span class="op">)</span>
 
 <span class="co">## specify model formula </span>
-<span class="no">f1</span> <span class="kw">=</span> <span class="st">'gene ~ offset(log(nUMI)) + timepoint + (1|subjectid)'</span>
+<span class="va">f1</span> <span class="op">=</span> <span class="st">'gene ~ offset(log(nUMI)) + timepoint + (1|subjectid)'</span>
 
 <span class="co"># method 1</span>
-<span class="no">results</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/SCMixedPoisson.html">SCMixedPoisson</a></span>(<span class="kw">gene_data</span> <span class="kw">=</span> <span class="no">gene_data</span>,
-                                  <span class="kw">metadata</span> <span class="kw">=</span> <span class="no">md</span>,
-                                  <span class="kw">model_formula</span> <span class="kw">=</span> <span class="no">f1</span>,
-                                  <span class="kw">test_variable</span> <span class="kw">=</span> <span class="st">'timepoint'</span>,
-                                  <span class="kw">celltype_genes_test</span> <span class="kw">=</span> <span class="no">genes_test</span>,
-                                  <span class="kw">save_path</span> <span class="kw">=</span> <span class="no">datapath</span>)
+<span class="va">results</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/SCMixedPoisson.html">SCMixedPoisson</a></span><span class="op">(</span>gene_data <span class="op">=</span> <span class="va">gene_data</span>,
+                                  metadata <span class="op">=</span> <span class="va">md</span>,
+                                  model_formula <span class="op">=</span> <span class="va">f1</span>, 
+                                  test_variable <span class="op">=</span> <span class="st">'timepoint'</span>,
+                                  celltype_genes_test <span class="op">=</span> <span class="va">genes_test</span>,
+                                  save_path <span class="op">=</span> <span class="va">datapath</span><span class="op">)</span>
 <span class="co"># write results </span>
-<span class="co"># data.table::fwrite(x = results,file = paste0(datapath, "/h1_sc_time_merged_v2.txt"), sep = '\t')</span></pre></body></html></div>
+<span class="co"># data.table::fwrite(x = results,file = paste0(datapath, "/h1_sc_time_merged_v2.txt"), sep = '\t')</span></code></pre></div>
 <p>Another way to specify the model automatically:</p>
-<div class="sourceCode" id="cb4"><html><body><pre class="r"><span class="no">results</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/SCMixedPoisson.html">SCMixedPoisson</a></span>(<span class="kw">gene_data</span> <span class="kw">=</span> <span class="no">gene_data</span>,
-                                  <span class="kw">metadata</span> <span class="kw">=</span> <span class="no">md</span>,
-                                  <span class="kw">test_variable</span> <span class="kw">=</span> <span class="st">'timepoint'</span>,
-                                  <span class="kw">covariate_variables</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'BMI'</span>, <span class="st">'SEX'</span>),
-                                  <span class="kw">celltype_genes_test</span> <span class="kw">=</span> <span class="no">genes_test</span>,
-                                  <span class="kw">save_path</span> <span class="kw">=</span> <span class="no">datapath</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">results</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/SCMixedPoisson.html">SCMixedPoisson</a></span><span class="op">(</span>gene_data <span class="op">=</span> <span class="va">gene_data</span>,
+                                  metadata <span class="op">=</span> <span class="va">md</span>,
+                                  test_variable <span class="op">=</span> <span class="st">'timepoint'</span>,
+                                  covariate_variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'BMI'</span>, <span class="st">'SEX'</span><span class="op">)</span>,
+                                  celltype_genes_test <span class="op">=</span> <span class="va">genes_test</span>, 
+                                  save_path <span class="op">=</span> <span class="va">datapath</span><span class="op">)</span></code></pre></div>
 <p>This would automatically test the delta for pre and post perturbation calculating the marginal means over the coavariates BMI and SEX with the generalized linear mixed effects Poisson model: <code>'gene ~ BMI + SEX + timepoint + (1|subjectid)'</code>.</p>
 </div>
-<div id="enrichment-of-single-cell-poisson-model-of-timepoint-effect-using-clusterprofiler" class="section level3">
-<h3 class="hasAnchor">
-<a href="#enrichment-of-single-cell-poisson-model-of-timepoint-effect-using-clusterprofiler" class="anchor"></a>enrichment of single cell poisson model of timepoint effect using clusterprofiler</h3>
-<div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="co">## enrichment on these results </span>
+<div class="section level3">
+<h3 id="enrichment-of-single-cell-poisson-model-of-timepoint-effect-using-clusterprofiler">enrichment of single cell poisson model of timepoint effect using clusterprofiler<a class="anchor" aria-label="anchor" href="#enrichment-of-single-cell-poisson-model-of-timepoint-effect-using-clusterprofiler"></a>
+</h3>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">## enrichment on these results </span>
 
 <span class="co">### plot enrichment with a hypergeometric test against the li BTM </span>
-<span class="no">scd1</span> <span class="kw">=</span>  <span class="fu"><a href="https://rdrr.io/r/base/split.html">split</a></span>( <span class="no">results</span> , <span class="kw">f</span> <span class="kw">=</span> <span class="no">mmres</span>$<span class="no">celltype</span> )
-<span class="no">scd1</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span>(<span class="no">scd1</span>, <span class="kw">function</span>(<span class="no">x</span>){<span class="no">x</span> <span class="kw">%&gt;%</span>
-    <span class="kw pkg">dplyr</span><span class="kw ns">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span>(<span class="no">gene</span>, <span class="no">celltype</span>, <span class="no">estimate</span>, <span class="no">padj</span>)  <span class="kw">%&gt;%</span>
-    <span class="kw pkg">dplyr</span><span class="kw ns">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html">rename</a></span>(<span class="st">'logFC'</span><span class="kw">=</span> <span class="no">fixed_effect</span>,  <span class="st">'P.Value'</span> <span class="kw">=</span> <span class="no">padj</span>) })
+<span class="va">scd1</span> <span class="op">=</span>  <span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span> <span class="va">results</span> , f <span class="op">=</span> <span class="va">mmres</span><span class="op">$</span><span class="va">celltype</span> <span class="op">)</span>
+<span class="va">scd1</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">scd1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">{</span><span class="va">x</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">gene</span>, <span class="va">celltype</span>, <span class="va">estimate</span>, <span class="va">padj</span><span class="op">)</span>  <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/rename.html" class="external-link">rename</a></span><span class="op">(</span><span class="st">'logFC'</span><span class="op">=</span> <span class="va">fixed_effect</span>,  <span class="st">'P.Value'</span> <span class="op">=</span> <span class="va">padj</span><span class="op">)</span> <span class="op">}</span><span class="op">)</span>
 
 
-<span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span>(<span class="no">termdf</span>)
-<span class="no">hypsc</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/RunHypergeometricTest.html">RunHypergeometricTest</a></span>(<span class="kw">result_list</span> <span class="kw">=</span> <span class="no">scd1</span>,
-                                       <span class="kw">TERM2GENE_dataframe</span> <span class="kw">=</span> <span class="no">term_df</span>,
-                                       <span class="kw">pval_threshold</span> <span class="kw">=</span> <span class="fl">0.05</span>,
-                                       <span class="kw">logFC_threshold</span> <span class="kw">=</span> <span class="fl">0.1</span>)
-<span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/PlotHypergeometric.html">PlotHypergeometric</a></span>(<span class="kw">hyperg_result</span> <span class="kw">=</span> <span class="no">hypsc</span>,
-                            <span class="kw">p.adjust.filter</span> <span class="kw">=</span> <span class="fl">0.05</span>,
-                            <span class="kw">genenumber_filter</span> <span class="kw">=</span> <span class="fl">2</span>,
-                            <span class="kw">savepath</span> <span class="kw">=</span> <span class="no">figpath</span>,
-                            <span class="kw">savename</span> <span class="kw">=</span> <span class="st">"d1singlecell_hypergeometric_padj0.05.pdf"</span>,
-                            <span class="kw">title</span> <span class="kw">=</span> <span class="st">"single cell 24h vs baseline gene_exprs ~ offset(nUMI) + timepoint + (1|subjectid) \n 
-                            hypergeometric test LI BTM, FDR 0.05, gene filter n &gt; 2"</span>,
-                            <span class="kw">height</span> <span class="kw">=</span> <span class="fl">5.5</span>, <span class="kw">width</span> <span class="kw">=</span> <span class="fl">8</span>)</pre></body></html></div>
+<span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="va">termdf</span><span class="op">)</span>
+<span class="va">hypsc</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/RunHypergeometricTest.html">RunHypergeometricTest</a></span><span class="op">(</span>result_list <span class="op">=</span> <span class="va">scd1</span>, 
+                                       TERM2GENE_dataframe <span class="op">=</span> <span class="va">term_df</span>,
+                                       pval_threshold <span class="op">=</span> <span class="fl">0.05</span>,
+                                       logFC_threshold <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>  
+<span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/PlotHypergeometric.html">PlotHypergeometric</a></span><span class="op">(</span>hyperg_result <span class="op">=</span> <span class="va">hypsc</span>,
+                            p.adjust.filter <span class="op">=</span> <span class="fl">0.05</span>,
+                            genenumber_filter <span class="op">=</span> <span class="fl">2</span>,
+                            savepath <span class="op">=</span> <span class="va">figpath</span>, 
+                            savename <span class="op">=</span> <span class="st">"d1singlecell_hypergeometric_padj0.05.pdf"</span>, 
+                            title <span class="op">=</span> <span class="st">"single cell 24h vs baseline gene_exprs ~ offset(nUMI) + timepoint + (1|subjectid) \n 
+                            hypergeometric test LI BTM, FDR 0.05, gene filter n &gt; 2"</span>, 
+                            height <span class="op">=</span> <span class="fl">5.5</span>, width <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="single-cell-module-level-testing-group-level-fold-change-comparisons" class="section level3">
-<h3 class="hasAnchor">
-<a href="#single-cell-module-level-testing-group-level-fold-change-comparisons" class="anchor"></a>2. Single cell module level testing + group level fold change comparisons</h3>
+<div class="section level3">
+<h3 id="single-cell-module-level-testing-group-level-fold-change-comparisons">2. Single cell module level testing + group level fold change comparisons<a class="anchor" aria-label="anchor" href="#single-cell-module-level-testing-group-level-fold-change-comparisons"></a>
+</h3>
 <p>This is designed for testing the difference in single cell module activity scores between groups at baseline, between groups, post treatment across groups and the difference in treatment effect between groups using the same <em>a priori</em> contrast approach as in the pseudobulk method described above.</p>
-<div id="part-i" class="section level4">
-<h4 class="hasAnchor">
-<a href="#part-i" class="anchor"></a>Part I</h4>
+<div class="section level4">
+<h4 id="part-i">Part I<a class="anchor" aria-label="anchor" href="#part-i"></a>
+</h4>
 <p>You first fit a module score to each single cell. Options: <em>threshold</em> what percent of genes in the module must a cell express to get a score (i.e. of 0.1, if the cell has less than 10% of genes &gt;0 in the module don’t score) <em>return_weighted</em> whether to return the weighted module score which is the average * weight where weight = number of genes in the cell in that module with non-zeroexpression</p>
 <p><em>cellwise_scaling</em> should the scores be scaled across cells? Not recommended unless you are testing only a single celltype. <em>Seurat_version</em> if this is set to “2” it will accomodate seurat v2, if set to “3” will accomodate v3</p>
 </div>
-<div id="part-ii-fitting-models" class="section level4">
-<h4 class="hasAnchor">
-<a href="#part-ii-fitting-models" class="anchor"></a>Part II fitting models:</h4>
+<div class="section level4">
+<h4 id="part-ii-fitting-models">Part II fitting models:<a class="anchor" aria-label="anchor" href="#part-ii-fitting-models"></a>
+</h4>
 <p><em>The SCGroupContrastGLMM Function</em> To simultaneously test the difference in the fold changes due to treatment (for example) the levels of the combined group + time factor "group_id have to be ordered as follows (can be any names, these are just the order): group1 timepoint 0, group1 timepoint 1, group2 timepoint 0, group2 timepoint 1</p>
 <p>It is also possible to use custom contrasts by changing the argument to contrast_list from contrast_2 (automatically loaded) to something else.</p>
 <p>Specify any lme4 model formula in the argument to f1, with the randomeffect term for subjectid set to <code>(1|sampleid)</code> which should have a pre and post perturbation measurement. <code>f1 = 'modulescore ~ age + gender +  group_id + (1|sampleid)'</code></p>
 <p>This function will also automatically save a helpful plot of the least squares means (the residual means of each group after accounting for covariates in the model) of the module over the levels of each combined group_timepoint factor.</p>
-<div class="sourceCode" id="cb6"><html><body><pre class="r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 <span class="co"># load data</span>
-<span class="no">Seurat</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">readRDS</a></span>(<span class="st">"my_seurat_object.rds"</span>)
+<span class="va">Seurat</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"my_seurat_object.rds"</span><span class="op">)</span>
 
 <span class="co"># add cellwise module score for each signature </span>
-<span class="no">mod_scores</span> <span class="kw">=</span> <span class="fu"><a href="../reference/WeightedCellModuleScore.html">WeightedCellModuleScore</a></span>(<span class="kw">seurat_object</span> <span class="kw">=</span> <span class="no">Seurat</span>,
-                                     <span class="kw">module_list</span> <span class="kw">=</span> <span class="no">btm</span>,
-                                     <span class="kw">threshold</span> <span class="kw">=</span> <span class="fl">0.1</span>,
-                                     <span class="kw">return_weighted</span> <span class="kw">=</span> <span class="fl">FALSE</span>, <span class="kw">cellwise_scaling</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                                     <span class="kw">Seurat_version</span> <span class="kw">=</span> <span class="st">"2"</span>)
-<span class="no">Seurat</span> <span class="kw">=</span> <span class="fu">AddMetaData</span>(<span class="no">Seurat</span>,<span class="kw">metadata</span> <span class="kw">=</span> <span class="no">mod_scores</span>)
-<span class="no">module_n</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span>(<span class="no">sig_test</span>)
+<span class="va">mod_scores</span> <span class="op">=</span> <span class="fu"><a href="../reference/WeightedCellModuleScore.html">WeightedCellModuleScore</a></span><span class="op">(</span>seurat_object <span class="op">=</span> <span class="va">Seurat</span>,
+                                     module_list <span class="op">=</span> <span class="va">btm</span>,
+                                     threshold <span class="op">=</span> <span class="fl">0.1</span>,
+                                     return_weighted <span class="op">=</span> <span class="cn">FALSE</span>, cellwise_scaling <span class="op">=</span> <span class="cn">FALSE</span>, 
+                                     Seurat_version <span class="op">=</span> <span class="st">"2"</span><span class="op">)</span> 
+<span class="va">Seurat</span> <span class="op">=</span> <span class="fu">AddMetaData</span><span class="op">(</span><span class="va">Seurat</span>,metadata <span class="op">=</span> <span class="va">mod_scores</span><span class="op">)</span>
+<span class="va">module_n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">sig_test</span><span class="op">)</span>
 
 <span class="co"># set up module data frame </span>
-<span class="no">module_df</span> <span class="kw">=</span> <span class="no">Seurat</span>@<span class="kw">meta.data</span> <span class="kw">%&gt;%</span> <span class="fu">select</span>(<span class="no">barcode_check</span>, <span class="no">celltype_joint</span>, <span class="no">module_n</span>)
+<span class="va">module_df</span> <span class="op">=</span> <span class="va">Seurat</span><span class="op">@</span><span class="va">meta.data</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">barcode_check</span>, <span class="va">celltype_joint</span>, <span class="va">module_n</span><span class="op">)</span> 
 
 <span class="co"># format metadata as factors group_id is order leveled for contrast_fit = contrast(emm1, method = list( (c21 - c20) - (c11 - c10) ))</span>
-<span class="no">md</span> <span class="kw">=</span> <span class="no">Seurat</span>@<span class="kw">meta.data</span> <span class="kw">%&gt;%</span>
-  <span class="fu">mutate</span>(<span class="kw">group_id</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span>(<span class="no">adjmfc.time</span>,  <span class="kw">levels</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'d0 low'</span>, <span class="st">'d1 low'</span>, <span class="st">'d0 high'</span>, <span class="st">'d1 high'</span>))) <span class="kw">%&gt;%</span>
-  <span class="fu">mutate</span>(<span class="kw">sampleid</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span>(<span class="no">sampleid</span>)) <span class="kw">%&gt;%</span>
-  <span class="fu">select</span>(<span class="no">barcode_check</span>, <span class="no">celltype_joint</span>, <span class="no">sampleid</span>,  <span class="no">age</span>, <span class="no">group_id</span>)
+<span class="va">md</span> <span class="op">=</span> <span class="va">Seurat</span><span class="op">@</span><span class="va">meta.data</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> 
+  <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>group_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">adjmfc.time</span>,  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'d0 low'</span>, <span class="st">'d1 low'</span>, <span class="st">'d0 high'</span>, <span class="st">'d1 high'</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+  <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>sampleid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">sampleid</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> 
+  <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">barcode_check</span>, <span class="va">celltype_joint</span>, <span class="va">sampleid</span>,  <span class="va">age</span>, <span class="va">group_id</span><span class="op">)</span>
 
 <span class="co"># Fit mixed model </span>
-<span class="no">plot_savepath</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(<span class="no">my_figure_save_path</span>, <span class="st">"/marginalmeans/"</span>); <span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span>(<span class="no">plot_savepath</span>)
+<span class="va">plot_savepath</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">my_figure_save_path</span>, <span class="st">"/marginalmeans/"</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">plot_savepath</span><span class="op">)</span>
 
 <span class="co"># specify any random intercept model e.g.</span>
-<span class="no">f1</span> <span class="kw">=</span> <span class="st">'modulescore ~ age + group_id + (1|sampleid)'</span>
+<span class="va">f1</span> <span class="op">=</span> <span class="st">'modulescore ~ age + group_id + (1|sampleid)'</span>
 
 <span class="co"># fit sc mod mixed model on ewighted module scores. </span>
-<span class="no">mm_res</span> <span class="kw">=</span> <span class="fu">FitModuleMixModel</span>(<span class="kw">module_data_frame</span> <span class="kw">=</span> <span class="no">module_df</span>,
-                           <span class="kw">celltype_column</span> <span class="kw">=</span> <span class="st">'celltype'</span>,
-                           <span class="kw">metadata</span> <span class="kw">=</span> <span class="no">md</span>,
-                           <span class="kw">fixed_effects</span> <span class="kw">=</span> <span class="kw">NULL</span>,
-                           <span class="kw">lmer_formula</span> <span class="kw">=</span> <span class="no">f1</span>,
-                           <span class="kw">plotdatqc</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                           <span class="kw">figpath</span> <span class="kw">=</span> <span class="st">'your/file/path'</span>)
+<span class="va">mm_res</span> <span class="op">=</span> <span class="fu">FitModuleMixModel</span><span class="op">(</span>module_data_frame <span class="op">=</span> <span class="va">module_df</span>, 
+                           celltype_column <span class="op">=</span> <span class="st">'celltype'</span>,
+                           metadata <span class="op">=</span> <span class="va">md</span>,
+                           fixed_effects <span class="op">=</span> <span class="cn">NULL</span>,
+                           lmer_formula <span class="op">=</span> <span class="va">f1</span>,
+                           plotdatqc <span class="op">=</span> <span class="cn">TRUE</span>,
+                           figpath <span class="op">=</span> <span class="st">'your/file/path'</span><span class="op">)</span>
 
 <span class="co">### This function returns p values, effect sizes for baseline and difference in fld changes between the groups </span>
-<span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(<span class="no">mmres</span>)
+<span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">mmres</span><span class="op">)</span>
 <span class="co"># "celltype"                    "modulename"                  "contrasttime1vs0_group2vs1" </span>
 <span class="co"># "estimatetime1vs0_group2vs1"  "std.errortime1vs0_group2vs1" "dftime1vs0_group2vs1"       </span>
 <span class="co"># "z.ratiotime1vs0_group2vs1"   "p.valuetime1vs0_group2vs1"   "contrasttime0_group2vs1"    </span>
 <span class="co"># "estimatetime0_group2vs1"     "std.errortime0_group2vs1"    "dftime0_group2vs1"          </span>
 <span class="co"># "z.ratiotime0_group2vs1"      "p.valuetime0_group2vs1"      "d0 low_marginal_mean"       </span>
 <span class="co"># "d1 low_marginal_mean"        "d0 high_marginal_mean"       "d1 high_marginal_mean"      </span>
-<span class="co"># "formula"                     "statistictime1vs0_group2vs1" "statistictime0_group2vs1"   </span></pre></body></html></div>
+<span class="co"># "formula"                     "statistictime1vs0_group2vs1" "statistictime0_group2vs1"   </span></code></pre></div>
 <p>A plot like this will be generated for each module for each cell type with the estimated marginal means in the right margin and the actual single cell module score distribution across each level of group_id:</p>
 <div class="figure">
 <img src="https://user-images.githubusercontent.com/15280712/89591805-1f5a1200-d819-11ea-8b49-5b84477dd178.png" alt="image"><p class="caption">image</p>
 </div>
 <p><em>The WilcoxWithinCluster function</em> To run a simple test of baseline differences between groups, use the <em>WilcoxWithinCluster</em> function as below if you only have one timepoint but 2 outcome groups.</p>
-<div class="sourceCode" id="cb7"><html><body><pre class="r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
 <span class="co">######## baseline differences with a simple wilcox test </span>
-<span class="no">weighted_score</span> <span class="kw">=</span> <span class="fu"><a href="../reference/WeightedCellModuleScore.html">WeightedCellModuleScore</a></span>(<span class="kw">seurat_object</span> <span class="kw">=</span> <span class="no">s</span>, <span class="kw">module_list</span> <span class="kw">=</span> <span class="no">sig</span>,
-                                         <span class="kw">threshold</span> <span class="kw">=</span> <span class="fl">0.1</span>, <span class="kw">cellwise_scaling</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
-                                         <span class="kw">return_weighted</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                                         <span class="kw">Seurat_version</span> <span class="kw">=</span> <span class="st">"3"</span>)
-
+<span class="va">weighted_score</span> <span class="op">=</span> <span class="fu"><a href="../reference/WeightedCellModuleScore.html">WeightedCellModuleScore</a></span><span class="op">(</span>seurat_object <span class="op">=</span> <span class="va">s</span>, module_list <span class="op">=</span> <span class="va">sig</span>,
+                                         threshold <span class="op">=</span> <span class="fl">0.1</span>, cellwise_scaling <span class="op">=</span> <span class="cn">FALSE</span>,
+                                         return_weighted <span class="op">=</span> <span class="cn">TRUE</span>,
+                                         Seurat_version <span class="op">=</span> <span class="st">"3"</span><span class="op">)</span>
+ 
 <span class="co"># set module dataframe</span>
-<span class="no">module_df</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">cbind</a></span>(<span class="kw">celltype_joint</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span>(<span class="no">s</span>@<span class="kw">meta.data</span>$<span class="no">seurat_clusters</span>),
-                  <span class="kw">barcode_check</span> <span class="kw">=</span> <span class="no">s</span>@<span class="kw">meta.data</span>$<span class="no">barcode_full</span>,
-                  <span class="no">weighted_score</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/droplevels.html">droplevels</a></span>()
-
+<span class="va">module_df</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>celltype_joint <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">s</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">seurat_clusters</span><span class="op">)</span>,
+                  barcode_check <span class="op">=</span> <span class="va">s</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">barcode_full</span>,
+                  <span class="va">weighted_score</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> 
+  <span class="fu"><a href="https://rdrr.io/r/base/droplevels.html" class="external-link">droplevels</a></span><span class="op">(</span><span class="op">)</span>
+ 
 <span class="co"># format lme4 metadata (note here just wilcox so group IDS do not have to be lme4 factors</span>
-<span class="no">meta_data</span> <span class="kw">=</span> <span class="no">s</span>@<span class="kw">meta.data</span> <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/droplevels.html">droplevels</a></span>() <span class="kw">%&gt;%</span>
-  <span class="fu">select</span>(<span class="kw">celltype_joint</span> <span class="kw">=</span> <span class="no">seurat_clusters</span>,  <span class="kw">barcode_check</span> <span class="kw">=</span> <span class="no">barcode_full</span>, <span class="no">sample</span>, <span class="kw">group_id</span> <span class="kw">=</span> <span class="no">IRAE</span>) <span class="kw">%&gt;%</span>
-  <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span>(<span class="no">group_id</span> <span class="kw">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"poor_outcome"</span>, <span class="st">"good_outcome"</span>)) <span class="kw">%&gt;%</span>
-  <span class="fu">mutate</span>(<span class="kw">group_id</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span>(<span class="no">group_id</span>, <span class="kw">levels</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"poor_outcome"</span>, <span class="st">"good_outcome"</span>)))
-
+<span class="va">meta_data</span> <span class="op">=</span> <span class="va">s</span><span class="op">@</span><span class="va">meta.data</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+  <span class="fu"><a href="https://rdrr.io/r/base/droplevels.html" class="external-link">droplevels</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+  <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/select.html" class="external-link">select</a></span><span class="op">(</span>celltype_joint <span class="op">=</span> <span class="va">seurat_clusters</span>,  barcode_check <span class="op">=</span> <span class="va">barcode_full</span>, <span class="va">sample</span>, group_id <span class="op">=</span> <span class="va">IRAE</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+  <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">group_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"poor_outcome"</span>, <span class="st">"good_outcome"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span>
+  <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>group_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">group_id</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"poor_outcome"</span>, <span class="st">"good_outcome"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+ 
 <span class="co"># Fit wilcox test and do bonferonni correction </span>
-<span class="no">plot_savepath2</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">figpath</span>, <span class="st">"module_distribution/"</span>); <span class="fu"><a href="https://rdrr.io/r/base/files2.html">dir.create</a></span>(<span class="no">plot_savepath2</span>)
-<span class="no">m2</span> <span class="kw">=</span> <span class="no">module_df</span> <span class="kw">%&gt;%</span> <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span>(<span class="no">barcode_check</span> <span class="kw">%in%</span> <span class="no">meta_data</span>$<span class="no">barcode_check</span> )
-<span class="no">cvnc</span> <span class="kw">=</span> <span class="fu"><a href="../reference/WilcoxWithinCluster.html">WilcoxWithinCluster</a></span>(<span class="kw">module_data_frame</span> <span class="kw">=</span> <span class="no">m2</span>, <span class="kw">lme4metadata</span> <span class="kw">=</span> <span class="no">meta_data</span>, <span class="kw">plot_savepath</span> <span class="kw">=</span> <span class="no">plot_savepath2</span>)
-<span class="no">cvnc</span>$<span class="no">padj</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/p.adjust.html">p.adjust</a></span>(<span class="kw">p</span> <span class="kw">=</span> <span class="no">cvnc</span>$<span class="no">p.value.t0.wilcox</span>, <span class="kw">method</span> <span class="kw">=</span> <span class="st">"BH"</span>)</pre></body></html></div>
+<span class="va">plot_savepath2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">figpath</span>, <span class="st">"module_distribution/"</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">plot_savepath2</span><span class="op">)</span>
+<span class="va">m2</span> <span class="op">=</span> <span class="va">module_df</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/pkg/dplyr/man/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">barcode_check</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">meta_data</span><span class="op">$</span><span class="va">barcode_check</span> <span class="op">)</span>
+<span class="va">cvnc</span> <span class="op">=</span> <span class="fu"><a href="../reference/WilcoxWithinCluster.html">WilcoxWithinCluster</a></span><span class="op">(</span>module_data_frame <span class="op">=</span> <span class="va">m2</span>, lme4metadata <span class="op">=</span> <span class="va">meta_data</span>, plot_savepath <span class="op">=</span> <span class="va">plot_savepath2</span><span class="op">)</span>
+<span class="va">cvnc</span><span class="op">$</span><span class="va">padj</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/p.adjust.html" class="external-link">p.adjust</a></span><span class="op">(</span>p <span class="op">=</span> <span class="va">cvnc</span><span class="op">$</span><span class="va">p.value.t0.wilcox</span>, method <span class="op">=</span> <span class="st">"BH"</span><span class="op">)</span></code></pre></div>
 </div>
 </div>
   </div>
@@ -290,11 +293,13 @@
 
 
       <footer><div class="copyright">
-  <p>Developed by Matthew Mulè.</p>
+  <p></p>
+<p>Developed by Matthew Mulè.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
       </footer>
@@ -302,6 +307,8 @@
 
   
 
+
+  
 
   </body>
 </html>

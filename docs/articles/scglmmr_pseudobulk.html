@@ -19,6 +19,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -31,18 +33,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">scglmmr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="../reference/index.html">Reference</a>
 </li>
@@ -64,8 +60,8 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/MattPM/scglmmr/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+  <a href="https://github.com/MattPM/scglmmr/" class="external-link">
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -85,18 +81,19 @@
       <h1 data-toc-skip>Pseudobulk differential expression with nested group repeated measures single cell experiment designs using scglmmr</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/MattPM/scglmmr/blob/master/vignettes/scglmmr_pseudobulk.Rmd"><code>vignettes/scglmmr_pseudobulk.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/MattPM/scglmmr/blob/HEAD/vignettes/scglmmr_pseudobulk.Rmd" class="external-link"><code>vignettes/scglmmr_pseudobulk.Rmd</code></a></small>
       <div class="hidden name"><code>scglmmr_pseudobulk.Rmd</code></div>
 
     </div>
 
     
     
-<div id="pseudobulk-mixed-effects-models" class="section level3">
-<h3 class="hasAnchor">
-<a href="#pseudobulk-mixed-effects-models" class="anchor"></a>1. pseudobulk mixed effects models</h3>
-<p>These functions implement convenience wrappers around both <code>limma</code> for fitting traditional linear models (for e.g. baseline differenced between groups) and the <code>dream</code> method from the <code>variancePartition</code> package. This is the only pseudobulk differential expression method that can accomodate both fixed and random effects (which are statistically necessary to account for non-independence of multiple measurements from the same donor) via use of <code>lme4</code> for mixed effects modeling while accounting for measurement uncertainty via pooling unqeual library sizes by incorporating <code>voom</code> observational weights. This method performed well in related simulation studies by <a href="https://www.nature.com/articles/s41467-020-19894-4">Crowell et. al. 2020</a>. scglmmr performs statistical contrasts between groups comparing the least squares means after accounting for model covariates is empowered by the <a href="https://cran.r-project.org/web/packages/emmeans/index.html">emmeans</a> package.</p>
-<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">scglmmr</span>)</pre></body></html></div>
+<div class="section level3">
+<h3 id="pseudobulk-mixed-effects-models">1. pseudobulk mixed effects models<a class="anchor" aria-label="anchor" href="#pseudobulk-mixed-effects-models"></a>
+</h3>
+<p>These functions implement convenience wrappers around both <code>limma</code> for fitting traditional linear models (for e.g. baseline differenced between groups) and the <code>dream</code> method from the <code>variancePartition</code> package. This is the only pseudobulk differential expression method that can accomodate both fixed and random effects (which are statistically necessary to account for non-independence of multiple measurements from the same donor) via use of <code>lme4</code> for mixed effects modeling while accounting for measurement uncertainty via pooling unqeual library sizes by incorporating <code>voom</code> observational weights. This method performed well in related simulation studies by <a href="https://www.nature.com/articles/s41467-020-19894-4" class="external-link">Crowell et. al. 2020</a>. scglmmr performs statistical contrasts between groups comparing the least squares means after accounting for model covariates is empowered by the <a href="https://cran.r-project.org/web/packages/emmeans/index.html" class="external-link">emmeans</a> package.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MattPM/scglmmr" class="external-link">scglmmr</a></span><span class="op">)</span></code></pre></div>
 <p>Below is a 2 group repeated measures experiment. A random intercept model is required to account for autocorrelation in each donors post perturbation response with their baseline level of expression. This data can be accomodated by scglmmr. More simple experiment designs are also supported, for example data with 2 groups but not repeated pre/post treatment measurements, see the <code><a href="../reference/RunVoomLimma.html">RunVoomLimma()</a></code> function.</p>
 <table class="table">
 <thead><tr class="header">
@@ -145,180 +142,181 @@
 </tbody>
 </table>
 </div>
-<div id="pseudobulk-mixed-effects-model" class="section level3">
-<h3 class="hasAnchor">
-<a href="#pseudobulk-mixed-effects-model" class="anchor"></a>1. “Pseudobulk” mixed effects model</h3>
+<div class="section level3">
+<h3 id="pseudobulk-mixed-effects-model">1. “Pseudobulk” mixed effects model<a class="anchor" aria-label="anchor" href="#pseudobulk-mixed-effects-model"></a>
+</h3>
 <p>In the case of pseudobulk libraries derived from single cell RNAseq data, interpolated model weights should correlate with library sizes within each cell type. Indeed we confirmed that the log count per million and square root standard deviation of genes had the expected monotonically decreasing trend within each cell type and that the resulting interpolated model weights across genes in a given sample were highly correlated with both the number of cells used to create the library and the sample’s total mRNA library size. Later, a more recent report introduced the muscat R package and simulation studies for testing within cluster differential expression. 10.1101/713412. This paper included simulation and validation studies of established bulk RNAseq methods for within cluster differential expression analysis. In that report, a pseudobulk method that performed particularly well was using limma with voom observational weights, and mixed effects (i.e. the ability to specify a random effect for donor baseline expression) with lme4 model formula implemented through the “dream” method available through the vairance partition package. We implemented a weighted mixed effects model using this limma + voom + lme4 method within each cell type using a random intercept for each donor with contrast coding to test for group level fold change differences.</p>
-<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="co">#devtools::install_github(repo = "https://github.com/MattPM/scglmmr")</span>
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">scglmmr</span>)
-<span class="no">datapath</span> <span class="kw">=</span> <span class="st">"mypath/"</span>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co">#devtools::install_github(repo = "https://github.com/MattPM/scglmmr")</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MattPM/scglmmr" class="external-link">scglmmr</a></span><span class="op">)</span>
+<span class="va">datapath</span> <span class="op">=</span> <span class="st">"mypath/"</span>
 
 <span class="co"># load seurat or sce object etc. </span>
-<span class="no">s</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">readRDS</a></span>(<span class="st">"path/seuratobject.rds"</span>)
+<span class="va">s</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"path/seuratobject.rds"</span><span class="op">)</span>
 
 <span class="co"># define counts and metadata and subset to cells above rm seurat object from workspace </span>
-<span class="no">meta</span> <span class="kw">=</span> <span class="no">s</span>@<span class="kw">meta.data</span>
-<span class="no">umi</span> <span class="kw">=</span> <span class="no">s</span>@<span class="kw">assays</span>$<span class="no">RNA</span>@<span class="kw">counts</span>
-<span class="fu"><a href="https://rdrr.io/r/base/rm.html">rm</a></span>(<span class="no">s</span>); <span class="fu"><a href="https://rdrr.io/r/base/gc.html">gc</a></span>()
+<span class="va">meta</span> <span class="op">=</span> <span class="va">s</span><span class="op">@</span><span class="va">meta.data</span>
+<span class="va">umi</span> <span class="op">=</span> <span class="va">s</span><span class="op">@</span><span class="va">assays</span><span class="op">$</span><span class="va">RNA</span><span class="op">@</span><span class="va">counts</span>
+<span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">s</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/base/gc.html" class="external-link">gc</a></span><span class="op">(</span><span class="op">)</span>
 
 <span class="co"># QC contingency of cells by subject for each celltype </span>
-<span class="no">tab</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/SubjectCelltypeTable.html">SubjectCelltypeTable</a></span>(<span class="kw">metadata</span> <span class="kw">=</span> <span class="no">meta</span>, <span class="kw">celltype_column</span> <span class="kw">=</span> <span class="st">"lineage"</span>, <span class="kw">sample_column</span> <span class="kw">=</span> <span class="st">"sample"</span>)
-<span class="no">tab</span>$<span class="no">celltypes_remove</span>; <span class="no">tab</span>$<span class="no">`low representation celltypes`</span>; <span class="no">tab</span>$<span class="no">table</span>
+<span class="va">tab</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/SubjectCelltypeTable.html">SubjectCelltypeTable</a></span><span class="op">(</span>metadata <span class="op">=</span> <span class="va">meta</span>, celltype_column <span class="op">=</span> <span class="st">"lineage"</span>, sample_column <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span>
+<span class="va">tab</span><span class="op">$</span><span class="va">celltypes_remove</span>; <span class="va">tab</span><span class="op">$</span><span class="va">`low representation celltypes`</span>; <span class="va">tab</span><span class="op">$</span><span class="va">table</span>
 
 <span class="co"># remove cells prior to pseudobulk analysis </span>
-<span class="no">meta</span> <span class="kw">=</span> <span class="no">meta</span>[!<span class="no">meta</span>$<span class="no">celltype_label_3</span> <span class="kw">%in%</span> <span class="no">tab</span>$<span class="no">celltypes_remove</span>, ]
+<span class="va">meta</span> <span class="op">=</span> <span class="va">meta</span><span class="op">[</span><span class="op">!</span><span class="va">meta</span><span class="op">$</span><span class="va">celltype_label_3</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">tab</span><span class="op">$</span><span class="va">celltypes_remove</span>, <span class="op">]</span>
 
 <span class="co"># subset data </span>
-<span class="no">umi</span> <span class="kw">=</span> <span class="no">umi</span>[ ,<span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span>(<span class="no">meta</span>)]
+<span class="va">umi</span> <span class="op">=</span> <span class="va">umi</span><span class="op">[</span> ,<span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">meta</span><span class="op">)</span><span class="op">]</span>
 
 <span class="co"># pseudobulk workflow </span>
-<span class="no">pb</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/PseudobulkList.html">PseudobulkList</a></span>(<span class="kw">rawcounts</span> <span class="kw">=</span> <span class="no">umi</span>, <span class="kw">metadata</span> <span class="kw">=</span> <span class="no">meta</span>, <span class="kw">sample_col</span> <span class="kw">=</span> <span class="st">"sample"</span>,
-                             <span class="kw">celltype_col</span> <span class="kw">=</span> <span class="st">"lineage"</span>, <span class="kw">avg_or_sum</span> <span class="kw">=</span> <span class="st">"sum"</span>)
-<span class="no">designmat</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/BulkDesignMatrix.html">BulkDesignMatrix</a></span>(<span class="kw">metadata</span> <span class="kw">=</span> <span class="no">meta</span>, <span class="kw">sample_column</span> <span class="kw">=</span> <span class="st">"sample"</span>,
-                                      <span class="kw">variable_column</span> <span class="kw">=</span> <span class="st">"cohort_timepoint"</span>, <span class="kw">pseudobulklist</span> <span class="kw">=</span> <span class="no">pb</span>)
-<span class="no">dge</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/NormalizePseudobulk.html">NormalizePseudobulk</a></span>(<span class="kw">pseudobulklist</span> <span class="kw">=</span> <span class="no">pb</span>, <span class="kw">design_matrix</span> <span class="kw">=</span> <span class="no">designmat</span>, <span class="kw">minimum.gene.count</span> <span class="kw">=</span> <span class="fl">5</span>)
+<span class="va">pb</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/PseudobulkList.html">PseudobulkList</a></span><span class="op">(</span>rawcounts <span class="op">=</span> <span class="va">umi</span>, metadata <span class="op">=</span> <span class="va">meta</span>, sample_col <span class="op">=</span> <span class="st">"sample"</span>,
+                             celltype_col <span class="op">=</span> <span class="st">"lineage"</span>, avg_or_sum <span class="op">=</span> <span class="st">"sum"</span><span class="op">)</span>
+<span class="va">designmat</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/BulkDesignMatrix.html">BulkDesignMatrix</a></span><span class="op">(</span>metadata <span class="op">=</span> <span class="va">meta</span>, sample_column <span class="op">=</span> <span class="st">"sample"</span>,
+                                      variable_column <span class="op">=</span> <span class="st">"cohort_timepoint"</span>, pseudobulklist <span class="op">=</span> <span class="va">pb</span><span class="op">)</span>
+<span class="va">dge</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/NormalizePseudobulk.html">NormalizePseudobulk</a></span><span class="op">(</span>pseudobulklist <span class="op">=</span> <span class="va">pb</span>, design_matrix <span class="op">=</span> <span class="va">designmat</span>, minimum.gene.count <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 
 <span class="co"># custom a priori contrasts over a combined factor of the group and timepoint variables </span>
-<span class="no">c_mat</span> <span class="kw">=</span> <span class="fu">makeContrasts</span>(
-  <span class="kw">foldchange_difference</span> <span class="kw">=</span> (<span class="no">group_timepoint1_1</span> - <span class="no">group_timepoint1_0</span>) - (<span class="no">group_timepoint0_1</span> - <span class="no">group_timepoint0_0</span>),
-  <span class="kw">time1_foldchange</span> <span class="kw">=</span> (<span class="no">group_timepoint1_1</span> + <span class="no">group_timepoint0_1</span>) / <span class="fl">2</span>  - (<span class="no">group_timepoint1_0</span> + <span class="no">group_timepoint0_0</span>) / <span class="fl">2</span>,
-  <span class="kw">baseline_groups</span> <span class="kw">=</span> (<span class="no">group_timepoint1_0</span> - <span class="no">group_timepoint0_0</span>),
-  <span class="kw">levels</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span>(<span class="no">designmat</span>)
-)
-
+<span class="va">c_mat</span> <span class="op">=</span> <span class="fu">makeContrasts</span><span class="op">(</span>
+  foldchange_difference <span class="op">=</span> <span class="op">(</span><span class="va">group_timepoint1_1</span> <span class="op">-</span> <span class="va">group_timepoint1_0</span><span class="op">)</span> <span class="op">-</span> <span class="op">(</span><span class="va">group_timepoint0_1</span> <span class="op">-</span> <span class="va">group_timepoint0_0</span><span class="op">)</span>,
+  time1_foldchange <span class="op">=</span> <span class="op">(</span><span class="va">group_timepoint1_1</span> <span class="op">+</span> <span class="va">group_timepoint0_1</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span>  <span class="op">-</span> <span class="op">(</span><span class="va">group_timepoint1_0</span> <span class="op">+</span> <span class="va">group_timepoint0_0</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span>,
+  baseline_groups <span class="op">=</span> <span class="op">(</span><span class="va">group_timepoint1_0</span> <span class="op">-</span> <span class="va">group_timepoint0_0</span><span class="op">)</span>,
+  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">designmat</span><span class="op">)</span>
+<span class="op">)</span>
+  
 <span class="co"># fit mixed model for the multi timepoint contrasts </span>
-<span class="no">fit</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/dreamMixedModel.html">dreamMixedModel</a></span>(<span class="kw">dge_lists</span> <span class="kw">=</span> <span class="no">dge</span>,
-                               <span class="kw">apriori_contrasts</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-                               <span class="kw">sample_column</span> <span class="kw">=</span> <span class="st">'sample'</span>,
-                               <span class="kw">cell_metadata</span> <span class="kw">=</span> <span class="no">meta</span>,
-                               <span class="kw">contrast_matrix</span> <span class="kw">=</span> <span class="no">c_mat</span>,
-                               <span class="kw">design_matrix</span> <span class="kw">=</span> <span class="no">designmat</span>,
-                               <span class="kw">lme4_formula</span> <span class="kw">=</span>  <span class="st">'~ 0 + age + gender + cohort_timepoint + (1|sampleid)'</span>,
-                               <span class="kw">fixed_effects</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'age'</span>, <span class="st">'gender'</span>, <span class="st">'cohort_timepoint'</span>),
-                               <span class="kw">plotsavepath</span> <span class="kw">=</span> <span class="no">figpath</span>,
-                               <span class="kw">ncores</span> <span class="kw">=</span> <span class="fl">4</span>)
+<span class="va">fit</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/dreamMixedModel.html">dreamMixedModel</a></span><span class="op">(</span>dge_lists <span class="op">=</span> <span class="va">dge</span>, 
+                               apriori_contrasts <span class="op">=</span> <span class="cn">TRUE</span>, 
+                               sample_column <span class="op">=</span> <span class="st">'sample'</span>,
+                               cell_metadata <span class="op">=</span> <span class="va">meta</span>, 
+                               contrast_matrix <span class="op">=</span> <span class="va">c_mat</span>, 
+                               design_matrix <span class="op">=</span> <span class="va">designmat</span>, 
+                               lme4_formula <span class="op">=</span>  <span class="st">'~ 0 + age + gender + cohort_timepoint + (1|sampleid)'</span>, 
+                               fixed_effects <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'age'</span>, <span class="st">'gender'</span>, <span class="st">'cohort_timepoint'</span><span class="op">)</span>, 
+                               plotsavepath <span class="op">=</span> <span class="va">figpath</span>, 
+                               ncores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>
 
 <span class="co"># fit simple linear model for the baseline group level contrast </span>
-<span class="no">bl</span> <span class="kw">=</span> <span class="kw pkg">scglmmr</span><span class="kw ns">::</span><span class="fu"><a href="../reference/RunVoomLimma.html">RunVoomLimma</a></span>(<span class="kw">dgelists</span> <span class="kw">=</span> <span class="no">dge</span>,
-                           <span class="kw">design_matrix</span> <span class="kw">=</span> <span class="no">designmat</span>,
-                           <span class="kw">do_contrast_fit</span> <span class="kw">=</span> <span class="no">T</span>,
-                           <span class="kw">my_contrast_matrix</span> <span class="kw">=</span> <span class="no">c_mat</span>[ ,<span class="fl">3</span>])
+<span class="va">bl</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/RunVoomLimma.html">RunVoomLimma</a></span><span class="op">(</span>dgelists <span class="op">=</span> <span class="va">dge</span>, 
+                           design_matrix <span class="op">=</span> <span class="va">designmat</span>, 
+                           do_contrast_fit <span class="op">=</span> <span class="cn">T</span>,
+                           my_contrast_matrix <span class="op">=</span> <span class="va">c_mat</span><span class="op">[</span> ,<span class="fl">3</span><span class="op">]</span><span class="op">)</span>
 
 <span class="co"># save </span>
-<span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">saveRDS</a></span>(<span class="no">bl</span>, <span class="kw">file</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(<span class="no">datapath</span>, <span class="st">"blfit_object.rds"</span>))
-<span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">saveRDS</a></span>(<span class="no">fit</span>, <span class="kw">file</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(<span class="no">datapath</span>, <span class="st">"fit_object.rds"</span>))</pre></body></html></div>
+<span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">bl</span>, file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">datapath</span>, <span class="st">"blfit_object.rds"</span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">fit</span>, file <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">datapath</span>, <span class="st">"fit_object.rds"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="downstream-analysis-on-pseudobulk-results" class="section level3">
-<h3 class="hasAnchor">
-<a href="#downstream-analysis-on-pseudobulk-results" class="anchor"></a>Downstream analysis on pseudobulk results</h3>
+<div class="section level3">
+<h3 id="downstream-analysis-on-pseudobulk-results">Downstream analysis on pseudobulk results<a class="anchor" aria-label="anchor" href="#downstream-analysis-on-pseudobulk-results"></a>
+</h3>
 <p>Here we provide examples of downstream analysis on results of the model fit above focusing on the first contrast (the first coefficient in the results), corresponding to:<br>
 foldchange_difference = (group_timepoint1_1 - group_timepoint1_0) - (group_timepoint0_1 - group_timepoint0_0)</p>
-<div class="sourceCode" id="cb3"><html><body><pre class="r"># hlmk = readRDS(file = here("signature_curation/hallmark.rds"))
-figpath = "your/path"
-test = scglmmr::GetRankResults(limma.fit.object.list = bl, coefficient.number = 1, "test")
-res = scglmmr::GetContrastResults(limma.fit.object.list = bl, coefficient.number = 1, contrast.name = "test")
-
-# get the mixed effects model results for the difference in fold changes 
-fit_res = scglmmr::GetContrastResultsRaw(limma.fit.object.list = fit, 
-                                         coefficient.number = 1,
-                                         contrast.name = "foldchangedifference")
-fit_rank = scglmmr::GetRankResultsRaw(contrast.result.raw.list = fit_res)
-
-
-# Gene Set Enrichment Analysis 
-gsea1 = scglmmr::RunFgseaOnRankList(rank.list.celltype = test, pathways = hlmk)
-d = scglmmr::RbindGseaResultList(gsea_result_list = gsea1,NES_filter = -Inf,padj_filter = 0.2)
-scglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
-# also see scglmmr::GSEABarPlot()
-
-# full set of leading edge genes vs celltypes 
-lefull = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1,NES.filter = -Inf)
-
-# combine GSEA results with model coefficient for each gene in leading edge 
-cr = scglmmr::CombineResults(gsealist = gsea1, contrastlist = res, gseafdr = 0.1, genefdr = 1)
-
-
-# make tidy average data for visualization of weighted pb results 
-av = scglmmr::PseudobulkList(rawcounts = umi, 
-                             metadata = meta, 
-                             sample_col = "sample", 
-                             celltype_col = "celltype",
-                             avg_or_sum = 'average')
-le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = av,
-                                           gsea.list = hlmk_ctm0, 
-                                           padj.filter = 0.1,
-                                           NES.filter = -Inf)
-
-
-# example plot of sample level average leading edge genes annotated 
-scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr,
-                               modulename = "MODULENAME",
-                               elltype_plot = "TCELL",
-                               metadata = meta, 
-                               metadata_annotate = c('group', 'timepoint', 'age', 'gender'),
-                               sample_column = 'sample',
-                               returnmat = F, 
-                               savepath = figpath, 
-                               savename = "filename")
-
-# see also: 
-# scglmmr::TopGenesTidySampleExprs() - same as aobve for 'top' de genes estimated by model coeffcient / p value. 
-# scglmmr::GetTidySummary() - for custom plotting
-
-
-# repeat this for all enriched pathways 
-heatpath = here("sime/path"); dir.create(heatpath)
-for (i in 1:length(le_expr)) {
-  cdat = le_expr[[i]]
-  ctype = names(le_expr[i])
-  umod = unique(cdat$module)
-  for (u in 1:length(umod)) {
-    scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr, 
-                          modulename = umod[u], 
-                          celltype_plot = ctype,
-                          metadata = meta, metadata_annotate = c('group', 'timepoint', 'age', 'gender'),
-                          sample_column = 'sample',
-                          returnmat = F, 
-                          savepath = heatpath,
-                          savename = paste0(ctype, " ",umod[u],'.pdf'))
-  }
-}
-
-# plot only the leading edge genes from enrichment in a heatmap of log Fold Change estimated for a model contrast 
-le = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1, NES.filter = -Inf)
-genesub = do.call(rbind, le) %$% gene %&gt;% unique 
-mtx2 = scglmmr::GetGeneMatrix(result.list = res, 
-                    stat_for_matrix = "logFC",
-                    gene_subset = genesub, 
-                    pvalfilter = -Inf, 
-                    logfcfilter = 0.1)
-
-pheatmap::pheatmap(mtx2,
-                   breaks =seq(from = 0, to = 2,length.out = 99),
-                   filename = paste0(figpath,"LEgenes_heatmap.pdf"))
-
-
-
-### Hypergeometric erichment 
-load(termdf) # this term2gene dataframe is included in the package see clusterProfiler
-hyp = scglmmr::RunHypergeometricTest(result_list = fit_res,
-                                     TERM2GENE_dataframe = termdf,
-                                     pval_threshold = 0.1,
-                                     logFC_threshold = 0,
-                                     usefdr_threshold = FALSE)
-# plot results 
-scglmmr::PlotHypergeometric(hyperg_result = hyp, 
-                            p.adjust.filter = 0.1,
-                            genenumber_filter = 2,
-                            savepath = figpath,
-                            savename = "name", 
-                            title = "title")
-
-# calculate average module z score across samples (z score across samples of gene z scores)
-# baseline_samples = c('') # user defined vector 
-lapply(av, function(x), x[ ,baseline_samples])
-mz = scglmmr::AverageSampleModuleZscore(average.metacell.list = av,
-                                        module.list = hlmk,use.module.subset = F)</pre></body></html></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="co"># hlmk = readRDS(file = here("signature_curation/hallmark.rds"))</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">figpath =<span class="st"> "your/path"</span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">test =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">GetRankResults</span>(<span class="dt">limma.fit.object.list =</span> bl, <span class="dt">coefficient.number =</span> <span class="dv">1</span>, <span class="st">"test"</span>)</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">res =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">GetContrastResults</span>(<span class="dt">limma.fit.object.list =</span> bl, <span class="dt">coefficient.number =</span> <span class="dv">1</span>, <span class="dt">contrast.name =</span> <span class="st">"test"</span>)</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="co"># get the mixed effects model results for the difference in fold changes </span></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7">fit_res =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">GetContrastResultsRaw</span>(<span class="dt">limma.fit.object.list =</span> fit, </a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">                                         <span class="dt">coefficient.number =</span> <span class="dv">1</span>,</a>
+<a class="sourceLine" id="cb3-9" data-line-number="9">                                         <span class="dt">contrast.name =</span> <span class="st">"foldchangedifference"</span>)</a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">fit_rank =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">GetRankResultsRaw</span>(<span class="dt">contrast.result.raw.list =</span> fit_res)</a>
+<a class="sourceLine" id="cb3-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb3-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb3-13" data-line-number="13"><span class="co"># Gene Set Enrichment Analysis </span></a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">gsea1 =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">RunFgseaOnRankList</span>(<span class="dt">rank.list.celltype =</span> test, <span class="dt">pathways =</span> hlmk)</a>
+<a class="sourceLine" id="cb3-15" data-line-number="15">d =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">RbindGseaResultList</span>(<span class="dt">gsea_result_list =</span> gsea1,<span class="dt">NES_filter =</span> <span class="op">-</span><span class="ot">Inf</span>,<span class="dt">padj_filter =</span> <span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb3-16" data-line-number="16">scglmmr<span class="op">::</span><span class="kw">GSEABubblePlot</span>(d, <span class="dt">save_path =</span> figpath, <span class="dt">save_name =</span> <span class="st">"plot.pdf"</span>)</a>
+<a class="sourceLine" id="cb3-17" data-line-number="17"><span class="co"># also see scglmmr::GSEABarPlot()</span></a>
+<a class="sourceLine" id="cb3-18" data-line-number="18"></a>
+<a class="sourceLine" id="cb3-19" data-line-number="19"><span class="co"># full set of leading edge genes vs celltypes </span></a>
+<a class="sourceLine" id="cb3-20" data-line-number="20">lefull =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">GetLeadingEdgeFull</span>(<span class="dt">gsea.list =</span> gsea1, <span class="dt">padj.filter =</span> <span class="fl">0.1</span>,<span class="dt">NES.filter =</span> <span class="op">-</span><span class="ot">Inf</span>)</a>
+<a class="sourceLine" id="cb3-21" data-line-number="21"></a>
+<a class="sourceLine" id="cb3-22" data-line-number="22"><span class="co"># combine GSEA results with model coefficient for each gene in leading edge </span></a>
+<a class="sourceLine" id="cb3-23" data-line-number="23">cr =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">CombineResults</span>(<span class="dt">gsealist =</span> gsea1, <span class="dt">contrastlist =</span> res, <span class="dt">gseafdr =</span> <span class="fl">0.1</span>, <span class="dt">genefdr =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb3-24" data-line-number="24"></a>
+<a class="sourceLine" id="cb3-25" data-line-number="25"></a>
+<a class="sourceLine" id="cb3-26" data-line-number="26"><span class="co"># make tidy average data for visualization of weighted pb results </span></a>
+<a class="sourceLine" id="cb3-27" data-line-number="27">av =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">PseudobulkList</span>(<span class="dt">rawcounts =</span> umi, </a>
+<a class="sourceLine" id="cb3-28" data-line-number="28">                             <span class="dt">metadata =</span> meta, </a>
+<a class="sourceLine" id="cb3-29" data-line-number="29">                             <span class="dt">sample_col =</span> <span class="st">"sample"</span>, </a>
+<a class="sourceLine" id="cb3-30" data-line-number="30">                             <span class="dt">celltype_col =</span> <span class="st">"celltype"</span>,</a>
+<a class="sourceLine" id="cb3-31" data-line-number="31">                             <span class="dt">avg_or_sum =</span> <span class="st">'average'</span>)</a>
+<a class="sourceLine" id="cb3-32" data-line-number="32">le_expr =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">LeadEdgeTidySampleExprs</span>(<span class="dt">av.exprs.list =</span> av,</a>
+<a class="sourceLine" id="cb3-33" data-line-number="33">                                           <span class="dt">gsea.list =</span> hlmk_ctm0, </a>
+<a class="sourceLine" id="cb3-34" data-line-number="34">                                           <span class="dt">padj.filter =</span> <span class="fl">0.1</span>,</a>
+<a class="sourceLine" id="cb3-35" data-line-number="35">                                           <span class="dt">NES.filter =</span> <span class="op">-</span><span class="ot">Inf</span>)</a>
+<a class="sourceLine" id="cb3-36" data-line-number="36"></a>
+<a class="sourceLine" id="cb3-37" data-line-number="37"></a>
+<a class="sourceLine" id="cb3-38" data-line-number="38"><span class="co"># example plot of sample level average leading edge genes annotated </span></a>
+<a class="sourceLine" id="cb3-39" data-line-number="39">scglmmr<span class="op">::</span><span class="kw">LeadEdgeSampleHeatmap</span>(<span class="dt">tidy.exprs.list =</span> le_expr,</a>
+<a class="sourceLine" id="cb3-40" data-line-number="40">                               <span class="dt">modulename =</span> <span class="st">"MODULENAME"</span>,</a>
+<a class="sourceLine" id="cb3-41" data-line-number="41">                               <span class="dt">elltype_plot =</span> <span class="st">"TCELL"</span>,</a>
+<a class="sourceLine" id="cb3-42" data-line-number="42">                               <span class="dt">metadata =</span> meta, </a>
+<a class="sourceLine" id="cb3-43" data-line-number="43">                               <span class="dt">metadata_annotate =</span> <span class="kw">c</span>(<span class="st">'group'</span>, <span class="st">'timepoint'</span>, <span class="st">'age'</span>, <span class="st">'gender'</span>),</a>
+<a class="sourceLine" id="cb3-44" data-line-number="44">                               <span class="dt">sample_column =</span> <span class="st">'sample'</span>,</a>
+<a class="sourceLine" id="cb3-45" data-line-number="45">                               <span class="dt">returnmat =</span> F, </a>
+<a class="sourceLine" id="cb3-46" data-line-number="46">                               <span class="dt">savepath =</span> figpath, </a>
+<a class="sourceLine" id="cb3-47" data-line-number="47">                               <span class="dt">savename =</span> <span class="st">"filename"</span>)</a>
+<a class="sourceLine" id="cb3-48" data-line-number="48"></a>
+<a class="sourceLine" id="cb3-49" data-line-number="49"><span class="co"># see also: </span></a>
+<a class="sourceLine" id="cb3-50" data-line-number="50"><span class="co"># scglmmr::TopGenesTidySampleExprs() - same as aobve for 'top' de genes estimated by model coeffcient / p value. </span></a>
+<a class="sourceLine" id="cb3-51" data-line-number="51"><span class="co"># scglmmr::GetTidySummary() - for custom plotting</span></a>
+<a class="sourceLine" id="cb3-52" data-line-number="52"></a>
+<a class="sourceLine" id="cb3-53" data-line-number="53"></a>
+<a class="sourceLine" id="cb3-54" data-line-number="54"><span class="co"># repeat this for all enriched pathways </span></a>
+<a class="sourceLine" id="cb3-55" data-line-number="55">heatpath =<span class="st"> </span><span class="kw">here</span>(<span class="st">"sime/path"</span>); <span class="kw">dir.create</span>(heatpath)</a>
+<a class="sourceLine" id="cb3-56" data-line-number="56"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">length</span>(le_expr)) {</a>
+<a class="sourceLine" id="cb3-57" data-line-number="57">  cdat =<span class="st"> </span>le_expr[[i]]</a>
+<a class="sourceLine" id="cb3-58" data-line-number="58">  ctype =<span class="st"> </span><span class="kw">names</span>(le_expr[i])</a>
+<a class="sourceLine" id="cb3-59" data-line-number="59">  umod =<span class="st"> </span><span class="kw">unique</span>(cdat<span class="op">$</span>module)</a>
+<a class="sourceLine" id="cb3-60" data-line-number="60">  <span class="cf">for</span> (u <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">length</span>(umod)) {</a>
+<a class="sourceLine" id="cb3-61" data-line-number="61">    scglmmr<span class="op">::</span><span class="kw">LeadEdgeSampleHeatmap</span>(<span class="dt">tidy.exprs.list =</span> le_expr, </a>
+<a class="sourceLine" id="cb3-62" data-line-number="62">                          <span class="dt">modulename =</span> umod[u], </a>
+<a class="sourceLine" id="cb3-63" data-line-number="63">                          <span class="dt">celltype_plot =</span> ctype,</a>
+<a class="sourceLine" id="cb3-64" data-line-number="64">                          <span class="dt">metadata =</span> meta, <span class="dt">metadata_annotate =</span> <span class="kw">c</span>(<span class="st">'group'</span>, <span class="st">'timepoint'</span>, <span class="st">'age'</span>, <span class="st">'gender'</span>),</a>
+<a class="sourceLine" id="cb3-65" data-line-number="65">                          <span class="dt">sample_column =</span> <span class="st">'sample'</span>,</a>
+<a class="sourceLine" id="cb3-66" data-line-number="66">                          <span class="dt">returnmat =</span> F, </a>
+<a class="sourceLine" id="cb3-67" data-line-number="67">                          <span class="dt">savepath =</span> heatpath,</a>
+<a class="sourceLine" id="cb3-68" data-line-number="68">                          <span class="dt">savename =</span> <span class="kw">paste0</span>(ctype, <span class="st">" "</span>,umod[u],<span class="st">'.pdf'</span>))</a>
+<a class="sourceLine" id="cb3-69" data-line-number="69">  }</a>
+<a class="sourceLine" id="cb3-70" data-line-number="70">}</a>
+<a class="sourceLine" id="cb3-71" data-line-number="71"></a>
+<a class="sourceLine" id="cb3-72" data-line-number="72"><span class="co"># plot only the leading edge genes from enrichment in a heatmap of log Fold Change estimated for a model contrast </span></a>
+<a class="sourceLine" id="cb3-73" data-line-number="73">le =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">GetLeadingEdgeFull</span>(<span class="dt">gsea.list =</span> gsea1, <span class="dt">padj.filter =</span> <span class="fl">0.1</span>, <span class="dt">NES.filter =</span> <span class="op">-</span><span class="ot">Inf</span>)</a>
+<a class="sourceLine" id="cb3-74" data-line-number="74">genesub =<span class="st"> </span><span class="kw">do.call</span>(rbind, le) <span class="op">%$%</span><span class="st"> </span>gene <span class="op">%&gt;%</span><span class="st"> </span>unique </a>
+<a class="sourceLine" id="cb3-75" data-line-number="75">mtx2 =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">GetGeneMatrix</span>(<span class="dt">result.list =</span> res, </a>
+<a class="sourceLine" id="cb3-76" data-line-number="76">                    <span class="dt">stat_for_matrix =</span> <span class="st">"logFC"</span>,</a>
+<a class="sourceLine" id="cb3-77" data-line-number="77">                    <span class="dt">gene_subset =</span> genesub, </a>
+<a class="sourceLine" id="cb3-78" data-line-number="78">                    <span class="dt">pvalfilter =</span> <span class="op">-</span><span class="ot">Inf</span>, </a>
+<a class="sourceLine" id="cb3-79" data-line-number="79">                    <span class="dt">logfcfilter =</span> <span class="fl">0.1</span>)</a>
+<a class="sourceLine" id="cb3-80" data-line-number="80"></a>
+<a class="sourceLine" id="cb3-81" data-line-number="81">pheatmap<span class="op">::</span><span class="kw">pheatmap</span>(mtx2,</a>
+<a class="sourceLine" id="cb3-82" data-line-number="82">                   <span class="dt">breaks =</span><span class="kw">seq</span>(<span class="dt">from =</span> <span class="dv">0</span>, <span class="dt">to =</span> <span class="dv">2</span>,<span class="dt">length.out =</span> <span class="dv">99</span>),</a>
+<a class="sourceLine" id="cb3-83" data-line-number="83">                   <span class="dt">filename =</span> <span class="kw">paste0</span>(figpath,<span class="st">"LEgenes_heatmap.pdf"</span>))</a>
+<a class="sourceLine" id="cb3-84" data-line-number="84"></a>
+<a class="sourceLine" id="cb3-85" data-line-number="85"></a>
+<a class="sourceLine" id="cb3-86" data-line-number="86"></a>
+<a class="sourceLine" id="cb3-87" data-line-number="87"><span class="co">### Hypergeometric erichment </span></a>
+<a class="sourceLine" id="cb3-88" data-line-number="88"><span class="kw">load</span>(termdf) <span class="co"># this term2gene dataframe is included in the package see clusterProfiler</span></a>
+<a class="sourceLine" id="cb3-89" data-line-number="89">hyp =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">RunHypergeometricTest</span>(<span class="dt">result_list =</span> fit_res,</a>
+<a class="sourceLine" id="cb3-90" data-line-number="90">                                     <span class="dt">TERM2GENE_dataframe =</span> termdf,</a>
+<a class="sourceLine" id="cb3-91" data-line-number="91">                                     <span class="dt">pval_threshold =</span> <span class="fl">0.1</span>,</a>
+<a class="sourceLine" id="cb3-92" data-line-number="92">                                     <span class="dt">logFC_threshold =</span> <span class="dv">0</span>,</a>
+<a class="sourceLine" id="cb3-93" data-line-number="93">                                     <span class="dt">usefdr_threshold =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb3-94" data-line-number="94"><span class="co"># plot results </span></a>
+<a class="sourceLine" id="cb3-95" data-line-number="95">scglmmr<span class="op">::</span><span class="kw">PlotHypergeometric</span>(<span class="dt">hyperg_result =</span> hyp, </a>
+<a class="sourceLine" id="cb3-96" data-line-number="96">                            <span class="dt">p.adjust.filter =</span> <span class="fl">0.1</span>,</a>
+<a class="sourceLine" id="cb3-97" data-line-number="97">                            <span class="dt">genenumber_filter =</span> <span class="dv">2</span>,</a>
+<a class="sourceLine" id="cb3-98" data-line-number="98">                            <span class="dt">savepath =</span> figpath,</a>
+<a class="sourceLine" id="cb3-99" data-line-number="99">                            <span class="dt">savename =</span> <span class="st">"name"</span>, </a>
+<a class="sourceLine" id="cb3-100" data-line-number="100">                            <span class="dt">title =</span> <span class="st">"title"</span>)</a>
+<a class="sourceLine" id="cb3-101" data-line-number="101"></a>
+<a class="sourceLine" id="cb3-102" data-line-number="102"><span class="co"># calculate average module z score across samples (z score across samples of gene z scores)</span></a>
+<a class="sourceLine" id="cb3-103" data-line-number="103"><span class="co"># baseline_samples = c('') # user defined vector </span></a>
+<a class="sourceLine" id="cb3-104" data-line-number="104"><span class="kw">lapply</span>(av, <span class="cf">function</span>(x), x[ ,baseline_samples])</a>
+<a class="sourceLine" id="cb3-105" data-line-number="105">mz =<span class="st"> </span>scglmmr<span class="op">::</span><span class="kw">AverageSampleModuleZscore</span>(<span class="dt">average.metacell.list =</span> av,</a>
+<a class="sourceLine" id="cb3-106" data-line-number="106">                                        <span class="dt">module.list =</span> hlmk,<span class="dt">use.module.subset =</span> F)</a></code></pre></div>
 </div>
   </div>
 
@@ -331,11 +329,13 @@ mz = scglmmr::AverageSampleModuleZscore(average.metacell.list = av,
 
 
       <footer><div class="copyright">
-  <p>Developed by Matthew Mulè.</p>
+  <p></p>
+<p>Developed by Matthew Mulè.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
       </footer>
@@ -343,6 +343,8 @@ mz = scglmmr::AverageSampleModuleZscore(average.metacell.list = av,
 
   
 
+
+  
 
   </body>
 </html>
