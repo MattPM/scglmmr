@@ -52,7 +52,7 @@ umi = s@assays$RNA@counts
 rm(s); gc()
 
 # QC contingency of cells by subject for each celltype 
-tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "lineage", sample_column = "sample")
+tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "celltype", sample_column = "sample")
 tab$celltypes_remove; tab$`low representation celltypes`; tab$table
 
 # remove cells prior to pseudobulk analysis 
@@ -62,19 +62,51 @@ meta = meta[!meta$celltype_label_3 %in% tab$celltypes_remove, ]
 umi = umi[ ,rownames(meta)]
 
 # pseudobulk workflow 
-pb = scglmmr::PseudobulkList(rawcounts = umi, metadata = meta, sample_col = "sample",
-                             celltype_col = "lineage", avg_or_sum = "sum")
-designmat = scglmmr::BulkDesignMatrix(metadata = meta, sample_column = "sample",
-                                      variable_column = "cohort_timepoint", pseudobulklist = pb)
-dge = scglmmr::NormalizePseudobulk(pseudobulklist = pb, design_matrix = designmat, minimum.gene.count = 5)
+pb = scglmmr::PseudobulkList(rawcounts = umi,
+                             metadata = meta, 
+                             sample_col = "sample",
+                             celltype_col = "celltype",
+                             avg_or_sum = "sum")
+# designmat = scglmmr::BulkDesignMatrix(metadata = meta, 
+#                                       sample_column = "sample",
+#                                       variable_column = "cohort_timepoint", 
+#                                       pseudobulklist = pb)
 
-# custom a priori contrasts over a combined factor of the group and timepoint variables 
-c_mat = makeContrasts(
-  foldchange_difference = (group_timepoint1_1 - group_timepoint1_0) - (group_timepoint0_1 - group_timepoint0_0),
-  time1_foldchange = (group_timepoint1_1 + group_timepoint0_1) / 2  - (group_timepoint1_0 + group_timepoint0_0) / 2,
-  baseline_groups = (group_timepoint1_0 - group_timepoint0_0),
-  levels = colnames(designmat)
+
+dge = scglmmr::NormalizePseudobulk(pseudobulklist = pb, 
+                                   design_matrix = designmat,
+                                   minimum.gene.count = 5)
+
+md = AggregateCellMetadata(cell.metadata = meta, 
+                           variables c('scaledage', 'sex', 'time.group', 'subjectid' ),
+                           sample.column = 'sample')
+
+
+
+# example of using a custom contrast: 
+# re-level time.group into ordered combined factor
+samplemd$time.group = factor(
+  samplemd$time.group,
+  levels = c('d0_group1', 'd1_group1', 'd0_group2', 'd1_group2')
+  )
+
+# specify random intercept model 
+f1 <- ~ 0 + time.group + gender + scaledage + (1|subjectid)
+
+# specify contrast matrix to test the fold change difference
+# based on levels of time.group this should be cmat = c(-1, 1, 1, -1, 0, 0)
+# the age and gender other main effects in the model should all be 0 in L 
+L2 = makeContrastsDream(
+  formula = f1, 
+  data = samplemd,
+  contrasts = c(
+    baseline = "time.groupd0_group1- time.groupd0_group2", 
+    delta = "(time.groupd1_group1 - time.groupd0_group1) - (time.groupd1_group2 - time.groupd0_group2)",
+    treatment = "( time.groupd1_group1 + time.groupd1_group2 ) / 2 - ( time.groupd0_group1 + time.groupd0_group2 ) / 2 "
+  )
 )
+
+
   
 # fit mixed model for the multi timepoint contrasts 
 fit = scglmmr::dreamMixedModel(dge_lists = dge, 

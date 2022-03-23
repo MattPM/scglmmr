@@ -18,8 +18,23 @@ add TOC
 add makeContrastsDream  
 change the workflow to represent the most up to dat PB workflow  
 Add Enrichmentjaccard  
-add new single cell models module and gene level
-model
+add new single cell models module and gene level model
+
+Description for dream:
+
+we use a linear model making the least distributional assumptions. we
+can use a normal model as long as we can model the mean variance trend
+in the data. we also want to be able to handle complex experiment
+designs where individuals with repeated measurements are nested in
+groups, we want to model the variation acros individuals, using a random
+intercept model fit with lme4. we also might have a simpler experiment
+design where the main effects of interst are between subjects. To
+accomodate both of thes while modeling mean varance trend and accountint
+for differences in library size usign obervational weights we use the
+voom method, we combine this with lme4 reml fitting criteria using the
+`dream` function provided by the variancePartition packsge described in
+Hoffman et al
+\[paper\].
 
 ## Single cell within cluster perturbation response differential expression
 
