@@ -133,7 +133,7 @@ EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, retu
     } else {
       ph = pheatmap::pheatmap(jaccard_matrix, silent = TRUE, clustering_method = 'complete')
     }
-    jmat[[i]] = ph
+    jmat[[i]] = jaccard_matrix
     #cluster modules
     clustered_mods = ph$tree_row$labels[ph$tree_row$order]
     gsealist[[i]] = gsealist[[i]][match(clustered_mods, gsealist[[i]]$pathway), ]
@@ -146,7 +146,7 @@ EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, retu
   # format jaccard matrix pheatmap output
   names(jmat) = names(gsealist)
   if(isTRUE(returnJaccardMtx)){
-    ret = list('sortedgsea' = d, 'jaccard_matrix_list' = jmat)
+    ret = list('sortedgsea' = d, 'jaccard_matrix_list' = jmat )
     return(ret)
   } else{
     return(d)
