@@ -111,10 +111,10 @@ LeadingEdgeIndexed = function(gsea.result.list, padj.threshold = 0.05){
 EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, returnJaccardMtx = FALSE, figpath){
 
   # dat input check
-  # remove enrichments from cell types without more than 2 modules enriched
+  # remove enrichments from cell types without more than 1 modules enriched
   # add these back at end
   gsealist2 = gsealist
-  subs = lapply(gsealist,nrow) > 2
+  subs = lapply(gsealist,nrow) > 1
   gsealist = gsealist[subs]
   indexedgenes = indexedgenes[subs]
   # confirm order of celltypes (lists) are the same
