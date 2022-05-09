@@ -2,7 +2,8 @@
 % Please edit documentation in R/SCGroupContrast_modulefunctions.r
 \name{FitLmerContrast}
 \alias{FitLmerContrast}
-\title{FitLmerContrast - for data with pre post treatment and 2 response groups; within each cell type contrast difference in fold change between groups, baseline difference, and fold change across groups of module scores.}
+\title{FitLmerContrast - for data with pre post treatment and 2 response groups; within each cell type contrast difference
+ in fold change between groups, baseline difference, and fold change across groups of module scores.}
 \usage{
 FitLmerContrast(
   module_data_frame,
@@ -31,7 +32,8 @@ FitLmerContrast(
 
 }
 \description{
-FitLmerContrast - for data with pre post treatment and 2 response groups; within each cell type contrast difference in fold change between groups, baseline difference, and fold change across groups of module scores.
+FitLmerContrast - for data with pre post treatment and 2 response groups; within each cell type contrast difference
+ in fold change between groups, baseline difference, and fold change across groups of module scores.
 }
 \examples{
 \dontrun{

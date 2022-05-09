@@ -2,8 +2,24 @@ Package: scglmmr
 Type: Package
 Title: Sample-level Single-cell Generalized Linear Multilevel Models in R 
 Version: 0.1.0
-Authors@R: c(person(given = 'Matthew', family = 'Mulè', email = 'matthew.mule@nih.gov', role = c('aut', 'cre'), comment = c(ORCID = '0000-0001-8457-2716')), person(given = 'John', family = 'Tsang', email = 'john.tsang@nih.gov', role = c('pdr'), comment = c(ORCID = '0000-0003-3186-3047')))
-Description: group and sample level comparisons for single cell data with multlevel models 
+Authors@R: 
+    c(person(given = "Matthew",
+             family = "Mulè",
+             role = c("aut", "cre"),
+             email = "mattmule@gmail.com",
+             comment = c(ORCID = "0000-0001-8457-2716")),
+      person(given = "Andrew",
+             family = "Martins",
+             role = "ctb",
+             email = "andrew.martins@nih.gov",
+             comment = c(ORCID = "0000-0002-1832-1924")),
+      person(given = "John",
+             family = "Tsang",
+             role = "ths",
+             email = "john.tsang@nih.gov",
+             comment = c(ORCID = "0000-0003-3186-3047"))
+             )
+Description: group and sample level comparisons for single cell data with mixed effects models 
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
@@ -15,3 +31,5 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+Depends: 
+    R (>= 2.10)

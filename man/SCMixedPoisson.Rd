@@ -2,7 +2,7 @@
 % Please edit documentation in R/SCMixedPoisson.r
 \name{SCMixedPoisson}
 \alias{SCMixedPoisson}
-\title{SCMixedPoisson}
+\title{SCMixedPoisson - Fit a gene level Poisson count mixed generalized linear model.}
 \usage{
 SCMixedPoisson(
   gene_data,
@@ -33,7 +33,7 @@ SCMixedPoisson(
 a results matrix for all genes across all cell types tested.
 }
 \description{
-SCMixedPoisson
+SCMixedPoisson - Fit a gene level Poisson count mixed generalized linear model.
 }
 \examples{
 results = SCMixedPoisson(gene_data = gene_data,

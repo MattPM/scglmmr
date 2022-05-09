@@ -11,7 +11,7 @@
 #'
 #' @return results from fgsea package indexed by celltype
 #' @importFrom fgsea fgsea
-#' @importFrom dplyr arrange filter
+#' @importFrom dplyr arrange mutate
 #' @export
 #'
 #' @examples
@@ -27,6 +27,7 @@
 FgseaList = function(..., rank.list.celltype, pathways,
                      maxSize = 500, minSize = 9) {
   print(paste0(' fgsea: parallelize with `BPPARAM` '))
+  print(' If using this method, cite Korotkevich et. al. Biorxiv (2021) doi.org/10.1101/060012')
   # init storage
   gsea = list()
   ct = names(rank.list.celltype)

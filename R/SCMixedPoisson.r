@@ -2,7 +2,7 @@
 # author: Matt Mulè
 # email: mattmule@gmail.com
 
-#' SCMixedPoisson
+#' SCMixedPoisson - Fit a gene level Poisson count mixed generalized linear model.
 #'
 #' @param gene_data matrix of raw single cell UMI counts genes as COLUMNS and cells as ROWS; i.e. a transpose t() of Bioconductor or Seurat raw.data slots if genes_test is specified, columns must contain all genes from genes_test i.e. umi_matrix = t(seurat_raw_counts[unique(unlist((genes_test)), ])
 #' @param metadata metadata for each cell used for fitting model
@@ -168,3 +168,5 @@ SCMixedPoisson = function(gene_data,
   saveRDS(object = resdf_full, file = paste0(save_path, 'SCMixedPoisson_full_result.rds'))
   return(resdf_full)
 }
+
+
