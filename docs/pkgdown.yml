@@ -3,7 +3,6 @@ pkgdown: 2.0.2
 pkgdown_sha: ~
 articles:
   pseudobulk_mixed_effects: pseudobulk_mixed_effects.html
-  scglmmr_pseudobulk: scglmmr_pseudobulk.html
   scglmmr_singlecell: scglmmr_singlecell.html
-last_built: 2022-05-09T18:22Z
+last_built: 2022-05-10T14:50Z
 

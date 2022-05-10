@@ -1,8 +1,9 @@
 ---
-title: "Single cell gene and module level differential expression with nested group repeated measures experiment designs using scglmmr"
+title: "Single cell gene and module differential expression with nested group repeated measures experiment designs"
 output: rmarkdown::html_vignette
+theme: haddock
 vignette: >
-  %\VignetteIndexEntry{Single cell gene and module level differential expression with nested group repeated measures experiment designs using scglmmr}
+  %\VignetteIndexEntry{Single cell gene and module differential expression with nested group repeated measures experiment designs}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -10,7 +11,8 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>", 
+  eval = FALSE
 )
 ```
 
@@ -19,220 +21,187 @@ library(scglmmr)
 ```
 
 
-### 2. Single cell gene level DE testing 
+### Single cell gene module level testing.  
 
-This single cell level models of differential expression pre and post treatment testing of genes by fitting a Poisson mixed glm. You specify a reduced and full model formula to extract p values and effect sizes. 
+Compare single cell level module score responses across groups. As in the pseudobulk vignette, fit models within each cell type adjusting for covariates using a random intercept term for each donor. Functions used in this workflow include: 
 
-Recommended: The function accepts an argument 'celltype_genes_test' this is a named list indexed by celltypes. 
+`WeightedCellModuleScore` - score each module activity for each cell; any method can be used here. Below we discuss relative vs absolute scaling across cells vs within cell types for effect size interpretation. 
 
-First we load a single cell object an define highly variable genes within each celltype, this can be done many different ways. 
-```{r, eval = FALSE}
-# Single cell mixed model. 
+`FitLmer` - fits a linear model using lme4 notation to the module scores. Returns a nested list of model results that can be queried to extract effects of interest. 
+
+`FitLmerContrast` - as above, but specifically designed for 2 group 2 timepoint repeated measures perturbation designs. Automatically calculates baseline differences, treatment effect across subjects and difference in treatment effects between groups using the [emmeans](https://cran.r-project.org/web/packages/emmeans/index.html) package. 
+
+A plot as shown below is generated for each module x cell type. 
+
+<img src="../man/figures/example_sc.png" heightt = 300 width = 300/>  
+
+### Load and normalize single cell data 
+```{r}
 suppressMessages(library(tidyverse))
-library(scglmmr)
-set.seed(1990)
+suppressMessages(library(Seurat))
+suppressMessages(library(here))
+suppressMessages(library(scglmmr))
 
-datapath = 'your_path_to_save_results'
-s = readRDS('path_to_seurat_or_SingleCellExperimentObject')
+# demonstrate using Seurat object
+s = readRDS(here("singlecellobject.rds"))
 
-# define highly variable genes within each cell type 
-gene_list = list()
-for (i in 1:length(unique(s@meta.data$celltype))) {
-  gene_list[[i]] = subset(s, celltype_joint == celltype_unique[i]) %>% 
-    Seurat::FindVariableFeatures(x[[i]],top.genes = 10000)
-  gene_list[[i]] = Seurat::VariableGenes(gene_list[[i]])
-}
+# create a vector of celltypes 
+ct = unique(s@meta.data$celltype)
 
-# one can also use scran trendVar etc. 
-```
+# normalize with log normalization
+s = NormalizeData(s,normalization.method = 'LogNormalize',assay = 'RNA')
 
-Now we run the single cell Poisson model by specifying a model formula, the formula must have the LHS equal to `gene ~ ` and include a random effect term `(1|subjectid)`. the variable that corresponds to the perturbation variable as a 2 level factor with pre and post perturbation measurements (repeated measurements for the same subject denoted by `subjectid` must be identified, for example, if the metadata variable coding for the time post perturbation is called treatment.time, then the model formula could be `f1 = 'gene ~ offset(log(nUMI)) + treatment.time + (1|subjectid)'` with this model one would set the argument `test_variable = treatment.time` which should have 2  ordered levels corresponding to pre and post treatment. Within the function, the `emmeans` package automatically tests the difference in the marginal means of the post vs pre perturbation effect. 
-```{r, eval = FALSE}
-# load subset of genes to test for each celltype 
-gene_union = unique(unlist(genes_test))
-
-# create day 1 metadata dataframe from a single cell object (seurat, SingleCellExperiment etc.)
-s@meta.data$subjectid = factor(as.character(s@meta.data$sampleid))
-
-# create metadata for lme4
-md = s@meta.data %>%
-  droplevels() %>%
-  dplyr::select(barcode_check, batch, subjectid, timepoint, celltype_joint, nUMI) %>%
-  mutate(timepoint = factor(timepoint, levels = c("d0", "d1"))) %>% 
-  rename(celltype = celltype_joint) %>% 
-  column_to_rownames('barcode_check')
-
-# get gene data 
-gene_data = Matrix::t(s@raw.data[gene_union, ])
-
-# we can now remove whatever single cell object was loaded in the environment. 
-rm(s); gc()
-
-## specify model formula 
-f1 = 'gene ~ offset(log(nUMI)) + timepoint + (1|subjectid)'
-
-# method 1
-results = scglmmr::SCMixedPoisson(gene_data = gene_data,
-                                  metadata = md,
-                                  model_formula = f1, 
-                                  test_variable = 'timepoint',
-                                  celltype_genes_test = genes_test,
-                                  save_path = datapath)
-# write results 
-# data.table::fwrite(x = results,file = paste0(datapath, "/h1_sc_time_merged_v2.txt"), sep = '\t')
 
 ```
 
-Another way to specify the model automatically: 
-```{r, eval = FALSE}
-results = scglmmr::SCMixedPoisson(gene_data = gene_data,
-                                  metadata = md,
-                                  test_variable = 'timepoint',
-                                  covariate_variables = c('BMI', 'SEX'),
-                                  celltype_genes_test = genes_test, 
-                                  save_path = datapath)
+### Define modules to fit 
 
-```
+These functions can be useful to further interrogate the pathways identified in the pseudobulk pipeline or for unbiased analysis. Here for demonstration purposes, a subset of the hallmark pathways are used. 
 
-This would automatically test the delta for pre and post perturbation calculating the marginal means over the coavariates BMI and SEX with the generalized linear mixed effects Poisson model: `'gene ~ BMI + SEX + timepoint + (1|subjectid)'`.
-
-### enrichment of single cell poisson model of timepoint effect using clusterprofiler  
-```{r, eval = FALSE}
-## enrichment on these results 
-
-### plot enrichment with a hypergeometric test against the li BTM 
-scd1 =  split( results , f = mmres$celltype )
-scd1 = lapply(scd1, function(x){x %>%
-    dplyr::select(gene, celltype, estimate, padj)  %>%
-    dplyr::rename('logFC'= fixed_effect,  'P.Value' = padj) })
-
-
-load(termdf)
-hypsc = scglmmr::RunHypergeometricTest(result_list = scd1, 
-                                       TERM2GENE_dataframe = term_df,
-                                       pval_threshold = 0.05,
-                                       logFC_threshold = 0.1)  
-scglmmr::PlotHypergeometric(hyperg_result = hypsc,
-                            p.adjust.filter = 0.05,
-                            genenumber_filter = 2,
-                            savepath = figpath, 
-                            savename = "d1singlecell_hypergeometric_padj0.05.pdf", 
-                            title = "single cell 24h vs baseline gene_exprs ~ offset(nUMI) + timepoint + (1|subjectid) \n 
-                            hypergeometric test LI BTM, FDR 0.05, gene filter n > 2", 
-                            height = 5.5, width = 8)
+```{r}
+sigs_test = hallmark[c(22, 23, 24,25,26,27)]
 ```
 
 
-### 2. Single cell module level testing + group level fold change comparisons 
+### Format cell metadata 
+```{r}
+# format cell metadata as factors group_id is order leveled for: 
+md = s@meta.data %>% 
+  filter(timepoint %in% c(0,1)) %>% 
+  mutate(group_id = paste(group, timepoint, sep = '_')) %>% 
+  mutate(group_id = factor(group_id,  levels = c('0_0', '0_1', '1_0', '1_1'))) %>%
+  select(celltype, subjectid, sex , age, timepoint, group_id) %>% 
+  mutate(age = as.numeric(age)) %>% 
+  droplevels()
 
-This is designed for testing the difference in single cell module activity scores between groups at baseline, between groups, post treatment across groups and the difference in treatment effect between groups using the same *a priori* contrast approach as in the pseudobulk method described above.
+```
 
-#### Part I 
-You first fit a module score to each single cell. 
-Options: 
-*threshold* what percent of genes in the module must a cell express to get a score (i.e. of 0.1, if the cell has less than 10% of genes >0 in the module don't score)
-*return_weighted* whether to return the weighted module score which is the average * weight where weight = number of genes in the cell in that module  with non-zeroexpression 
+### Quality control cell types to be fit  
 
-*cellwise_scaling* should the scores be scaled across cells? Not recommended unless you are testing only a single celltype. 
-*Seurat_version* if this is set to "2" it will accomodate seurat v2, if set to "3" will accomodate v3 
+If a cell type is very donor specific such that there are only cells for a couple of subjects we cant interpret the group level effects so we remove these cell types. 
 
-#### Part II fitting models: 
+```{r}
+# qc data to remove celltypes with no cells for some subhects at both timepoints 
+# keeps MLE more stable for the estimates of random intercept 
+ct.si = apply(table(md$celltype, md$subjectid) , 1, min) 
+c.keep = names(ct.si[ct.si > 7])
+md = md[md$celltype %in% c.keep, ]
+```
 
-*The SCGroupContrastGLMM Function*
-To simultaneously test the difference in the fold changes due to treatment (for example) the levels of the combined group + time factor "group_id have to be ordered as follows (can be any names, these are just the order): 
-group1 timepoint 0, group1 timepoint 1, group2 timepoint 0, group2 timepoint 1  
+### Calculate module scores 
 
-It is also possible to use custom contrasts by changing the argument to contrast_list from contrast_2 (automatically loaded) to something else. 
+This can be done in multiple ways. The function below calculates the simple average. Note that for interpretability of the efects within each cluster, the score is being applied and scaled within each cell type. 
 
-Specify any lme4 model formula in the argument to f1, with the randomeffect term for subjectid set to `(1|sampleid)` which should have a pre and post perturbation measurement. 
-`f1 = 'modulescore ~ age + gender +  group_id + (1|sampleid)'`
+```{r}
 
-This function will also automatically save a helpful plot of the least squares means  (the residual means of each group after accounting for covariates in the model) of the module over the levels of each combined group_timepoint factor. 
+# add single cell weighted module scores
+# split to standardize within cell type 
+ct.md = split(md, f = md$celltype)
 
-```{r, eval=FALSE}
+# get umi data 
+umi = s@assays$RNA@data[ ,rownames(md)]
 
-# load data
-Seurat = readRDS("my_seurat_object.rds")
+# fit module scores 
+mod_scores = lapply(ct.md, function(x){ 
+  scglmmr::WeightedCellModuleScore(gene_matrix = umi[ ,rownames(x)], 
+                                   module_list = sigs_test, 
+                                   threshold = 0,
+                                   # standardize within protein celltype
+                                   cellwise_scaling = TRUE, 
+                                   return_weighted = FALSE )
+  })
+ms = bind_rows(mod_scores)
 
-# add cellwise module score for each signature 
-mod_scores = WeightedCellModuleScore(seurat_object = Seurat,
-                                     module_list = btm,
-                                     threshold = 0.1,
-                                     return_weighted = FALSE, cellwise_scaling = FALSE, 
-                                     Seurat_version = "2") 
-Seurat = AddMetaData(Seurat,metadata = mod_scores)
-module_n = names(sig_test)
+# correctly order rows after the split. 
+ms = ms[match(x = rownames(md), table = rownames(ms)), ]
+stopifnot(all.equal(rownames(ms), rownames(md)))
 
-# set up module data frame 
-module_df = Seurat@meta.data %>% select(barcode_check, celltype_joint, module_n) 
+```
 
-# format metadata as factors group_id is order leveled for contrast_fit = contrast(emm1, method = list( (c21 - c20) - (c11 - c10) ))
-md = Seurat@meta.data %>% 
-  mutate(group_id = factor(adjmfc.time,  levels = c('d0 low', 'd1 low', 'd0 high', 'd1 high'))) %>%
-  mutate(sampleid = factor(sampleid)) %>% 
-  select(barcode_check, celltype_joint, sampleid,  age, group_id)
+### Fit modules 
 
-# Fit mixed model 
-plot_savepath = paste0(my_figure_save_path, "/marginalmeans/"); dir.create(plot_savepath)
+Specify a model using lme4 notation and fit models. Note that the LHS outcome "modulescore" should not be changed as this is adaptively applied to each module internally.
 
-# specify any random intercept model e.g.
-f1 = 'modulescore ~ age + group_id + (1|sampleid)'
+```{r}
+
+
+# specify model 
+f1 = 'modulescore ~ 0 + timepoint + age + sex + (1|subjectid)'
+
+# specify a path to save plots 
+plot_savepath = here('/mypath/')
+
 
 # fit sc mod mixed model on ewighted module scores. 
-mm_res = FitModuleMixModel(module_data_frame = module_df, 
-                           celltype_column = 'celltype',
-                           metadata = md,
-                           fixed_effects = NULL,
-                           lmer_formula = f1,
-                           plotdatqc = TRUE,
-                           figpath = 'your/file/path')
-
-### This function returns p values, effect sizes for baseline and difference in fld changes between the groups 
-colnames(mmres)
-# "celltype"                    "modulename"                  "contrasttime1vs0_group2vs1" 
-# "estimatetime1vs0_group2vs1"  "std.errortime1vs0_group2vs1" "dftime1vs0_group2vs1"       
-# "z.ratiotime1vs0_group2vs1"   "p.valuetime1vs0_group2vs1"   "contrasttime0_group2vs1"    
-# "estimatetime0_group2vs1"     "std.errortime0_group2vs1"    "dftime0_group2vs1"          
-# "z.ratiotime0_group2vs1"      "p.valuetime0_group2vs1"      "d0 low_marginal_mean"       
-# "d1 low_marginal_mean"        "d0 high_marginal_mean"       "d1 high_marginal_mean"      
-# "formula"                     "statistictime1vs0_group2vs1" "statistictime0_group2vs1"   
+mmres = FitLmer(module_data_frame = ms,
+                celltype_column = 'celltype',
+                metadata = md, 
+                lme4.formula = f1)
+  
 ```
 
-A plot like this will be generated for each module for each cell type with the estimated marginal means in the right margin and the actual single cell module score distribution across each level of group_id: 
+### Examine results 
 
-![image](https://user-images.githubusercontent.com/15280712/89591805-1f5a1200-d819-11ea-8b49-5b84477dd178.png)
+Results are formatted as a list indexed by cell type. If we want to find the effects of time on expression we can use the following code to extract out this effect as shown below using the emmeans package. This allows maximum flexibility since any effect can be extracted and custom contrast matrices can be utilized -- see emmeans documentation. 
+
+```{r}
+
+# write wrapper to extract out time effect.
+extract.time.effect = function(fit.list.celltype){ 
+  c_res = list()
+  for(u in length(fit.list.celltype)){ 
+    emm1 = tryCatch(
+        emmeans::emmeans(object = m1, specs = ~ timepoint , data = res, lmer.df = "asymptotic"),
+        error = function(e) return(NA)
+        )
+    c_res[[u]] = emm1
+  }
+}
+
+# now we can apply this to each cell type. 
+time.result = lapply(mmres , extract.time.effect)
+
+```
+
+### a custom function for automatically extracting effects from a 2 group repeated measures treatment design
+
+This function was written for a 2 group design (as shown in the main readme) where subjects each have a pre and post perturbation measurement. WE wantto compare the pertuebation effects across subjects, and between groups and test the baseline differences. All of these effects are extracted automatically into a simple output, and plots are created as above.  
+For this function, on the RHS, + (1|subjectid) should also not be changed. One can also specify fixed effects covariates as a vector. 
+```{r}
+
+f1 = 'modulescore ~ 0 + groupid + age + sex + (1|subjectid)'
+
+# fit sc mod mixed model on ewighted module scores. 
+mm_res.m1 = FitLmerContrast(module_data_frame = ms, 
+                            celltype_column = 'celltype', 
+                            metadata = md, 
+                            lmer_formula = f1, 
+                            plotdatqc = TRUE, 
+                            fixed_effects = NULL,
+                            figpath = plot_savepath)
+# saveRDS(mm_res.m1,file = paste0(datapath, "mm_res.m1.rds"))
+```
 
 
-*The WilcoxWithinCluster function*
-To run a simple test of baseline differences between groups, use the *WilcoxWithinCluster* function as below if you only have one timepoint but 2 outcome groups. 
+Note that the effect size of specific module scores may be compared using the code below to determine which celltype has the greatest *absolute* effect size (epression) of a given module. Both the between and within cell type expression group level differences are likely of interest for interpretation. 
 
-```{r, eval = FALSE}
+```{r}
+ms.full = scglmmr::WeightedCellModuleScore(
+  gene_matrix = umi, 
+  module_list = sigs_test, 
+  threshold = 0,
+  # standardize within protein celltype
+  cellwise_scaling = TRUE, 
+  return_weighted = FALSE 
+  )
 
-######## baseline differences with a simple wilcox test 
-weighted_score = WeightedCellModuleScore(seurat_object = s, module_list = sig,
-                                         threshold = 0.1, cellwise_scaling = FALSE,
-                                         return_weighted = TRUE,
-                                         Seurat_version = "3")
- 
-# set module dataframe
-module_df = cbind(celltype_joint = as.character(s@meta.data$seurat_clusters),
-                  barcode_check = s@meta.data$barcode_full,
-                  weighted_score) %>% 
-  droplevels()
- 
-# format lme4 metadata (note here just wilcox so group IDS do not have to be lme4 factors
-meta_data = s@meta.data %>%
-  droplevels() %>%
-  select(celltype_joint = seurat_clusters,  barcode_check = barcode_full, sample, group_id = IRAE) %>%
-  filter(group_id %in% c("poor_outcome", "good_outcome")) %>%
-  mutate(group_id = factor(group_id, levels = c("poor_outcome", "good_outcome")))
- 
-# Fit wilcox test and do bonferonni correction 
-plot_savepath2 = file.path(figpath, "module_distribution/"); dir.create(plot_savepath2)
-m2 = module_df %>% filter(barcode_check %in% meta_data$barcode_check )
-cvnc = WilcoxWithinCluster(module_data_frame = m2, lme4metadata = meta_data, plot_savepath = plot_savepath2)
-cvnc$padj = p.adjust(p = cvnc$p.value.t0.wilcox, method = "BH")
+d = cbind(ms.full, md)
 
+# absolute effect size for hallmark 
+f1 = as.formula(HALLMARK_HYPOXIA ~ celltype + age + sex + (1|subjecctID))
+m1 = lme4::lmer(f1, data = bl)
+emm1 = emmeans::emmeans(m1, specs = ~celltype)
+plot(emm1)
 
 ```
 

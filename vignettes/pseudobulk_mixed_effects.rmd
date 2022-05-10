@@ -1,8 +1,9 @@
 ---
-title: "nested group repeated measures pseudobulk differential expression testing"
+title: "Pseudobulk differential expression with nested group repeated measures single cell experiment design"
 output: rmarkdown::html_vignette
+theme: haddock
 vignette: >
-  %\VignetteIndexEntry{Pseudobulk differential expression with nested group repeated measures single cell experiment designs using scglmmr}
+  %\VignetteIndexEntry{Pseudobulk differential expression with nested group repeated measures single cell experiment design}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
