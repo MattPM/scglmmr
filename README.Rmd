@@ -13,6 +13,8 @@ knitr::opts_chunk$set(
 )
 ```
 
+[![DOI](https://zenodo.org/badge/330215343.svg)](https://zenodo.org/badge/latestdoi/330215343)
+
 **This package is under active development**
 
 An R package for implementing mixed effects modeling methods on single cell data that can accomodate many different complex experiment designs. The package is built around [lme4](https://www.jstatsoft.org/article/view/v067i01) and was originally made for analysis of single cell data collected from many individuals who are assayed pre- and post- perturbation such as drug treatment, nested within one or more response groups. The methods herein allow one to compare the difference in perturbation response effects between groups while modeling variation in donor expression. It also has many wrappers for downstream enrichment testing and visualization.  

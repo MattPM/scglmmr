@@ -3,6 +3,8 @@ Sample-level Single Cell GLMMs in R
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
+[![DOI](https://zenodo.org/badge/330215343.svg)](https://zenodo.org/badge/latestdoi/330215343)
+
 **This package is under active development**
 
 An R package for implementing mixed effects modeling methods on single

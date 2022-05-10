@@ -1,7 +1,6 @@
 ---
 title: "Pseudobulk differential expression with nested group repeated measures single cell experiment design"
 output: rmarkdown::html_vignette
-theme: haddock
 vignette: >
   %\VignetteIndexEntry{Pseudobulk differential expression with nested group repeated measures single cell experiment design}
   %\VignetteEngine{knitr::rmarkdown}
