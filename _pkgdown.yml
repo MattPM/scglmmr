@@ -1,8 +1,2 @@
 url: https://mattpm.net/scglmmr/
-
 destination: docs
-
-
-articles:
-  pseudobulk_mixed_effects: pseudobulk_mixed_effects.html
-  scglmmr_singlecell: scglmmr_singlecell.html
