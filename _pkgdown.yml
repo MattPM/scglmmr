@@ -1,5 +1,6 @@
 destination: docs
 template:
+  bootstrap: 5
   bslib:
     pkgdown-nav-height: 100px
   navbar:
