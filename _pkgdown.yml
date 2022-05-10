@@ -1,6 +1,5 @@
 destination: docs
 template:
-  theme: haddock
   bslib:
     pkgdown-nav-height: 100px
   navbar:
