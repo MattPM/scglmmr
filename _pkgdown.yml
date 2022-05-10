@@ -1,11 +1,6 @@
-destination: docs
-template:
-  bootstrap: 5
-  bslib:
-    pkgdown-nav-height: 100px
-  navbar:
-    bg: dark
+url: https://mattpm.net/scglmmr/
 
-home:
-  sidebar:
-    structure: [links, citation, authors, dev]
+destination: docs
+
+
+

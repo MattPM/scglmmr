@@ -1,14 +1,13 @@
 ---
-title: "Pseudobulk differential expression with nested group repeated measures single cell experiment design"
+title: "Pseudobulk differential expression with nested group repeated measures single cell experiment designs"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Pseudobulk differential expression with nested group repeated measures single cell experiment design}
+  %\VignetteIndexEntry{Pseudobulk differential expression with nested group repeated measures single cell experiment designs}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
-
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>", 
