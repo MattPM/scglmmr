@@ -18,7 +18,7 @@ allow one to compare the difference in perturbation response effects
 between groups while modeling variation in donor expression. It also has
 many wrappers for downstream enrichment testing and visualization.
 
-Please see vignettes.
+Please see vignettes
 
 ## Installation
 
@@ -44,9 +44,9 @@ associated effects *within cell types* defined either by protein
 downstream enrichment testing and visualization.
 
 Any number of model covariates can be specified. The vignettes provide
-methods where a random intercept term for teh donor ID of each cell
-oraggregated library is incluided in the model. These methods thus model
-the vriation around the baseline expression across individuals,
+methods where a random intercept term for teh donor ID of each cell or
+aggregated library is incluided in the model. These methods model
+variation around the average baseline expression across individuals,
 accomodating non-independence of expression for repeated timepoints from
 each subject.
 

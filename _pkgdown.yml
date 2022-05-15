@@ -1,2 +1,4 @@
 url: https://mattpm.net/scglmmr/
 destination: docs
+template:
+  bootstrap: 5

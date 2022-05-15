@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 An R package for implementing mixed effects modeling methods on single cell data that can accomodate many different complex experiment designs. The package is built around [lme4](https://www.jstatsoft.org/article/view/v067i01) and was originally made for analysis of single cell data collected from many individuals who are assayed pre- and post- perturbation such as drug treatment, nested within one or more response groups. The methods herein allow one to compare the difference in perturbation response effects between groups while modeling variation in donor expression. It also has many wrappers for downstream enrichment testing and visualization.  
 
-Please see vignettes. 
+Please see vignettes
 
 ## Installation  
 ```{r}
@@ -34,7 +34,7 @@ library(scglmmr)
 
 The purpose of this software is to analyze single cell genomics data with pre and post perturbation measurements from the same individuals, including complex designs with many subjects, each subject having repeated measurements pre and post perturbation and each subject nested within in different groups, such as different end point response correlates, e.g. high and low responders. The focus is on implementing flexible generalized linear multilevel models to derive group (i.e. good or poor clinical outcome, high or low rug response) and treatment associated effects *within cell types* defined either by protein (e.g. with CITE-seq data) or transcriptome based clustering followed by downstream enrichment testing and visualization. 
 
-Any number of model covariates can be specified. The vignettes provide methods where a random intercept term for teh donor ID of each cell oraggregated library is incluided in the model. These methods thus model the vriation around the baseline expression across individuals, accomodating  non-independence of expression for repeated timepoints from each subject. 
+Any number of model covariates can be specified. The vignettes provide methods where a random intercept term for teh donor ID of each cell or aggregated library is incluided in the model. These methods model variation around the average baseline expression across individuals, accomodating  non-independence of expression for repeated timepoints from each subject. 
 
 An overview of methods provided: 
 
