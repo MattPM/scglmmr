@@ -1,6 +1,12 @@
 ---
 title: "Pseudobulk differential expression with nested group repeated measures single cell experiment designs"
-output: rmarkdown::html_vignette
+output: 
+  github_document:
+    html_preview: true
+    toc: TRUE
+  html_document:
+    df_print: kable
+    theme: united
 vignette: >
   %\VignetteIndexEntry{Pseudobulk differential expression with nested group repeated measures single cell experiment designs}
   %\VignetteEngine{knitr::rmarkdown}

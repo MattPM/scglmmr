@@ -1,6 +1,12 @@
 ---
 title: "Single cell gene and module differential expression with nested group repeated measures experiment designs"
-output: rmarkdown::html_vignette
+output: 
+  github_document:
+    html_preview: true
+    toc: TRUE
+  html_document:
+    df_print: kable
+    theme: united
 vignette: >
   %\VignetteIndexEntry{Single cell gene and module differential expression with nested group repeated measures experiment designs}
   %\VignetteEngine{knitr::rmarkdown}
