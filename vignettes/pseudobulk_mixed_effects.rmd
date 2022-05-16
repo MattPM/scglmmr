@@ -118,9 +118,9 @@ L2 = makeContrastsDream(
   formula = f1, 
   data = samplemd,
   contrasts = c(
-    baseline = "irae.time1_0 - irae.time0_0", # note fixef model also fit for this single time point contrast 
-    treatment_delta = "( irae.time1_1 - irae.time1_0 ) - ( irae.time0_1 - irae.time0_0 )",
-    treatment = "( irae.time1_1 + irae.time0_1 ) / 2 - ( irae.time1_0 + irae.time0_0 ) / 2 "
+    baseline = "group.time1_0 - group.time0_0", # note fixef model also fit for this single time point contrast 
+    treatment_delta = "( group.time1_1 - group.time1_0 ) - ( group.time0_1 - group.time0_0 )",
+    treatment = "( group.time1_1 + group.time0_1 ) / 2 - ( group.time1_0 + group.time0_0 ) / 2 "
     )
   )
 

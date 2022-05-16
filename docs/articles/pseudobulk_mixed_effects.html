@@ -234,9 +234,9 @@ information on symbolic model formulas</a>.</p>
   formula <span class="op">=</span> <span class="va">f1</span>, 
   data <span class="op">=</span> <span class="va">samplemd</span>,
   contrasts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>
-    baseline <span class="op">=</span> <span class="st">"irae.time1_0 - irae.time0_0"</span>, <span class="co"># note fixef model also fit for this single time point contrast </span>
-    treatment_delta <span class="op">=</span> <span class="st">"( irae.time1_1 - irae.time1_0 ) - ( irae.time0_1 - irae.time0_0 )"</span>,
-    treatment <span class="op">=</span> <span class="st">"( irae.time1_1 + irae.time0_1 ) / 2 - ( irae.time1_0 + irae.time0_0 ) / 2 "</span>
+    baseline <span class="op">=</span> <span class="st">"group.time1_0 - group.time0_0"</span>, <span class="co"># note fixef model also fit for this single time point contrast </span>
+    treatment_delta <span class="op">=</span> <span class="st">"( group.time1_1 - group.time1_0 ) - ( group.time0_1 - group.time0_0 )"</span>,
+    treatment <span class="op">=</span> <span class="st">"( group.time1_1 + group.time0_1 ) / 2 - ( group.time1_0 + group.time0_0 ) / 2 "</span>
     <span class="op">)</span>
   <span class="op">)</span>
 
