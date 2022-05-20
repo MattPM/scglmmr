@@ -222,13 +222,13 @@ PlotFgsea = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1, p.t
   if (!is.null(p.threshold)) {
     d = RbindGseaResultList(gsea_result_list,
                             NES_filter = -Inf,
-                            pval_filter = 0.05)
+                            pval_filter = p.threshold)
     p.legend = '-log10(p)'
   } else {
     # combine into dataframe
     d = RbindGseaResultList(gsea_result_list,
                             NES_filter = -Inf,
-                            padj_filter = 0.1)
+                            padj_filter = padj_filter)
     p.legend = '-log10(padj)'
   }
 
