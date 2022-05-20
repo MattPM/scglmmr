@@ -4,7 +4,13 @@
 \alias{LeadEdgeTidySampleExprs}
 \title{LeadEdgeTidySampleExprs - convert a PseudobulkList into a tidy dataframe for each sample across cell types of the leading edge genes from a gsea list}
 \usage{
-LeadEdgeTidySampleExprs(av.exprs.list, gsea.list, padj.filter, NES.filter)
+LeadEdgeTidySampleExprs(
+  av.exprs.list,
+  gsea.list,
+  padj.filter,
+  p.filter = NULL,
+  NES.filter
+)
 }
 \arguments{
 \item{av.exprs.list}{object returned by `PseudobulkList` summed or average counts}
@@ -12,6 +18,8 @@ LeadEdgeTidySampleExprs(av.exprs.list, gsea.list, padj.filter, NES.filter)
 \item{gsea.list}{object returned by RunFgseaOnRankList}
 
 \item{padj.filter}{filter for adjusted p from GSEA}
+
+\item{p.filter}{filter for p from GSEA padj.filter must not be specified to use this option.}
 
 \item{NES.filter}{filter for normalized enrichment score from GSEA}
 }

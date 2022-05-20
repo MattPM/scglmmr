@@ -7,12 +7,8 @@
 GSEABarPlot(
   rbind_gsea_result_dataframe,
   celltype_name,
-  save_path,
-  title,
-  save_name,
   fill_color,
-  width = 8.5,
-  height = 7.2
+  text.size = 8
 )
 }
 \arguments{
@@ -20,26 +16,18 @@ GSEABarPlot(
 
 \item{celltype_name}{name of celltype to be plotted}
 
-\item{save_path}{file path to save results}
-
-\item{title}{title of plot}
-
-\item{save_name}{name of file saved to save_path}
-
 \item{fill_color}{color of bar}
 
-\item{width}{ggsave param}
-
-\item{height}{ggsave param}
+\item{text.size}{size of axis labels}
 }
 \value{
-nothing
+ggplot object
 }
 \description{
 GSEABarPlot - plot gsea results for a single cell type
 }
 \examples{
 \dontrun{
-scglmmr::GSEABarPlot(d, celltype_name = 'celltype1', save_path = figpath, title = 'ct2', fill_color = 'dodgerblue' save_name = "plot.pdf")
+p = scglmmr::GSEABarPlot(d, celltype_name = 'celltype1', fill_color = 'dodgerblue')
 }
 }

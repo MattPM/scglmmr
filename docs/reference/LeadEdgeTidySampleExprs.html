@@ -55,7 +55,13 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">LeadEdgeTidySampleExprs</span><span class="op">(</span><span class="va">av.exprs.list</span>, <span class="va">gsea.list</span>, <span class="va">padj.filter</span>, <span class="va">NES.filter</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">LeadEdgeTidySampleExprs</span><span class="op">(</span>
+  <span class="va">av.exprs.list</span>,
+  <span class="va">gsea.list</span>,
+  <span class="va">padj.filter</span>,
+  p.filter <span class="op">=</span> <span class="cn">NULL</span>,
+  <span class="va">NES.filter</span>
+<span class="op">)</span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -66,6 +72,8 @@
 <dd><p>object returned by RunFgseaOnRankList</p></dd>
 <dt>padj.filter</dt>
 <dd><p>filter for adjusted p from GSEA</p></dd>
+<dt>p.filter</dt>
+<dd><p>filter for p from GSEA padj.filter must not be specified to use this option.</p></dd>
 <dt>NES.filter</dt>
 <dd><p>filter for normalized enrichment score from GSEA</p></dd>
 </dl></div>

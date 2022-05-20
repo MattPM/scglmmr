@@ -4,7 +4,7 @@
 \alias{CombineResults}
 \title{CombineResults - For all cell types merge the gsea leading edge genes with their contrast model coefficieint and p value from limma / dream}
 \usage{
-CombineResults(gsealist, contrastlist, gseafdr, genefdr = Inf)
+CombineResults(gsealist, contrastlist, gseafdr, gseap, genefdr = Inf)
 }
 \arguments{
 \item{gsealist}{list of results returned by `RunFgseaOnRankList()`}
@@ -13,7 +13,9 @@ CombineResults(gsealist, contrastlist, gseafdr, genefdr = Inf)
 
 \item{gseafdr}{the adjusted p value threshold to filter out results (gsea)}
 
-\item{genefdr}{the adjusted p value threshold to filter out individual genes - by default all the leading edge genes are returned.}
+\item{gseap}{the p value threshold to filter out results (gsea); gseafdr must not be specified to use this option}
+
+\item{genefdr}{the adjusted p value threshold to filter out individual genes - by default all the leading edge genes are returned (recommended)}
 }
 \value{
 a tidy dataframe

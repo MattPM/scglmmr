@@ -58,12 +58,8 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">GSEABarPlot</span><span class="op">(</span>
   <span class="va">rbind_gsea_result_dataframe</span>,
   <span class="va">celltype_name</span>,
-  <span class="va">save_path</span>,
-  <span class="va">title</span>,
-  <span class="va">save_name</span>,
   <span class="va">fill_color</span>,
-  width <span class="op">=</span> <span class="fl">8.5</span>,
-  height <span class="op">=</span> <span class="fl">7.2</span>
+  text.size <span class="op">=</span> <span class="fl">8</span>
 <span class="op">)</span></code></pre></div>
     </div>
 
@@ -73,27 +69,22 @@
 <dd><p>result returned from RbindGseaResultList</p></dd>
 <dt>celltype_name</dt>
 <dd><p>name of celltype to be plotted</p></dd>
-<dt>save_path</dt>
-<dd><p>file path to save results</p></dd>
-<dt>title</dt>
-<dd><p>title of plot</p></dd>
-<dt>save_name</dt>
-<dd><p>name of file saved to save_path</p></dd>
 <dt>fill_color</dt>
 <dd><p>color of bar</p></dd>
-<dt>width</dt>
-<dd><p>ggsave param</p></dd>
-<dt>height</dt>
-<dd><p>ggsave param</p></dd>
+<dt>text.size</dt>
+<dd><p>size of axis labels</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>nothing</p>
+    <p>ggplot object</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
+<span class="r-in"><span class="va">p</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu">GSEABarPlot</span><span class="op">(</span><span class="va">d</span>, celltype_name <span class="op">=</span> <span class="st">'celltype1'</span>, fill_color <span class="op">=</span> <span class="st">'dodgerblue'</span><span class="op">)</span></span>
+<span class="r-in"><span class="op">}</span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>

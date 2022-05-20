@@ -65,18 +65,29 @@ FgseaList = function(..., rank.list.celltype, pathways,
 #' gsea = FgseaList(rank.list.celltype = t1hvl_rank)
 #' celltype.indexed.modules.leadingedge = LeadingEdgeIndexed(gsea, 0.05)
 #' }
-LeadingEdgeIndexed = function(gsea.result.list, padj.threshold = 0.05){
+LeadingEdgeIndexed = function(gsea.result.list, padj.threshold = 0.05, p.threshold = NULL){
   x = gsea.result.list
   newlist = list()
-  for (i in 1:length(x)) {
-    y = x[[i]] %>%
-      dplyr::filter(padj < padj.threshold) %>%
-      dplyr::select(pathway, leadingEdge)
-    newlist[[i]] = y$leadingEdge
-    names(newlist[[i]]) = y$pathway
+  # enable p thresholding
+  if (!is.null(p.threshold)) {
+    for (i in 1:length(x)) {
+      y = x[[i]] %>%
+        dplyr::filter(pval < p.threshold) %>%
+        dplyr::select(pathway, leadingEdge)
+      newlist[[i]] = y$leadingEdge
+      names(newlist[[i]]) = y$pathway
+    }
+  } else{
+    for (i in 1:length(x)) {
+      y = x[[i]] %>%
+        dplyr::filter(padj < padj.threshold) %>%
+        dplyr::select(pathway, leadingEdge)
+      newlist[[i]] = y$leadingEdge
+      names(newlist[[i]]) = y$pathway
+    }
+    names(newlist) = names(x)
+    return(newlist)
   }
-  names(newlist) = names(x)
-  return(newlist)
 }
 
 
@@ -156,6 +167,41 @@ EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, retu
 
 
 
+#' RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot; called by PlotFgseaList
+#'
+#' @param gsea_result_list result returned by RunFgseaOnRankList
+#' @param NES_filter filter out results below this NES
+#' @param padj_filter filter out results above this adjusted p threshold
+#'
+#' @return a dataframe of subsetted gsea results for all celltypes
+#' @importFrom dplyr select filter mutate
+#' @export
+#'
+#' @examples
+#'\dontrun{
+#'d = scglmmr::RbindGseaResultList(gsea_result_list = gsea1,NES_filter = -Inf,padj_filter = 0.2)
+#' }
+RbindGseaResultList = function(gsea_result_list, NES_filter = -Inf, padj_filter = NULL, pval_filter = NULL){
+
+  score = lapply(gsea_result_list, function(x) {
+    x = x %>%
+      dplyr::select(pathway, padj, NES, celltype) %>%
+      dplyr::filter(NES > NES_filter)
+  })
+  # combine and filter
+  if (!is.null(pval_filter)) {
+    score = do.call(rbind, score) %>%
+      dplyr::filter(pval < pval_filter) %>%
+      dplyr::mutate(n_logp = -log10(padj))
+  } else{
+    score = do.call(rbind, score) %>%
+      dplyr::filter(padj < padj_filter) %>%
+      dplyr::mutate(n_logp = -log10(padj))
+  }
+  return(score)
+}
+
+
 #' PlotFgsea identical to GSEABubblePlot, returns plot for manual adjustment or saving and also clusters the map.
 #'
 #' @param rbind_gsea_result_dataframe dataframe returned by RbindGseaResultList
@@ -169,12 +215,23 @@ EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, retu
 #'
 #' @examples
 #'\dontrun{
-#'scglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
+#' p = PlotFgsea(gsea_result_list = g1, padj_filter = 0.1)
 #' }
-PlotFgsea = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1) {
+PlotFgsea = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1, p.threshold = NULL) {
+  # combine results
+  if (!is.null(p.threshold)) {
+    d = RbindGseaResultList(gsea_result_list,
+                            NES_filter = -Inf,
+                            pval_filter = 0.05)
+    p.legend = '-log10(p)'
+  } else {
+    # combine into dataframe
+    d = RbindGseaResultList(gsea_result_list,
+                            NES_filter = -Inf,
+                            padj_filter = 0.1)
+    p.legend = '-log10(padj)'
+  }
 
-  # combine into dataframe
-  d = RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
 
   # cluster results
   hcdat = d %>%
@@ -186,6 +243,7 @@ PlotFgsea = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1) {
   xx = pheatmap::pheatmap(hcdat, silent = TRUE, clustering_method = "average")
   module_order = xx$tree_row$labels[xx$tree_row$order]
   celltype_order = xx$tree_col$labels[xx$tree_col$order]
+  # reorder as factors for ggplot
   d$celltype = factor(d$celltype, levels = celltype_order)
   d$pathway = factor(d$pathway, levels = module_order)
 
@@ -197,7 +255,7 @@ PlotFgsea = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1) {
     scale_x_discrete(position = "top"),
     theme(axis.text.x=element_text(angle = 45, hjust = 0)),
     theme(axis.title.y = element_blank()),
-    labs(fill = 'Normalized \n Enrichment \n Score', size = '-log10(padj)'),
+    labs(fill = 'Normalized \n Enrichment \n Score', size = p.legend),
     theme(legend.title = element_text(colour = "black", size = 8)),
     theme(axis.text.y = element_text(size = 8, color = "black")),
     theme(axis.text.x = element_text(size = 8.5, color = "black")),
@@ -212,11 +270,11 @@ PlotFgsea = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1) {
 }
 
 
-
 #' GetLeadingEdgeFull Get a tidy dataframe of ALL Leading Edge Genes from gene set enrichment for all cell types
 #'
 #' @param gsea.list results returned by RunFgseaOnRankList
 #' @param padj.filter filter reslts
+#' @param p.filter raw p value filter -- padj.filter must not be specified
 #' @param NES.filter filter results
 #'
 #' @return a list
@@ -230,12 +288,23 @@ PlotFgsea = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1) {
 #'lefull = scglmmr::GetLeadingEdgeFull(gsea.list = gsea1, padj.filter = 0.1,NES.filter = -Inf)
 #' }
 
-GetLeadingEdgeFull = function(gsea.list, padj.filter, NES.filter){
-  gseasub = lapply(gsea.list, function(x){
-    x %>%
-      dplyr::filter(NES > NES.filter & padj < padj.filter) %>%
-      dplyr::select(pathway, leadingEdge)
-  })
+GetLeadingEdgeFull = function(gsea.list, padj.filter = NULL, NES.filter, p.filter= NULL){
+
+  # filter results
+  if (!is.null(p.filter)) {
+    gseasub = lapply(gsea.list, function(x) {
+      x %>%
+        dplyr::filter(NES > NES.filter & pval < p.filter) %>%
+        dplyr::select(pathway, leadingEdge)
+    })
+
+  } else {
+    gseasub = lapply(gsea.list, function(x) {
+      x %>%
+        dplyr::filter(NES > NES.filter & padj < padj.filter) %>%
+        dplyr::select(pathway, leadingEdge)
+    })
+  }
   # get lists with results passing filter and subset result lists by that index
   g =  which(purrr::map_int(gseasub, nrow) > 0) %>% names
   gseasub = gseasub[g]
@@ -301,7 +370,8 @@ GetLeadingEdgeGenes = function(gsea.result.list, celltype.index, module.name) {
 #' @param gsealist list of results returned by `RunFgseaOnRankList()`
 #' @param contrastlist list of results returned by  `scglmmr::ExtractResult()` or from older versions of scglmmr, the equivalent results from: `GetContrastResults()` , `GetContrastResultsRaw()`
 #' @param gseafdr the adjusted p value threshold to filter out results (gsea)
-#' @param genefdr the adjusted p value threshold to filter out individual genes - by default all the leading edge genes are returned.
+#' @param gseap the p value threshold to filter out results (gsea); gseafdr must not be specified to use this option
+#' @param genefdr the adjusted p value threshold to filter out individual genes - by default all the leading edge genes are returned (recommended)
 #'
 #' @return a tidy dataframe
 #' @importFrom dplyr mutate filter select group_by
@@ -311,14 +381,23 @@ GetLeadingEdgeGenes = function(gsea.result.list, celltype.index, module.name) {
 #'\dontrun{
 #' combined_results = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.2)
 #' }
-CombineResults = function(gsealist, contrastlist, gseafdr, genefdr = Inf){
+CombineResults = function(gsealist, contrastlist, gseafdr, gseap, genefdr = Inf){
 
-
-  # filter gsea esults and cat pathway and celltype
-  gs = lapply(gsealist, function(x){
-    x = x %>%
-      dplyr::filter(padj < gseafdr) %>%
-      dplyr::mutate(name = paste(pathway, celltype, sep = "__"))})
+  # filter results
+  if (!is.null(gseap)) {
+    # filter gsea esults and cat pathway and celltype
+    gs = lapply(gsealist, function(x) {
+      x = x %>%
+        dplyr::filter(pval < gseap) %>%
+        dplyr::mutate(name = paste(pathway, celltype, sep = "__"))
+    })
+  } else{
+    gs = lapply(gsealist, function(x) {
+      x = x %>%
+        dplyr::filter(padj < gseafdr) %>%
+        dplyr::mutate(name = paste(pathway, celltype, sep = "__"))
+    })
+  }
 
   # get a vector of celltypes with DE results
   generes = do.call(rbind, contrastlist)
@@ -368,6 +447,7 @@ CombineResults = function(gsealist, contrastlist, gseafdr, genefdr = Inf){
 #' @param av.exprs.list object returned by `PseudobulkList` summed or average counts
 #' @param gsea.list object returned by RunFgseaOnRankList
 #' @param padj.filter filter for adjusted p from GSEA
+#' @param p.filter filter for p from GSEA padj.filter must not be specified to use this option.
 #' @param NES.filter filter for normalized enrichment score from GSEA
 #'
 #' @return a list of tidy dataframes by celltype
@@ -390,11 +470,21 @@ CombineResults = function(gsealist, contrastlist, gseafdr, genefdr = Inf){
 #'                                            padj.filter = 0.1,
 #'                                            NES.filter = -Inf)
 #' }
-LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, NES.filter){
-  gseasub = lapply(gsea.list, function(x){x = x %>%
-    dplyr::filter(NES > NES.filter & padj < padj.filter) %>%
-    dplyr::select(pathway, leadingEdge)
-  })
+LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, p.filter = NULL, NES.filter){
+
+
+  # filter results
+  if (!is.null(gseap)) {
+    gseasub = lapply(gsea.list, function(x){x = x %>%
+      dplyr::filter(NES > NES.filter & pval < p.filter) %>%
+      dplyr::select(pathway, leadingEdge)
+    })
+  } else{
+    gseasub = lapply(gsea.list, function(x){x = x %>%
+      dplyr::filter(NES > NES.filter & padj < padj.filter) %>%
+      dplyr::select(pathway, leadingEdge)
+    })
+  }
   # get lists with results passing filter and subset result lists by that index
   g =  which(purrr::map_int(gseasub, nrow) > 0) %>% names
   gseasub = gseasub[g] ; avsub = av.exprs.list[g]
@@ -491,72 +581,36 @@ LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot,
 }
 
 
-
-#' RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot; called by PlotFgseaList
-#'
-#' @param gsea_result_list result returned by RunFgseaOnRankList
-#' @param NES_filter filter out results below this NES
-#' @param padj_filter filter out results above this adjusted p threshold
-#'
-#' @return a dataframe of subsetted gsea results for all celltypes
-#' @importFrom dplyr select filter mutate
-#' @export
-#'
-#' @examples
-#'\dontrun{
-#'d = scglmmr::RbindGseaResultList(gsea_result_list = gsea1,NES_filter = -Inf,padj_filter = 0.2)
-#' }
-RbindGseaResultList = function(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1){
-  score = lapply(gsea_result_list, function(x){
-    x = x %>%
-      dplyr::select(pathway, padj, NES, celltype) %>%
-      dplyr::filter( NES > NES_filter )
-  })
-  score = do.call(rbind, score) %>% dplyr::filter(padj < padj_filter) %>% dplyr::mutate(n_logp = -log10(padj))
-  return(score)
-}
-
 #' GSEABarPlot - plot gsea results for a single cell type
 #'
 #' @param rbind_gsea_result_dataframe result returned from RbindGseaResultList
 #' @param celltype_name name of celltype to be plotted
-#' @param save_path file path to save results
-#' @param title title of plot
-#' @param save_name name of file saved to save_path
 #' @param fill_color color of bar
-#' @param width ggsave param
-#' @param height ggsave param
-#'
-#' @return nothing
+#' @param text.size size of axis labels
+#' @return ggplot object
 #' @import ggplot2
 #' @export
 #'
 #' @examples
 #'\dontrun{
-#'scglmmr::GSEABarPlot(d, celltype_name = 'celltype1', save_path = figpath, title = 'ct2', fill_color = 'dodgerblue' save_name = "plot.pdf")
+#' p = scglmmr::GSEABarPlot(d, celltype_name = 'celltype1', fill_color = 'dodgerblue')
 #' }
-
-GSEABarPlot = function(rbind_gsea_result_dataframe, celltype_name, save_path, title, save_name, fill_color, width = 8.5, height = 7.2) {
+GSEABarPlot = function(rbind_gsea_result_dataframe, celltype_name, fill_color, text.size = 8) {
   # filter to single cell type
   dplot = rbind_gsea_result_dataframe[ rbind_gsea_result_dataframe$celltype == celltype_name, ]
-
+  # create
   p = ggplot(dplot, aes(y = NES, x = pathway)) +
-    geom_bar(stat="identity", fill=fill_color, alpha=0.8, width= 0.75) +
+    geom_bar(stat="identity", fill=fill_color, alpha=0.8, width= 0.75, show.legend = FALSE) +
     coord_flip() +
     theme_bw() +
-    scale_fill_viridis_c(option = "B") +
     scale_x_discrete(position = "top") +
-    theme(axis.title.y = element_blank()) +
-    theme(legend.position = "bottom") +
-    theme(legend.title = element_text(face = "bold",colour = "black", size = 8)) +
-    theme(axis.text.y = element_text(size = 8, face = "bold", color = "black")) +
-    theme(axis.text.x = element_text(size = 8.5, face = "bold", color = "black")) +
-    guides(shape = guide_legend(override.aes = list(size = 5))) +
-    guides(color = guide_legend(override.aes = list(size = 5))) +
-    theme(legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
-    ggtitle(title)
-  ggsave(p, filename = paste0(save_path,save_name,".pdf"), width = width, height = height)
-  print(p)
+    theme(axis.title.y = element_blank(),
+          legend.position = "bottom",
+          legend.title = element_text(face = "bold",colour = "black", size = 8),
+          axis.text.y = element_text(size = text.size, face = "bold", color = "black"),
+          axis.text.x = element_text(size = text.size, face = "bold", color = "black")
+    )
+  return(p)
 }
 
 

@@ -4,7 +4,7 @@
 \alias{GetLeadingEdgeFull}
 \title{GetLeadingEdgeFull Get a tidy dataframe of ALL Leading Edge Genes from gene set enrichment for all cell types}
 \usage{
-GetLeadingEdgeFull(gsea.list, padj.filter, NES.filter)
+GetLeadingEdgeFull(gsea.list, padj.filter = NULL, NES.filter, p.filter = NULL)
 }
 \arguments{
 \item{gsea.list}{results returned by RunFgseaOnRankList}
@@ -12,6 +12,8 @@ GetLeadingEdgeFull(gsea.list, padj.filter, NES.filter)
 \item{padj.filter}{filter reslts}
 
 \item{NES.filter}{filter results}
+
+\item{p.filter}{raw p value filter -- padj.filter must not be specified}
 }
 \value{
 a list

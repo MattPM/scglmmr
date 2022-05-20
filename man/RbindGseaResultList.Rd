@@ -4,7 +4,12 @@
 \alias{RbindGseaResultList}
 \title{RbindGseaResultList - prepare gsea result list for visualization funcitons GseaBubblePlot or GseaBarPlot; called by PlotFgseaList}
 \usage{
-RbindGseaResultList(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
+RbindGseaResultList(
+  gsea_result_list,
+  NES_filter = -Inf,
+  padj_filter = NULL,
+  pval_filter = NULL
+)
 }
 \arguments{
 \item{gsea_result_list}{result returned by RunFgseaOnRankList}

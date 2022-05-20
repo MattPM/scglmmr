@@ -55,7 +55,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">GetLeadingEdgeFull</span><span class="op">(</span><span class="va">gsea.list</span>, <span class="va">padj.filter</span>, <span class="va">NES.filter</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">GetLeadingEdgeFull</span><span class="op">(</span><span class="va">gsea.list</span>, padj.filter <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">NES.filter</span>, p.filter <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -66,6 +66,8 @@
 <dd><p>filter reslts</p></dd>
 <dt>NES.filter</dt>
 <dd><p>filter results</p></dd>
+<dt>p.filter</dt>
+<dd><p>raw p value filter -- padj.filter must not be specified</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>

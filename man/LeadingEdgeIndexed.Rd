@@ -4,7 +4,7 @@
 \alias{LeadingEdgeIndexed}
 \title{LeadingEdgeIndexed - extract leading edge genes from FgseaList results, return a new embedded list of named modules, indexed by celltype}
 \usage{
-LeadingEdgeIndexed(gsea.result.list, padj.threshold = 0.05)
+LeadingEdgeIndexed(gsea.result.list, padj.threshold = 0.05, p.threshold = NULL)
 }
 \arguments{
 \item{gsea.result.list}{results from FgseaList or RunFgseaOnRankList}

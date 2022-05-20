@@ -4,7 +4,12 @@
 \alias{PlotFgsea}
 \title{PlotFgsea identical to GSEABubblePlot, returns plot for manual adjustment or saving and also clusters the map.}
 \usage{
-PlotFgsea(gsea_result_list, NES_filter = -Inf, padj_filter = 0.1)
+PlotFgsea(
+  gsea_result_list,
+  NES_filter = -Inf,
+  padj_filter = 0.1,
+  p.threshold = NULL
+)
 }
 \arguments{
 \item{rbind_gsea_result_dataframe}{dataframe returned by RbindGseaResultList}
@@ -17,6 +22,6 @@ PlotFgsea identical to GSEABubblePlot, returns plot for manual adjustment or sav
 }
 \examples{
 \dontrun{
-scglmmr::GSEABubblePlot(d, save_path = figpath, save_name = "plot.pdf")
+p = PlotFgsea(gsea_result_list = g1, padj_filter = 0.1)
 }
 }

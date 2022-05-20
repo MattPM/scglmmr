@@ -1,0 +1,341 @@
+Pseudobulk differential expression with nested group repeated measures
+single cell experiment designs
+================
+
+-   <a href="#1-pseudobulk-mixed-effects-models"
+    id="toc-1-pseudobulk-mixed-effects-models">1. pseudobulk mixed effects
+    models</a>
+-   <a href="#load-single-cell-data-aggregate-and-quaity-control"
+    id="toc-load-single-cell-data-aggregate-and-quaity-control">Load single
+    cell data, aggregate and quaity control</a>
+-   <a
+    href="#fit-models-and-specify-a-priori-contrasts-corresponding-to-the-desired-effect-comparisons"
+    id="toc-fit-models-and-specify-a-priori-contrasts-corresponding-to-the-desired-effect-comparisons">Fit
+    models and specify a priori contrasts corresponding to the desired
+    effect comparisons</a>
+-   <a
+    href="#downstream-gene-set-enrichment-analysis-within-celltypes-for-different-effects"
+    id="toc-downstream-gene-set-enrichment-analysis-within-celltypes-for-different-effects">Downstream
+    gene set enrichment analysis within celltypes for different effects</a>
+-   <a href="#further-analysis-and-curation-of-enrichment-results"
+    id="toc-further-analysis-and-curation-of-enrichment-results">Further
+    analysis and curation of enrichment results</a>
+-   <a href="#extract-all-leading-edge-genes-indexed-by-cell-type"
+    id="toc-extract-all-leading-edge-genes-indexed-by-cell-type">Extract all
+    leading edge genes indexed by cell type</a>
+-   <a
+    href="#calculate-the-jaccard-similarity-of-the-leading-edge-genes-for-enrichments-within-a-given-cell-type-and-effect"
+    id="toc-calculate-the-jaccard-similarity-of-the-leading-edge-genes-for-enrichments-within-a-given-cell-type-and-effect">Calculate
+    the Jaccard similarity of the leading edge genes for enrichments within
+    a given cell type and effect</a>
+-   <a href="#visualization-of-enrichment-results"
+    id="toc-visualization-of-enrichment-results">Visualization of enrichment
+    results</a>
+-   <a href="#additional-visualization-methods"
+    id="toc-additional-visualization-methods">Additional visualization
+    methods</a>
+
+### 1. pseudobulk mixed effects models
+
+These functions implement wrappers around limma for fitting fixed effect
+linear models and the dream method from the variancePartition package.
+The dream method is the only way to test differential expression while
+accomodating ‘random’ or varying effects. This is statistically
+necessary to account for non-independence when we have perturbation
+experiments with repeated measurements from the same donors. To enable
+linear models (e.g. modeling the mean with a normal distribution) to be
+fit to gene counts, dream accounts for the mean variance trend via
+incorporating voom observational weights.
+
+``` r
+#devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
+library(scglmmr)
+```
+
+Below analysis of a 2 group repeated measures experiment design is
+shown. Pre-treatment baseline effect differences, treatment effets
+across all donors and the difference in treatment effects are all
+compared while modeling variation in baseline expression using a random
+intercept term.
+
+| sample         |    sampleid    |           time | group          |      sex       |
+|:---------------|:--------------:|---------------:|:---------------|:--------------:|
+| 101_t0         |      101       |             d0 | low            |       F        |
+| 101_t1         |      101       |             d1 | high           |       F        |
+| 102_t0         |      102       |             d0 | low            |       M        |
+| 102_t1         |      102       |             d1 | high           |       M        |
+| … (x n donors) | … (x n donors) | … (x n donors) | … (x n donors) | … (x n donors) |
+
+### Load single cell data, aggregate and quaity control
+
+``` r
+
+datapath = "mypath/"
+
+# load seurat or sce object etc. 
+s = readRDS("path/seuratobject.rds")
+
+# define counts and metadata and subset to cells above rm seurat object from workspace 
+meta = s@meta.data
+umi = s@assays$RNA@counts
+rm(s); gc()
+
+# QC contingency of cells by subject for each celltype 
+tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "celltype", sample_column = "sample")
+tab$celltypes_remove; tab$`low representation celltypes`; tab$table
+
+# remove cells prior to pseudobulk analysis 
+meta = meta[!meta$celltype_label_3 %in% tab$celltypes_remove, ]
+
+# subset data 
+umi = umi[ ,rownames(meta)]
+
+# Create aggregated pseudobulk data
+pb = scglmmr::PseudobulkList(
+  rawcounts = umi,
+  metadata = meta, 
+  sample_col = "sample",
+  celltype_col = "celltype",
+  avg_or_sum = "sum"
+  )
+
+
+# Create aggretated sample level metadata
+met = scglmmr::AggregateCellMetadata(
+  cell.metadata = meta, 
+  sample_column = 'sample', 
+  variable_columns = c('subjectid', 'timepoint', 'response', 'age', 'sex'),
+  pseudobulk.List = pb
+  )
+
+# creation of a combined grouping factor indicating both timepoint and group
+# (e.g. t0_Group1, t0_group2) will make it simple to set up contrasts.
+# here group means 'response group' i.e. high vs low responder. 
+# also convert other variables to factors and do some standard transformation
+# of metadata.
+met$group.time = paste(met$group, met$timepoint, sep = '_')
+
+# make sure this is a factor and the levels are in a coherent order for the 
+# contrast matrix -- see below. here: 
+# time 0 = 0, time 1 = 1. 
+# low response = 0 high response = 1. 
+met$group.time = factor(
+  met$group.time,
+  levels = c("1_0", "1_1", "0_0", "0_1")
+  )
+
+# now filter genes within each cell type that are reasonably expressed. 
+design = model.matrix( ~ 0 + met$group.time)
+dge = Normalize(pseudobulk.list = pb,design = design,minimum.gene.count = 5)
+```
+
+### Fit models and specify a priori contrasts corresponding to the desired effect comparisons
+
+Below we use a function from the variancePartition package
+makeContrastsDream which is similar to the function makeContrasts from
+limma and works the same way.
+
+We also specify a varying intercept model using lme4 symbolic formula.
+[More information on symbolic model
+formulas](https://arxiv.org/pdf/1911.08628.pdfs).
+
+``` r
+# Now we  specify model 
+f1 <- ~ 0 + age + sex + group.time + (1|subjectid) 
+
+# make contrast matrix 
+L2 = makeContrastsDream(
+  formula = f1, 
+  data = samplemd,
+  contrasts = c(
+    baseline = "group.time1_0 - group.time0_0", # note fixef model also fit for this single time point contrast 
+    treatment_delta = "( group.time1_1 - group.time1_0 ) - ( group.time0_1 - group.time0_0 )",
+    treatment = "( group.time1_1 + group.time0_1 ) / 2 - ( group.time1_0 + group.time0_0 ) / 2 "
+    )
+  )
+
+# visualize the contrast matrix, compare to levels of group.time variable
+# to check for correctly specified effects. 
+plotContrasts(L2) 
+```
+
+Fit the models.
+
+``` r
+
+fit1 = FitDream(pb.list = dge, 
+                sample.metadata = met, 
+                lme4.formula = f1, 
+                dream.contrast.matrix = L2,
+                ncores = 4)
+```
+
+It’s also possible to fit a simple model for the baseline contrast since
+random effects are not needed.
+
+``` r
+# fit simple linear model for the baseline group level contrast 
+design.2 = model.matrix(~0 + age + sex + group.time, data = met)
+fit0 = scglmmr::RunVoomLimma(dgelists = dge, 
+                           design_matrix = design.2, 
+                           do_contrast_fit = T,
+                           # we use only the first row of the contrast matrix L2
+                           my_contrast_matrix = L2[ ,1])
+```
+
+### Downstream gene set enrichment analysis within celltypes for different effects
+
+Run gene set enrichment analysis within each cell type fbased on genes
+ranked by effect size for each of the effects defined above.
+
+``` r
+# parallelize fgsea 
+BiocParallel::register(BiocParallel::SnowParam(4))
+pparam = BiocParallel::SnowParam(workers = 4, type = "SOCK", progressbar = TRUE)
+
+# msigDB hallmark pathways are included in package
+hlmk = scglmmr::hallmark
+
+# gsea: baseline differences between groups - hypothesis set and hallmark pathway
+r0 = ExtractResult(model.fit.list = fit0,
+                   what = 'gene.t.ranks',
+                   coefficient.number = 1,
+                   coef.name = 'baseline_irae')
+hlmk.0 = FgseaList(rank.list.celltype = r0,
+                   pathways = hlmk,
+                   BPPARAM = pparam)
+
+# gsea: treatment effect (across all donors) - hypothesis set and hallmark pathway
+rtreat = ExtractResult(model.fit.list = fit1,
+                       what = 'gene.t.ranks',
+                       coefficient.number = 3,
+                       coef.name = 'treatment')
+hlmk.treat = FgseaList(rank.list.celltype = rtreat,
+                       pathways = hlmk,
+                       BPPARAM = pparam)
+
+# gsea: difference in treatment effect between groups (irae / no irae) hypothesis set and hallmark pathway
+rdelta = ExtractResult(model.fit.list = fit1,
+                       what = 'gene.t.ranks',
+                       coefficient.number = 2,
+                       coef.name = 'treatment_delta')
+hlmk.delta = RunFgseaOnRankList(rank.list.celltype = rdelta,
+                                pathways = hlmk,
+                                BPPARAM = pparam)
+```
+
+### Further analysis and curation of enrichment results
+
+``` r
+# full set of leading edge genes indexed by celltype x effect x module 
+lefull = scglmmr::GetLeadingEdgeFull(gsea.list = hlmk.treat,
+                                     padj.filter = 0.02, 
+                                     NES.filter = -Inf)
+
+# extract model fit results instead of ranks
+fit1.res = scglmmr::ExtractResult(model.fit.list = fit1, 
+                                  coefficient.number = 3, 
+                                  coef.name = 'treatment')
+
+# combine GSEA results with model coefficient for each gene in leading edge 
+# include all leading edge genes irrespective of individual gene p value 
+cr = scglmmr::CombineResults(gsealist = hlmk.treat, 
+                             contrastlist = fit1.res, 
+                             gseafdr = 0.02, 
+                             genefdr = 1)
+```
+
+### Extract all leading edge genes indexed by cell type
+
+``` r
+li = scglmmr::LeadingEdgeIndexed(gsea.result.list = hlmk.treat, padj.threshold = 0.02)
+```
+
+### Calculate the Jaccard similarity of the leading edge genes for enrichments within a given cell type and effect
+
+``` r
+# figpath.temp = here('figures')
+treat.JI = EnrichmentJaccard(gsealist = hlmk.treat, 
+                          indexedgenes = li, 
+                          #saveplot = TRUE, 
+                          #figpath = figpath.temp,
+                          returnJaccardMtx = TRUE)
+
+# curate results 
+results.sorted = treat.JI$sortedgsea %>%
+  dplyr::mutate(signal = paste(celltype, pathway, sep = '~'))
+  
+# data.table::fwrite(results.sorted, file = paste0(datapath, 'g0.result.sort.txt'),sep = "\t")
+```
+
+### Visualization of enrichment results
+
+**Create a bubble plot heatmap of enrichment results within clusters**
+
+``` r
+p = PlotFgsea(gsea_result_list = hlmk.treat, NES_filter = -Inf,padj_filter = 0.02)
+```
+
+**Create heatmap of genes based on model fit coefficients**
+
+``` r
+gene.mat = GetGeneMatrix(result.list = fit1, 
+                         pvalfilter = 0.05, 
+                         stat_for_matrix = 'logFC',
+                         logfcfilter = 0.1)
+
+HeatmapDiag(matrix = gene.mat)
+
+# can also call pheatmap on gene.mat
+```
+
+### Additional visualization methods
+
+``` r
+# make tidy average data for visualization of weighted pb results 
+av = scglmmr::PseudobulkList(rawcounts = umi, 
+                             metadata = meta, 
+                             sample_col = "sample", 
+                             celltype_col = "celltype",
+                             avg_or_sum = 'average')
+le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = av,
+                                           gsea.list = hlmk.treat, 
+                                           padj.filter = 0.1,
+                                           NES.filter = -Inf)
+
+
+# example plot of sample level average leading edge genes annotated 
+scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr,
+                               modulename = "MODULENAME",
+                               elltype_plot = "TCELL",
+                               metadata = meta, 
+                               metadata_annotate = c('group', 'timepoint', 'age', 'sex'),
+                               sample_column = 'sample',
+                               returnmat = F, 
+                               savepath = figpath, 
+                               savename = "filename")
+
+# see also: 
+# scglmmr::TopGenesTidySampleExprs() - same as aobve for 'top' de genes estimated by model coeffcient / p value. 
+# scglmmr::GetTidySummary() - for custom plotting
+
+
+# sample level vsualization of average data above 
+# repeat this for all enriched pathways 
+heatpath = here("sime/path"); dir.create(heatpath)
+for (i in 1:length(le_expr)) {
+  cdat = le_expr[[i]]
+  ctype = names(le_expr[i])
+  umod = unique(cdat$module)
+  for (u in 1:length(umod)) {
+    scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr, 
+                          modulename = umod[u], 
+                          celltype_plot = ctype,
+                          metadata = meta, metadata_annotate = c('group', 'timepoint', 'age', 'gender'),
+                          sample_column = 'sample',
+                          returnmat = F, 
+                          savepath = heatpath,
+                          savename = paste0(ctype, " ",umod[u],'.pdf'))
+  }
+}
+```
