@@ -185,7 +185,7 @@ RbindGseaResultList = function(gsea_result_list, NES_filter = -Inf, padj_filter 
 
   score = lapply(gsea_result_list, function(x) {
     x = x %>%
-      dplyr::select(pathway, padj, NES, celltype) %>%
+      dplyr::select(pathway, pval, padj, NES, celltype) %>%
       dplyr::filter(NES > NES_filter)
   })
   # combine and filter
