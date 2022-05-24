@@ -14,7 +14,7 @@ ExtractResult(
 \arguments{
 \item{model.fit.list}{list of model results indexed by celltypes returned by `scglmmr::dreamMixedModel`,  `scglmmr::RunVoomLimma`, or manually by `lmFit` or `dream`.}
 
-\item{what}{what to return what = c('statistics', 'gene.z.ranks' or 'gene.t.ranks')[1] defaults to statistics for each cell type, e.g. avg exprs, logFC, t statistic, pval, adj.P.Val etc. If gene.z.ranks, ranks genes based on z statistic (mixed models) and returns a list (indexed by celltype of named numeric vector of genes ranked for FgseaList.}
+\item{what}{what to return what = c('statistics', 'lmer.z.ranks' or 'gene.t.ranks')[1] defaults to statistics for each cell type, e.g. avg exprs, logFC, t statistic, pval, adj.P.Val etc. If gene.z.ranks, ranks genes based on z statistic (mixed models) and returns a list (indexed by celltype of named numeric vector of genes ranked for FgseaList.}
 
 \item{coefficient.number}{what coefficient to return -- this needs to be one of model.fit.list$coefficients: check the order of the coefficients. Results returned from dream include statistical contrasts and estimated coefficients from the model. If limma::contrasts.fit was used (e.g. if using do_contrast_fit = TRUE in RunVoomLimma), these 'coefficients' are results of the statistical contrast.}
 

@@ -474,7 +474,7 @@ LeadEdgeTidySampleExprs = function(av.exprs.list, gsea.list, padj.filter, p.filt
 
 
   # filter results
-  if (!is.null(gseap)) {
+  if (!is.null(p.filter)) {
     gseasub = lapply(gsea.list, function(x){x = x %>%
       dplyr::filter(NES > NES.filter & pval < p.filter) %>%
       dplyr::select(pathway, leadingEdge)
