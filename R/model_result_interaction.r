@@ -5,7 +5,7 @@
 
 #' ExtractResult - convenience function to return statistics for downstream analysis functions such as FgseaList. Returns results from list of dream or lmFit results from those functions natively (use model.fit.list = list(fit)) or from scglmmr::RunVoomLimma and scglmmr::dreamMixedModel
 #' @param model.fit.list list of model results indexed by celltypes returned by `scglmmr::dreamMixedModel`,  `scglmmr::RunVoomLimma`, or manually by `lmFit` or `dream`.
-#' @param what what to return what = c('statistics', 'gene.t.ranks')[1] defaults to statistics for each cell type, e.g. avg exprs, logFC, t statistic, pval, adj.P.Val etc. If gene.t.ranks, ranks genes based on t statistic and returns a named numeric vector for FgseaList.
+#' @param what what to return what = c('statistics', 'gene.z.ranks' or 'gene.t.ranks')[1] defaults to statistics for each cell type, e.g. avg exprs, logFC, t statistic, pval, adj.P.Val etc. If gene.z.ranks, ranks genes based on z statistic (mixed models) and returns a list (indexed by celltype of named numeric vector of genes ranked for FgseaList.
 #' @param coefficient.number what coefficient to return -- this needs to be one of model.fit.list$coefficients: check the order of the coefficients. Results returned from dream include statistical contrasts and estimated coefficients from the model. If limma::contrasts.fit was used (e.g. if using do_contrast_fit = TRUE in RunVoomLimma), these 'coefficients' are results of the statistical contrast.
 #' @param coef.name the name of the estimated coefficient for which results are being returned; if returning results from a statistical contrast e.g. limma::contrasts.fit() this will be the name of the contrast. If returning a model fit with the dream function, can also be contrast specified by from variancePartition::makeContrastsDream() or a fixed effect parameter that was included in the model.
 #' @return a list of dataframes with contrast results indexed by cell type or a list of genes ranked b t statistic in format ready for FgseaList.
@@ -13,48 +13,89 @@
 #' @importFrom tibble rownames_to_column column_to_rownames
 #' @importFrom dplyr mutate select
 #' @export
-ExtractResult = function(model.fit.list, what = c('statistics', 'gene.t.ranks')[1], coefficient.number, coef.name){
+ExtractResult = function(model.fit.list,
+                         what = c('statistics', 'lmer.z.ranks', 'gene.t.ranks')[1],
+                         coefficient.number,
+                         coef.name) {
+  values.possible = c('statistics', 'lmer.z.ranks', 'gene.t.ranks')
+  if (!what %in% values.possible) {
+    stop('`what` must be one of: statistics, lmer.z.ranks, gene.t.ranks')
+  }
+
+
   #init
   celltypes = names(model.fit.list)
 
   # check user input data
   model_type = model.fit.list[[1]]$method
-  message1 = 'raw t statistic reported for unequal degrees of freedom'
-  message2 = 'emperical Bayes moderated t statistic reported for model with only fixed effects'
+  message1 = 'lmer mixed model fit'
+  message2 = 'linear model fixed effects only fit'
   messageprint = ifelse(model_type == 'lmer', message1, message2)
   print(paste0('returning results of ', model_type, ' model: ', messageprint))
+
+  # ensure user estimating the correct coefficient
   coefs = colnames(model.fit.list[[1]]$coefficients)
-  print('coefficients available from model fit object: ');print(coefs)
-  # ensure user is estimating the contrast that
-  stopifnot(all.equal(
-    as.character(coef.name), as.character(coefs[coefficient.number])
-  ))
+  print('coefficients available from model fit object: ')
+  print(coefs)
+  stopifnot(all.equal(as.character(coef.name),
+                      as.character(coefs[coefficient.number])))
+
+  # print data returning
+  if (what == 'statistics') {
+    print('returning statistics for: ')
+    print(coefs[coefficient.number])
+    print('to return ranks change argument to `what`')
+  } else{
+    print('returning gene ranks for: ')
+    print(coefs[coefficient.number])
+  }
 
   # extract results
-  test = ret = list()
-  for (i in 1:length(model.fit.list)) {
-    test[[i]] =
-      limma::topTable(fit = model.fit.list[[i]], coef = coefficient.number, number = Inf, sort.by = 't') %>%
-      tibble::rownames_to_column("gene") %>%
-      dplyr::mutate(contrast = rep(coef.name)) %>%
-      dplyr::mutate(celltype = celltypes[i]) %>%
-      arrange(desc(t))
-
-    if (what == 'gene.t.ranks') {
-      ret[[i]] = test[[i]] %>%
-        dplyr::select(c('gene', 't')) %>%
-        tibble::column_to_rownames("gene") %>%
-        t() %>%
-        unlist(use.names = T)
-      ret[[i]] = ret[[i]][1, ]
-    } else{
-      ret[[i]] = test[[i]]
+  test = list()
+  if (model_type == 'lmer') {
+    # use variancePartition topTable function for mixed model
+    for (i in 1:length(model.fit.list)) {
+      test[[i]] =
+        variancePartition::topTable(fit = model.fit.list[[i]],
+                                    coef = coefficient.number,
+                                    number = Inf) %>%
+        tibble::rownames_to_column("gene") %>%
+        dplyr::mutate(contrast = rep(coef.name)) %>%
+        dplyr::mutate(celltype = celltypes[i]) %>%
+        arrange(desc(z.std)) # arrange by signed z statistic calculated by dream
+    }
+  } else {
+    # use limma topTable function for fixed effects model
+    for (i in 1:length(model.fit.list)) {
+      test[[i]] =
+        limma::topTable(fit =  model.fit.list[[i]],
+                        coef = coefficient.number,
+                        number = Inf) %>%
+        tibble::rownames_to_column("gene") %>%
+        dplyr::mutate(contrast = rep(coef.name)) %>%
+        dplyr::mutate(celltype = celltypes[i]) %>%
+        arrange(desc(t)) # arrange by empirical bayes moderated t stat
     }
   }
-  names(ret) = names(model.fit.list)
+  # convenince for returning genes ranked (as above from the arrange call)
+  # added the base::sort, decreasing = TRUE line to futureproof in case arrange(desc(z.std)) removed
+  if (what == 'gene.t.ranks') {
+    ret = lapply(test, function(x) {
+      structure(x$t, names = as.character(x$gene))
+    })
+    ret = lapply(ret, sort, decreasing = TRUE)
+  } else if (what == 'lmer.z.ranks') {
+    ret = lapply(test, function(x) {
+      structure(x$z.std, names = as.character(x$gene))
+    })
+    ret = lapply(ret, sort, decreasing = TRUE)
+  } else{
+    # default - return full model statistics
+    ret = test
+  }
+  names(ret) = celltypes
   return(ret)
 }
-
 
 #' GetGeneMatrix get a gene matric for plotting genes by celltypes statistic from pseudobulk model results e.g. using heatmap pheatmap or complexheatmap
 #'

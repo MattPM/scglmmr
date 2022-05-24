@@ -381,7 +381,7 @@ GetLeadingEdgeGenes = function(gsea.result.list, celltype.index, module.name) {
 #'\dontrun{
 #' combined_results = CombineResults(gsealist = testgsea, contrastlist = testmod, gseafdr = 0.05,genefdr = 0.2)
 #' }
-CombineResults = function(gsealist, contrastlist, gseafdr, gseap, genefdr = Inf){
+CombineResults = function(gsealist, contrastlist, gseafdr, gseap=NULL, genefdr = Inf){
 
   # filter results
   if (!is.null(gseap)) {

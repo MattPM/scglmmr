@@ -4,7 +4,7 @@
 \alias{CombineResults}
 \title{CombineResults - For all cell types merge the gsea leading edge genes with their contrast model coefficieint and p value from limma / dream}
 \usage{
-CombineResults(gsealist, contrastlist, gseafdr, gseap, genefdr = Inf)
+CombineResults(gsealist, contrastlist, gseafdr, gseap = NULL, genefdr = Inf)
 }
 \arguments{
 \item{gsealist}{list of results returned by `RunFgseaOnRankList()`}
