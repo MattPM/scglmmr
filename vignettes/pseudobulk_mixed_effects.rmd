@@ -22,11 +22,15 @@ knitr::opts_chunk$set(
 ```
 
 ### 1. pseudobulk mixed effects models  
-These functions implement wrappers around limma for fitting fixed effect linear models and the dream method from the variancePartition package. The dream method is the only way to test differential expression while accomodating ‘random’ or varying effects. This is statistically necessary to account for non-independence when we have perturbation experiments with repeated measurements from the same donors. To enable linear models (e.g. modeling the mean with a normal distribution) to be fit to gene counts, dream accounts for the mean variance trend via incorporating voom observational weights.
+These functions implement wrappers around limma for fitting fixed effect linear models, and the `dream` method from the `variancePartition` package forfitting mixed (i.e. varying) effects models. Mixed models are necessary for experiments that have the design of  repeated measurements from the same donors in perturbation studies in multi sample ‘random’ (varying) effects. This is necessary to account for non-independence when we have perturbation experiments with repeated measurements from the same donors. To enable linear models (e.g. modeling the mean with a normal distribution) to be fit to gene counts, `variancePartition::dream` accounts for the mean variance trend via incorporating voom observational weights. The approach is described in [Hoffman et al Bininformatics 2020](doi.org/10.1093/bioinformatics/btaa687)
 
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 #devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
-library(scglmmr)
+suppressMessages(library(scglmmr))
+suppressMessages(library(magrittr))
+#the mixed model fits and gsea are parallelized 
+BiocParallel::register(BiocParallel::SnowParam(4))
+pparam = BiocParallel::SnowParam(workers = 4, type = "SOCK", progressbar = TRUE)
 ```
 
 Below analysis of a 2 group repeated measures experiment design is shown. Pre-treatment baseline effect differences, treatment effets across all donors and the difference in treatment effects are all compared while modeling variation in baseline expression using a random intercept term. 
@@ -40,6 +44,7 @@ Below analysis of a 2 group repeated measures experiment design is shown. Pre-tr
 |  ... (x n donors)    | ... (x n donors)           | ... (x n donors)           |  ... (x n donors)           | ... (x n donors)             | 
 
 ### Load single cell data, aggregate and quaity control 
+
 
 ```{r, eval = FALSE}
 
@@ -130,62 +135,52 @@ plotContrasts(L2)
 
 ```
 
-Fit the models. 
+Fit the models with `variancePartition::dream` which uses voom weights in lme4 mixed effects models. 
 
 ```{r}
 
 fit1 = FitDream(pb.list = dge, 
                 sample.metadata = met, 
-                lme4.formula = f1, 
+                lme4.formula = f1,
                 dream.contrast.matrix = L2,
                 ncores = 4)
+fit1 = variancePartition::eBayes(fit1)
 ```
 
-It's also possible to fit a simple model for the baseline contrast since random effects are not needed. 
-
-```{r}
-# fit simple linear model for the baseline group level contrast 
-design.2 = model.matrix(~0 + age + sex + group.time, data = met)
-fit0 = scglmmr::RunVoomLimma(dgelists = dge, 
-                           design_matrix = design.2, 
-                           do_contrast_fit = T,
-                           # we use only the first row of the contrast matrix L2
-                           my_contrast_matrix = L2[ ,1])
-```
-
+Note, `variancePartition::dream` now incorporates an emperical Bayes step derived for mixed effects models accounting for per gene degrees of freedom, please see: https://github.com/GabrielHoffman/variancePartition/issues/54. 
 
 ### Downstream gene set enrichment analysis within celltypes for different effects 
 
-Run gene set enrichment analysis within each cell type fbased on genes ranked by effect size for each of the effects defined above. 
+Run gene set enrichment analysis within each cell type fbased on genes ranked by effect size for each of the effects defined above.  
+
+Here within each cell type and for each contrast we run gene set enrichment analysis using 2 functions `ExtractResult` and `FgseaList`. `ExtractResult` is used to extract a list of gene ranks (it can be used as a wrapper around dream::topTable and limma::topTable to return a full list of results). Since we had multiple covariates in a mixed model and we used a custom contrast matrix, we specify the covariate of interest from the contrast using arguments `coefficient.number`  and `coef.name` which are output in results based on the names of the contrasts. 
+
+With the list of ranks we then run gene set enrichment with the [fgsea method by Korotkevich et al](https://www.biorxiv.org/content/10.1101/060012v3) using the function `FseaList`. 
+
+Based on our contrast matrix (the object `L2` we created above with `makeContrastsDream`), `coefficient.number = 1` corresponds to the baseline difference between groups, `coefficient.number = 2` is the difference in fold changes between the groups and `coefficient.number = 3` is the pre vs post perturbation difference across subjects in both groups. 
+
+#### Examples of extracting gene ranks based on contrasts and running gene set enrichment 
+
 ```{r}
-# parallelize fgsea 
-BiocParallel::register(BiocParallel::SnowParam(4))
-pparam = BiocParallel::SnowParam(workers = 4, type = "SOCK", progressbar = TRUE)
 
-# msigDB hallmark pathways are included in package
+# msigDB hallmark pathways are included in the scglmmr package
 hlmk = scglmmr::hallmark
-
-# gsea: baseline differences between groups - hypothesis set and hallmark pathway
-r0 = ExtractResult(model.fit.list = fit0,
-                   what = 'gene.t.ranks',
-                   coefficient.number = 1,
-                   coef.name = 'baseline_irae')
-hlmk.0 = FgseaList(rank.list.celltype = r0,
-                   pathways = hlmk,
-                   BPPARAM = pparam)
-
-# gsea: treatment effect (across all donors) - hypothesis set and hallmark pathway
+scglmmr::ExtractResult()
+# extract genes ranked by treatment effect (across all donors) 
 rtreat = ExtractResult(model.fit.list = fit1,
-                       what = 'gene.t.ranks',
+                       what = 'lmer.z.ranks',
                        coefficient.number = 3,
                        coef.name = 'treatment')
+# run fgsea 
 hlmk.treat = FgseaList(rank.list.celltype = rtreat,
                        pathways = hlmk,
                        BPPARAM = pparam)
 
-# gsea: difference in treatment effect between groups (irae / no irae) hypothesis set and hallmark pathway
+
+
+# extract gene ranks of treatment effect (across all donors) 
 rdelta = ExtractResult(model.fit.list = fit1,
-                       what = 'gene.t.ranks',
+                       what = 'lmer.z.ranks',
                        coefficient.number = 2,
                        coef.name = 'treatment_delta')
 hlmk.delta = RunFgseaOnRankList(rank.list.celltype = rdelta,
@@ -195,7 +190,33 @@ hlmk.delta = RunFgseaOnRankList(rank.list.celltype = rdelta,
 
 ```
 
+On a technical note, it's also possible to fit a simple model for the baseline contrast not estimating the variation across subjects with a random effect as this contrast is more typically estimated with a standard group 1 vs 2 least squares approach. The function `RunVoomLimma` is provided to fit these models. If you compare the effect size estimates for an individual cell type for the `coefficient.number = 1` from the mixed model fits (object `fit1` above) to the models below they will be very highly corrleated along the diagonal with some differences arising to the different degrees of freedom, sample size and variance coming from the additional layer of variation estimated by the mixed model. The choice of model to use is up to the user. 
+
+```{r}
+# fit simple linear model for the baseline group level contrast 
+design.2 = model.matrix(~0 + age + sex + group.time, data = met)
+fit0 = scglmmr::RunVoomLimma(dgelists = dge, 
+                           design_matrix = design.2, 
+                           do_contrast_fit = T,
+                           # we use only the first row of the contrast matrix L2
+                           my_contrast_matrix = L2[ ,1])
+
+
+# extract fixed efect model estimate of baseline contrast (pre treatment differences between groups)
+r0 = ExtractResult(model.fit.list = fit0,
+                   what = 'gene.t.ranks',
+                   coefficient.number = 1,
+                   coef.name = 'baseline')
+## run gene set enrichment 
+hlmk.0 = FgseaList(rank.list.celltype = r0,
+                   pathways = hlmk,
+                   BPPARAM = pparam)
+
+```
+
+
 ### Further analysis and curation of enrichment results 
+
 
 ```{r}
 # full set of leading edge genes indexed by celltype x effect x module 
@@ -204,7 +225,8 @@ lefull = scglmmr::GetLeadingEdgeFull(gsea.list = hlmk.treat,
                                      NES.filter = -Inf)
 
 # extract model fit results instead of ranks
-fit1.res = scglmmr::ExtractResult(model.fit.list = fit1, 
+# automatically this sets argument `result` to 'statistics'
+fit1.res = scglmmr::ExtractResult(model.fit.list = fit1 , 
                                   coefficient.number = 3, 
                                   coef.name = 'treatment')
 
@@ -219,11 +241,15 @@ cr = scglmmr::CombineResults(gsealist = hlmk.treat,
 
 ### Extract all leading edge genes indexed by cell type 
 
+This outputs a nested list of leading edge genes from each enrichment across cell types. list level 1 is cell type, level 2 is enrichment signal. 
+
 ```{r}
 li = scglmmr::LeadingEdgeIndexed(gsea.result.list = hlmk.treat, padj.threshold = 0.02)
 ```
 
 ### Calculate the Jaccard similarity of the leading edge genes for enrichments within a given cell type and effect
+
+This is useful for understanding which enrichment signals may come from the same vs distinct genes. 
 
 ```{r}
 # figpath.temp = here('figures')
@@ -245,33 +271,46 @@ results.sorted = treat.JI$sortedgsea %>%
 
 **Create a bubble plot heatmap of enrichment  results within clusters**
 ```{r}
-p = PlotFgsea(gsea_result_list = hlmk.treat, NES_filter = -Inf,padj_filter = 0.02)
-
+# NES_filter to -Inf to plot positive and negative enrichment
+p = PlotFgsea(gsea_result_list = hlmk.treat, NES_filter = -Inf,padj_filter = 0.05)
 ```
 
 **Create heatmap of genes based on model fit coefficients**
 
+Extract and make a heatmap of log fold changes across celltypes. 
+
+HeatmapDiag uses the package [slanter](https://CRAN.R-project.org/package=slanter). 
 ```{r}
 gene.mat = GetGeneMatrix(result.list = fit1, 
                          pvalfilter = 0.05, 
                          stat_for_matrix = 'logFC',
                          logfcfilter = 0.1)
 
+#make heatmap  e.g. 
+pheatmap::pheatmap(gene.mat)
+
+# diagnoalize the heatmap so that the most correlated signals are grouped 
+# this uses the package slanter 
 HeatmapDiag(matrix = gene.mat)
 
-# can also call pheatmap on gene.mat
 ```
-
 
 ### Additional visualization methods 
 
+Below we go a level further and visualize the average gene expression across samples 
+
 ```{r}
+
+
 # make tidy average data for visualization of weighted pb results 
 av = scglmmr::PseudobulkList(rawcounts = umi, 
                              metadata = meta, 
                              sample_col = "sample", 
                              celltype_col = "celltype",
                              avg_or_sum = 'average')
+
+# note one can lso calculate logCPM from summed data using edgeR::cpm()
+
 le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = av,
                                            gsea.list = hlmk.treat, 
                                            padj.filter = 0.1,
@@ -315,5 +354,13 @@ for (i in 1:length(le_expr)) {
 
 
 ```
+
+
+```{r}
+sessionInfo()
+```
+
+
+
 
 

@@ -39,13 +39,19 @@ Any number of model covariates can be specified. The vignettes provide methods w
 An overview of methods provided: 
 
 ### 1. pseudobulk aggregated models  
-These functions implement wrappers around `limma` for fitting fixed effect linear models and the `dream` method from the `variancePartition` package. The dream method is the only way to test differential expression while accomodating 'random' or varying effects. This is statistically necessary to account for non-independence when we have perturbation experiments with repeated measurements from the same donors. To enable linear models (e.g. modeling the mean with a normal distribution) to be fit to gene counts, dream accounts for the mean variance trend via incorporating `voom` observational weights. 
+These functions implement wrappers around `limma` for fitting fixed effect linear models and the method [**"dream", described in Hoffman et al *Bioinformatics* 2020**](https://doi.org/10.1093/bioinformatics/btaa687) from the `variancePartition` package. Dream is the only way to test differential expression while accomodating 'random' or varying effects and accounting for experiments with non-independence due to replicated measurements (e.g. timepoints) from the same donor. To enable linear models (e.g. modeling the mean with a normal distribution) to be fit to gene counts, dream accounts for the mean variance trend via incorporating `voom` observational weights. 
 
 ### 2. single cell gene and gene module level mixed effects models
-Test perturbation effect using a gene level Poisson mixed model.
+
+Model variation in gene counts at the single cell and sample / donor level.  
+
+Rather than aggregating data at the sample level in to average or summed counts, this uses a Piosson generalized linear mixed effects model wiht a log link function to test the effect of perturbation at the single cell level across a cohort of individuals, incorporating random effects for replicated sampels from the same donor. This estiates
 
 ### 3. single cell module level mixed effect models    
-Test perturbation effects and differences in perturbation responses between groups at the gene module level. 
+
+Model variation of gene module activity at the single cell and sample / donor level 
+
+This set of functions scores the activity of modules in single cells, then tests the effect of sone treatment perturbation across donors using a linear mixed modethe single cell level. Any model can be specified. In addition, a custom function is provided for a experiment with a single perturbation applied to multiple donors nested in 2 response groups, due to the commonality of this experiment design in biological studies. 
 
 ### 4. Downstream enrichment testing and visualization
 There are wrapper functions around multiple gene set enrichment methods, with emphasis on the [fast set gene enrichment (fgsea) package](https://www.biorxiv.org/content/10.1101/060012v2#disqus_thread). The results from fgsea can then be further interrogated by methods for contrasting information content in genes driving enrichments within and between celltypes. Multiple visualization wrappers are also provided.
