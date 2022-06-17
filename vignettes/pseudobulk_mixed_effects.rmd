@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 ### 1. pseudobulk mixed effects models  
 These functions implement wrappers around limma for fitting fixed effect linear models, and the `dream` method from the `variancePartition` package forfitting mixed (i.e. varying) effects models. Mixed models are necessary for experiments that have the design of  repeated measurements from the same donors in perturbation studies in multi sample ‘random’ (varying) effects. This is necessary to account for non-independence when we have perturbation experiments with repeated measurements from the same donors. To enable linear models (e.g. modeling the mean with a normal distribution) to be fit to gene counts, `variancePartition::dream` accounts for the mean variance trend via incorporating voom observational weights. The approach is described in [Hoffman et al Bininformatics 2020](doi.org/10.1093/bioinformatics/btaa687)
 
-```{r, eval = TRUE}
+```{r}
 #devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
 suppressMessages(library(scglmmr))
 suppressMessages(library(magrittr))
@@ -63,7 +63,7 @@ tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "celltype
 tab$celltypes_remove; tab$`low representation celltypes`; tab$table
 
 # remove cells prior to pseudobulk analysis 
-meta = meta[!meta$celltype_label_3 %in% tab$celltypes_remove, ]
+meta = meta[!meta$celltype %in% tab$celltypes_remove, ]
 
 # subset data 
 umi = umi[ ,rownames(meta)]
@@ -104,7 +104,7 @@ met$group.time = factor(
 
 # now filter genes within each cell type that are reasonably expressed. 
 design = model.matrix( ~ 0 + met$group.time)
-dge = Normalize(pseudobulk.list = pb,design = design,minimum.gene.count = 5)
+dge = Normalize(pseudobulk.list = pb, design = design, minimum.gene.count = 5)
 
 ```
 
@@ -275,11 +275,11 @@ results.sorted = treat.JI$sortedgsea %>%
 p = PlotFgsea(gsea_result_list = hlmk.treat, NES_filter = -Inf,padj_filter = 0.05)
 ```
 
-**Create heatmap of genes based on model fit coefficients**
+**Create heatmap of gene perturbation fold changes across cell subsets based on model fit coefficients**
 
 Extract and make a heatmap of log fold changes across celltypes. 
+HeatmapDiag uses the package [slanter](https://CRAN.R-project.org/package=slanter) which accepts the same arguments as `pheatmap`. 
 
-HeatmapDiag uses the package [slanter](https://CRAN.R-project.org/package=slanter). 
 ```{r}
 gene.mat = GetGeneMatrix(result.list = fit1, 
                          pvalfilter = 0.05, 
@@ -287,31 +287,25 @@ gene.mat = GetGeneMatrix(result.list = fit1,
                          logfcfilter = 0.1)
 
 #make heatmap  e.g. 
-pheatmap::pheatmap(gene.mat)
+pheatmap::pheatmap(gene.mat, fontsize_row = 5)
 
 # diagnoalize the heatmap so that the most correlated signals are grouped 
 # this uses the package slanter 
-HeatmapDiag(matrix = gene.mat)
+HeatmapDiag(matrix = gene.mat, fontsize_row = 5)
 
 ```
 
-### Additional visualization methods 
+**Create heatmap of gene perturbation fold changes from enrichments across individuals within a cell subset**
 
-Below we go a level further and visualize the average gene expression across samples 
+Visualize the log counts per million at the sample level of the gene set enrichment results.  
 
 ```{r}
 
-
 # make tidy average data for visualization of weighted pb results 
-av = scglmmr::PseudobulkList(rawcounts = umi, 
-                             metadata = meta, 
-                             sample_col = "sample", 
-                             celltype_col = "celltype",
-                             avg_or_sum = 'average')
+lcmp = lapply(pb, edgeR::cpm, log = TRUE )
 
-# note one can lso calculate logCPM from summed data using edgeR::cpm()
-
-le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = av,
+# 
+le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = lcmp,
                                            gsea.list = hlmk.treat, 
                                            padj.filter = 0.1,
                                            NES.filter = -Inf)
@@ -319,12 +313,12 @@ le_expr = scglmmr::LeadEdgeTidySampleExprs(av.exprs.list = av,
 
 # example plot of sample level average leading edge genes annotated 
 scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr,
-                               modulename = "MODULENAME",
-                               elltype_plot = "TCELL",
+                               modulename = "HALLMARK_HYPOXIA",
+                               elltype_plot = "CD4_NaiveTcell",
                                metadata = meta, 
                                metadata_annotate = c('group', 'timepoint', 'age', 'sex'),
                                sample_column = 'sample',
-                               returnmat = F, 
+                               returnmat = FALSE, 
                                savepath = figpath, 
                                savename = "filename")
 
@@ -354,6 +348,49 @@ for (i in 1:length(le_expr)) {
 
 
 ```
+
+You can also create a customized map by returning the matrix from `LeadEdgeSampleHeatmap`. 
+
+```{r}
+
+# scglmmr function to extract leading edge genes 
+lexp1 = LeadEdgeTidySampleExprs(av.exprs.list = lcpm, gsea.list = g1c, padj.filter = 0.05, NES.filter = 0)
+
+# annotate time and batch on the heatmap
+heatmap_anno = meta[, c('batch', 'timepoint')]
+anno_color = list(
+  timepoint = c('1' = "orange", '2' = 'red',  "0" = "white"),
+  batch = c('1' = "black", '2' = "white")
+)
+
+# define your own custom color vector for the log fold change values
+cu = c("#053061", "#1E61A5", "#3C8ABE", "#7CB7D6", "#BAD9E9", "#E5EEF3", 
+       "#F9EAE1", "#F9C7AD", "#EB9273", "#CF5246", "#AB1529", "#67001F")
+
+# scglmmr function for leading edge gene matrix across donors
+mat2 = scglmmr::LeadEdgeSampleHeatmap(tidy.exprs.list = le_expr, 
+                                 modulename = "reactome interferon signaling",
+                                 celltype_plot = 'CD14_Mono',
+                                 # metadata = meta, # unused  
+                                 # metadata_annotate = c('batch'), # unused 
+                                 sample_column = 'sample',
+                                 returnmat = TRUE)
+# draw heatmap 
+pheatmap::pheatmap(mat2, 
+                   border_color = NA,
+                   treeheight_row = 0, treeheight_col = 10,
+                   annotation = heatmap_anno,
+                   annotation_colors = anno_color,
+                   color = cu,
+                   width = 5,  height = 7.6,
+                   # this can be set to false to look at raw expression e.g. 
+                   scale = "row",
+                   filename = paste0(figpath, "mono_d1_ReactomeIFN.pdf")
+                   )
+
+
+```
+
 
 
 ```{r}
