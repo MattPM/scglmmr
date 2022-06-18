@@ -237,7 +237,7 @@ ms.full = scglmmr::WeightedCellModuleScore(
 d = cbind(ms.full, md)
 
 # absolute effect size for hallmark 
-f1 = as.formula(HALLMARK_HYPOXIA ~ celltype + age + sex + (1|subjecctID))
+f1 = as.formula(HALLMARK_HYPOXIA ~ 0 + celltype + age + sex + (1|subjecctID))
 m1 = lme4::lmer(f1, data = bl)
 emm1 = emmeans::emmeans(m1, specs = ~celltype)
 plot(emm1)
