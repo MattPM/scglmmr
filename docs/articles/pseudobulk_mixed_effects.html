@@ -82,17 +82,25 @@
 <h3 id="pseudobulk-mixed-effects-models">1. pseudobulk mixed effects models<a class="anchor" aria-label="anchor" href="#pseudobulk-mixed-effects-models"></a>
 </h3>
 <p>These functions implement wrappers around limma for fitting fixed
-effect linear models and the dream method from the variancePartition
-package. The dream method is the only way to test differential
-expression while accomodating ‘random’ or varying effects. This is
-statistically necessary to account for non-independence when we have
-perturbation experiments with repeated measurements from the same
-donors. To enable linear models (e.g. modeling the mean with a normal
-distribution) to be fit to gene counts, dream accounts for the mean
-variance trend via incorporating voom observational weights.</p>
+effect linear models, and the <code>dream</code> method from the
+<code>variancePartition</code> package forfitting mixed (i.e. varying)
+effects models. Mixed models are necessary for experiments that have the
+design of repeated measurements from the same donors in perturbation
+studies in multi sample ‘random’ (varying) effects. This is necessary to
+account for non-independence when we have perturbation experiments with
+repeated measurements from the same donors. To enable linear models
+(e.g. modeling the mean with a normal distribution) to be fit to gene
+counts, <code><a href="https://rdrr.io/pkg/variancePartition/man/dream-method.html" class="external-link">variancePartition::dream</a></code> accounts for the mean
+variance trend via incorporating voom observational weights. The
+approach is described in <a href="doi.org/10.1093/bioinformatics/btaa687">Hoffman et al
+Bininformatics 2020</a></p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">#devtools::install_github(repo = "https://github.com/MattPM/scglmmr")</span>
-<span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MattPM/scglmmr" class="external-link">scglmmr</a></span><span class="op">)</span></code></pre></div>
+<span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/MattPM/scglmmr" class="external-link">scglmmr</a></span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://magrittr.tidyverse.org" class="external-link">magrittr</a></span><span class="op">)</span><span class="op">)</span>
+<span class="co">#the mixed model fits and gsea are parallelized </span>
+<span class="fu">BiocParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocParallel/man/register.html" class="external-link">register</a></span><span class="op">(</span><span class="fu">BiocParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocParallel/man/SnowParam-class.html" class="external-link">SnowParam</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span>
+<span class="va">pparam</span> <span class="op">=</span> <span class="fu">BiocParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocParallel/man/SnowParam-class.html" class="external-link">SnowParam</a></span><span class="op">(</span>workers <span class="op">=</span> <span class="fl">4</span>, type <span class="op">=</span> <span class="st">"SOCK"</span>, progressbar <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
 <p>Below analysis of a 2 group repeated measures experiment design is
 shown. Pre-treatment baseline effect differences, treatment effets
 across all donors and the difference in treatment effects are all
@@ -172,7 +180,7 @@ intercept term.</p>
 <span class="va">tab</span><span class="op">$</span><span class="va">celltypes_remove</span>; <span class="va">tab</span><span class="op">$</span><span class="va">`low representation celltypes`</span>; <span class="va">tab</span><span class="op">$</span><span class="va">table</span>
 
 <span class="co"># remove cells prior to pseudobulk analysis </span>
-<span class="va">meta</span> <span class="op">=</span> <span class="va">meta</span><span class="op">[</span><span class="op">!</span><span class="va">meta</span><span class="op">$</span><span class="va">celltype_label_3</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">tab</span><span class="op">$</span><span class="va">celltypes_remove</span>, <span class="op">]</span>
+<span class="va">meta</span> <span class="op">=</span> <span class="va">meta</span><span class="op">[</span><span class="op">!</span><span class="va">meta</span><span class="op">$</span><span class="va">celltype</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">tab</span><span class="op">$</span><span class="va">celltypes_remove</span>, <span class="op">]</span>
 
 <span class="co"># subset data </span>
 <span class="va">umi</span> <span class="op">=</span> <span class="va">umi</span><span class="op">[</span> ,<span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">meta</span><span class="op">)</span><span class="op">]</span>
@@ -213,7 +221,7 @@ intercept term.</p>
 
 <span class="co"># now filter genes within each cell type that are reasonably expressed. </span>
 <span class="va">design</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix</a></span><span class="op">(</span> <span class="op">~</span> <span class="fl">0</span> <span class="op">+</span> <span class="va">met</span><span class="op">$</span><span class="va">group.time</span><span class="op">)</span>
-<span class="va">dge</span> <span class="op">=</span> <span class="fu"><a href="../reference/Normalize.html">Normalize</a></span><span class="op">(</span>pseudobulk.list <span class="op">=</span> <span class="va">pb</span>,design <span class="op">=</span> <span class="va">design</span>,minimum.gene.count <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></code></pre></div>
+<span class="va">dge</span> <span class="op">=</span> <span class="fu"><a href="../reference/Normalize.html">Normalize</a></span><span class="op">(</span>pseudobulk.list <span class="op">=</span> <span class="va">pb</span>, design <span class="op">=</span> <span class="va">design</span>, minimum.gene.count <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="fit-models-and-specify-a-priori-contrasts-corresponding-to-the-desired-effect-comparisons">Fit models and specify a priori contrasts corresponding to the
@@ -243,24 +251,19 @@ information on symbolic model formulas</a>.</p>
 <span class="co"># visualize the contrast matrix, compare to levels of group.time variable</span>
 <span class="co"># to check for correctly specified effects. </span>
 <span class="fu">plotContrasts</span><span class="op">(</span><span class="va">L2</span><span class="op">)</span> </code></pre></div>
-<p>Fit the models.</p>
+<p>Fit the models with <code><a href="https://rdrr.io/pkg/variancePartition/man/dream-method.html" class="external-link">variancePartition::dream</a></code> which uses
+voom weights in lme4 mixed effects models.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R">
 <span class="va">fit1</span> <span class="op">=</span> <span class="fu"><a href="../reference/FitDream.html">FitDream</a></span><span class="op">(</span>pb.list <span class="op">=</span> <span class="va">dge</span>, 
                 sample.metadata <span class="op">=</span> <span class="va">met</span>, 
-                lme4.formula <span class="op">=</span> <span class="va">f1</span>, 
+                lme4.formula <span class="op">=</span> <span class="va">f1</span>,
                 dream.contrast.matrix <span class="op">=</span> <span class="va">L2</span>,
-                ncores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></code></pre></div>
-<p>It’s also possible to fit a simple model for the baseline contrast
-since random effects are not needed.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># fit simple linear model for the baseline group level contrast </span>
-<span class="va">design.2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix</a></span><span class="op">(</span><span class="op">~</span><span class="fl">0</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">group.time</span>, data <span class="op">=</span> <span class="va">met</span><span class="op">)</span>
-<span class="va">fit0</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/RunVoomLimma.html">RunVoomLimma</a></span><span class="op">(</span>dgelists <span class="op">=</span> <span class="va">dge</span>, 
-                           design_matrix <span class="op">=</span> <span class="va">design.2</span>, 
-                           do_contrast_fit <span class="op">=</span> <span class="cn">T</span>,
-                           <span class="co"># we use only the first row of the contrast matrix L2</span>
-                           my_contrast_matrix <span class="op">=</span> <span class="va">L2</span><span class="op">[</span> ,<span class="fl">1</span><span class="op">]</span><span class="op">)</span></code></pre></div>
+                ncores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>
+<span class="va">fit1</span> <span class="op">=</span> <span class="fu">variancePartition</span><span class="fu">::</span><span class="fu">eBayes</span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></code></pre></div>
+<p>Note, <code><a href="https://rdrr.io/pkg/variancePartition/man/dream-method.html" class="external-link">variancePartition::dream</a></code> now incorporates an
+emperical Bayes step derived for mixed effects models accounting for per
+gene degrees of freedom, please see: <a href="https://github.com/GabrielHoffman/variancePartition/issues/54" class="external-link uri">https://github.com/GabrielHoffman/variancePartition/issues/54</a>.</p>
 </div>
 <div class="section level3">
 <h3 id="downstream-gene-set-enrichment-analysis-within-celltypes-for-different-effects">Downstream gene set enrichment analysis within celltypes for
@@ -268,40 +271,85 @@ different effects<a class="anchor" aria-label="anchor" href="#downstream-gene-se
 </h3>
 <p>Run gene set enrichment analysis within each cell type fbased on
 genes ranked by effect size for each of the effects defined above.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># parallelize fgsea </span>
-<span class="fu">BiocParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocParallel/man/register.html" class="external-link">register</a></span><span class="op">(</span><span class="fu">BiocParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocParallel/man/SnowParam-class.html" class="external-link">SnowParam</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span>
-<span class="va">pparam</span> <span class="op">=</span> <span class="fu">BiocParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocParallel/man/SnowParam-class.html" class="external-link">SnowParam</a></span><span class="op">(</span>workers <span class="op">=</span> <span class="fl">4</span>, type <span class="op">=</span> <span class="st">"SOCK"</span>, progressbar <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-
-<span class="co"># msigDB hallmark pathways are included in package</span>
+<p>Here within each cell type and for each contrast we run gene set
+enrichment analysis using 2 functions <code>ExtractResult</code> and
+<code>FgseaList</code>. <code>ExtractResult</code> is used to extract a
+list of gene ranks (it can be used as a wrapper around dream::topTable
+and limma::topTable to return a full list of results). Since we had
+multiple covariates in a mixed model and we used a custom contrast
+matrix, we specify the covariate of interest from the contrast using
+arguments <code>coefficient.number</code> and <code>coef.name</code>
+which are output in results based on the names of the contrasts.</p>
+<p>With the list of ranks we then run gene set enrichment with the <a href="https://www.biorxiv.org/content/10.1101/060012v3" class="external-link">fgsea method by
+Korotkevich et al</a> using the function <code>FseaList</code>.</p>
+<p>Based on our contrast matrix (the object <code>L2</code> we created
+above with <code>makeContrastsDream</code>),
+<code>coefficient.number = 1</code> corresponds to the baseline
+difference between groups, <code>coefficient.number = 2</code> is the
+difference in fold changes between the groups and
+<code>coefficient.number = 3</code> is the pre vs post perturbation
+difference across subjects in both groups.</p>
+<div class="section level4">
+<h4 id="examples-of-extracting-gene-ranks-based-on-contrasts-and-running-gene-set-enrichment">Examples of extracting gene ranks based on contrasts and running
+gene set enrichment<a class="anchor" aria-label="anchor" href="#examples-of-extracting-gene-ranks-based-on-contrasts-and-running-gene-set-enrichment"></a>
+</h4>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
+<span class="co"># msigDB hallmark pathways are included in the scglmmr package</span>
 <span class="va">hlmk</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="va">hallmark</span>
-
-<span class="co"># gsea: baseline differences between groups - hypothesis set and hallmark pathway</span>
-<span class="va">r0</span> <span class="op">=</span> <span class="fu"><a href="../reference/ExtractResult.html">ExtractResult</a></span><span class="op">(</span>model.fit.list <span class="op">=</span> <span class="va">fit0</span>,
-                   what <span class="op">=</span> <span class="st">'gene.t.ranks'</span>,
-                   coefficient.number <span class="op">=</span> <span class="fl">1</span>,
-                   coef.name <span class="op">=</span> <span class="st">'baseline_irae'</span><span class="op">)</span>
-<span class="va">hlmk.0</span> <span class="op">=</span> <span class="fu"><a href="../reference/FgseaList.html">FgseaList</a></span><span class="op">(</span>rank.list.celltype <span class="op">=</span> <span class="va">r0</span>,
-                   pathways <span class="op">=</span> <span class="va">hlmk</span>,
-                   BPPARAM <span class="op">=</span> <span class="va">pparam</span><span class="op">)</span>
-
-<span class="co"># gsea: treatment effect (across all donors) - hypothesis set and hallmark pathway</span>
+<span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/ExtractResult.html">ExtractResult</a></span><span class="op">(</span><span class="op">)</span>
+<span class="co"># extract genes ranked by treatment effect (across all donors) </span>
 <span class="va">rtreat</span> <span class="op">=</span> <span class="fu"><a href="../reference/ExtractResult.html">ExtractResult</a></span><span class="op">(</span>model.fit.list <span class="op">=</span> <span class="va">fit1</span>,
-                       what <span class="op">=</span> <span class="st">'gene.t.ranks'</span>,
+                       what <span class="op">=</span> <span class="st">'lmer.z.ranks'</span>,
                        coefficient.number <span class="op">=</span> <span class="fl">3</span>,
                        coef.name <span class="op">=</span> <span class="st">'treatment'</span><span class="op">)</span>
+<span class="co"># run fgsea </span>
 <span class="va">hlmk.treat</span> <span class="op">=</span> <span class="fu"><a href="../reference/FgseaList.html">FgseaList</a></span><span class="op">(</span>rank.list.celltype <span class="op">=</span> <span class="va">rtreat</span>,
                        pathways <span class="op">=</span> <span class="va">hlmk</span>,
                        BPPARAM <span class="op">=</span> <span class="va">pparam</span><span class="op">)</span>
 
-<span class="co"># gsea: difference in treatment effect between groups (irae / no irae) hypothesis set and hallmark pathway</span>
+
+
+<span class="co"># extract gene ranks of treatment effect (across all donors) </span>
 <span class="va">rdelta</span> <span class="op">=</span> <span class="fu"><a href="../reference/ExtractResult.html">ExtractResult</a></span><span class="op">(</span>model.fit.list <span class="op">=</span> <span class="va">fit1</span>,
-                       what <span class="op">=</span> <span class="st">'gene.t.ranks'</span>,
+                       what <span class="op">=</span> <span class="st">'lmer.z.ranks'</span>,
                        coefficient.number <span class="op">=</span> <span class="fl">2</span>,
                        coef.name <span class="op">=</span> <span class="st">'treatment_delta'</span><span class="op">)</span>
 <span class="va">hlmk.delta</span> <span class="op">=</span> <span class="fu"><a href="../reference/RunFgseaOnRankList.html">RunFgseaOnRankList</a></span><span class="op">(</span>rank.list.celltype <span class="op">=</span> <span class="va">rdelta</span>,
                                 pathways <span class="op">=</span> <span class="va">hlmk</span>,
                                 BPPARAM <span class="op">=</span> <span class="va">pparam</span><span class="op">)</span></code></pre></div>
+<p>On a technical note, it’s also possible to fit a simple model for the
+baseline contrast not estimating the variation across subjects with a
+random effect as this contrast is more typically estimated with a
+standard group 1 vs 2 least squares approach. The function
+<code>RunVoomLimma</code> is provided to fit these models. If you
+compare the effect size estimates for an individual cell type for the
+<code>coefficient.number = 1</code> from the mixed model fits (object
+<code>fit1</code> above) to the models below they will be very highly
+corrleated along the diagonal with some differences arising to the
+different degrees of freedom, sample size and variance coming from the
+additional layer of variation estimated by the mixed model. The choice
+of model to use is up to the user.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># fit simple linear model for the baseline group level contrast </span>
+<span class="va">design.2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/model.matrix.html" class="external-link">model.matrix</a></span><span class="op">(</span><span class="op">~</span><span class="fl">0</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">group.time</span>, data <span class="op">=</span> <span class="va">met</span><span class="op">)</span>
+<span class="va">fit0</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/RunVoomLimma.html">RunVoomLimma</a></span><span class="op">(</span>dgelists <span class="op">=</span> <span class="va">dge</span>, 
+                           design_matrix <span class="op">=</span> <span class="va">design.2</span>, 
+                           do_contrast_fit <span class="op">=</span> <span class="cn">T</span>,
+                           <span class="co"># we use only the first row of the contrast matrix L2</span>
+                           my_contrast_matrix <span class="op">=</span> <span class="va">L2</span><span class="op">[</span> ,<span class="fl">1</span><span class="op">]</span><span class="op">)</span>
+
+
+<span class="co"># extract fixed efect model estimate of baseline contrast (pre treatment differences between groups)</span>
+<span class="va">r0</span> <span class="op">=</span> <span class="fu"><a href="../reference/ExtractResult.html">ExtractResult</a></span><span class="op">(</span>model.fit.list <span class="op">=</span> <span class="va">fit0</span>,
+                   what <span class="op">=</span> <span class="st">'gene.t.ranks'</span>,
+                   coefficient.number <span class="op">=</span> <span class="fl">1</span>,
+                   coef.name <span class="op">=</span> <span class="st">'baseline'</span><span class="op">)</span>
+<span class="co">## run gene set enrichment </span>
+<span class="va">hlmk.0</span> <span class="op">=</span> <span class="fu"><a href="../reference/FgseaList.html">FgseaList</a></span><span class="op">(</span>rank.list.celltype <span class="op">=</span> <span class="va">r0</span>,
+                   pathways <span class="op">=</span> <span class="va">hlmk</span>,
+                   BPPARAM <span class="op">=</span> <span class="va">pparam</span><span class="op">)</span></code></pre></div>
+</div>
 </div>
 <div class="section level3">
 <h3 id="further-analysis-and-curation-of-enrichment-results">Further analysis and curation of enrichment results<a class="anchor" aria-label="anchor" href="#further-analysis-and-curation-of-enrichment-results"></a>
@@ -313,7 +361,8 @@ genes ranked by effect size for each of the effects defined above.</p>
                                      NES.filter <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span><span class="op">)</span>
 
 <span class="co"># extract model fit results instead of ranks</span>
-<span class="va">fit1.res</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/ExtractResult.html">ExtractResult</a></span><span class="op">(</span>model.fit.list <span class="op">=</span> <span class="va">fit1</span>, 
+<span class="co"># automatically this sets argument `result` to 'statistics'</span>
+<span class="va">fit1.res</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/ExtractResult.html">ExtractResult</a></span><span class="op">(</span>model.fit.list <span class="op">=</span> <span class="va">fit1</span> , 
                                   coefficient.number <span class="op">=</span> <span class="fl">3</span>, 
                                   coef.name <span class="op">=</span> <span class="st">'treatment'</span><span class="op">)</span>
 
@@ -327,6 +376,9 @@ genes ranked by effect size for each of the effects defined above.</p>
 <div class="section level3">
 <h3 id="extract-all-leading-edge-genes-indexed-by-cell-type">Extract all leading edge genes indexed by cell type<a class="anchor" aria-label="anchor" href="#extract-all-leading-edge-genes-indexed-by-cell-type"></a>
 </h3>
+<p>This outputs a nested list of leading edge genes from each enrichment
+across cell types. list level 1 is cell type, level 2 is enrichment
+signal.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">li</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/LeadingEdgeIndexed.html">LeadingEdgeIndexed</a></span><span class="op">(</span>gsea.result.list <span class="op">=</span> <span class="va">hlmk.treat</span>, padj.threshold <span class="op">=</span> <span class="fl">0.02</span><span class="op">)</span></code></pre></div>
 </div>
@@ -334,6 +386,8 @@ genes ranked by effect size for each of the effects defined above.</p>
 <h3 id="calculate-the-jaccard-similarity-of-the-leading-edge-genes-for-enrichments-within-a-given-cell-type-and-effect">Calculate the Jaccard similarity of the leading edge genes for
 enrichments within a given cell type and effect<a class="anchor" aria-label="anchor" href="#calculate-the-jaccard-similarity-of-the-leading-edge-genes-for-enrichments-within-a-given-cell-type-and-effect"></a>
 </h3>
+<p>This is useful for understanding which enrichment signals may come
+from the same vs distinct genes.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># figpath.temp = here('figures')</span>
 <span class="va">treat.JI</span> <span class="op">=</span> <span class="fu"><a href="../reference/EnrichmentJaccard.html">EnrichmentJaccard</a></span><span class="op">(</span>gsealist <span class="op">=</span> <span class="va">hlmk.treat</span>, 
@@ -354,30 +408,36 @@ enrichments within a given cell type and effect<a class="anchor" aria-label="anc
 <p><strong>Create a bubble plot heatmap of enrichment results within
 clusters</strong></p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">p</span> <span class="op">=</span> <span class="fu"><a href="../reference/PlotFgsea.html">PlotFgsea</a></span><span class="op">(</span>gsea_result_list <span class="op">=</span> <span class="va">hlmk.treat</span>, NES_filter <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span>,padj_filter <span class="op">=</span> <span class="fl">0.02</span><span class="op">)</span></code></pre></div>
-<p><strong>Create heatmap of genes based on model fit
-coefficients</strong></p>
+<code class="sourceCode R"><span class="co"># NES_filter to -Inf to plot positive and negative enrichment</span>
+<span class="va">p</span> <span class="op">=</span> <span class="fu"><a href="../reference/PlotFgsea.html">PlotFgsea</a></span><span class="op">(</span>gsea_result_list <span class="op">=</span> <span class="va">hlmk.treat</span>, NES_filter <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span>,padj_filter <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></code></pre></div>
+<p><strong>Create heatmap of gene perturbation fold changes across cell
+subsets based on model fit coefficients</strong></p>
+<p>Extract and make a heatmap of log fold changes across celltypes.
+HeatmapDiag uses the package <a href="https://CRAN.R-project.org/package=slanter" class="external-link">slanter</a> which
+accepts the same arguments as <code>pheatmap</code>.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">gene.mat</span> <span class="op">=</span> <span class="fu"><a href="../reference/GetGeneMatrix.html">GetGeneMatrix</a></span><span class="op">(</span>result.list <span class="op">=</span> <span class="va">fit1</span>, 
                          pvalfilter <span class="op">=</span> <span class="fl">0.05</span>, 
                          stat_for_matrix <span class="op">=</span> <span class="st">'logFC'</span>,
                          logfcfilter <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>
 
-<span class="fu"><a href="../reference/HeatmapDiag.html">HeatmapDiag</a></span><span class="op">(</span>matrix <span class="op">=</span> <span class="va">gene.mat</span><span class="op">)</span>
+<span class="co">#make heatmap  e.g. </span>
+<span class="fu">pheatmap</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pheatmap/man/pheatmap.html" class="external-link">pheatmap</a></span><span class="op">(</span><span class="va">gene.mat</span>, fontsize_row <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 
-<span class="co"># can also call pheatmap on gene.mat</span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="additional-visualization-methods">Additional visualization methods<a class="anchor" aria-label="anchor" href="#additional-visualization-methods"></a>
-</h3>
+<span class="co"># diagnoalize the heatmap so that the most correlated signals are grouped </span>
+<span class="co"># this uses the package slanter </span>
+<span class="fu"><a href="../reference/HeatmapDiag.html">HeatmapDiag</a></span><span class="op">(</span>matrix <span class="op">=</span> <span class="va">gene.mat</span>, fontsize_row <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></code></pre></div>
+<p><strong>Create heatmap of gene perturbation fold changes from
+enrichments across individuals within a cell subset</strong></p>
+<p>Visualize the log counts per million at the sample level of the gene
+set enrichment results.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># make tidy average data for visualization of weighted pb results </span>
-<span class="va">av</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/PseudobulkList.html">PseudobulkList</a></span><span class="op">(</span>rawcounts <span class="op">=</span> <span class="va">umi</span>, 
-                             metadata <span class="op">=</span> <span class="va">meta</span>, 
-                             sample_col <span class="op">=</span> <span class="st">"sample"</span>, 
-                             celltype_col <span class="op">=</span> <span class="st">"celltype"</span>,
-                             avg_or_sum <span class="op">=</span> <span class="st">'average'</span><span class="op">)</span>
-<span class="va">le_expr</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/LeadEdgeTidySampleExprs.html">LeadEdgeTidySampleExprs</a></span><span class="op">(</span>av.exprs.list <span class="op">=</span> <span class="va">av</span>,
+<code class="sourceCode R">
+<span class="co"># make tidy average data for visualization of weighted pb results </span>
+<span class="va">lcmp</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">pb</span>, <span class="fu">edgeR</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/edgeR/man/cpm.html" class="external-link">cpm</a></span>, log <span class="op">=</span> <span class="cn">TRUE</span> <span class="op">)</span>
+
+<span class="co"># </span>
+<span class="va">le_expr</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/LeadEdgeTidySampleExprs.html">LeadEdgeTidySampleExprs</a></span><span class="op">(</span>av.exprs.list <span class="op">=</span> <span class="va">lcmp</span>,
                                            gsea.list <span class="op">=</span> <span class="va">hlmk.treat</span>, 
                                            padj.filter <span class="op">=</span> <span class="fl">0.1</span>,
                                            NES.filter <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span><span class="op">)</span>
@@ -385,12 +445,12 @@ coefficients</strong></p>
 
 <span class="co"># example plot of sample level average leading edge genes annotated </span>
 <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/LeadEdgeSampleHeatmap.html">LeadEdgeSampleHeatmap</a></span><span class="op">(</span>tidy.exprs.list <span class="op">=</span> <span class="va">le_expr</span>,
-                               modulename <span class="op">=</span> <span class="st">"MODULENAME"</span>,
-                               elltype_plot <span class="op">=</span> <span class="st">"TCELL"</span>,
+                               modulename <span class="op">=</span> <span class="st">"HALLMARK_HYPOXIA"</span>,
+                               elltype_plot <span class="op">=</span> <span class="st">"CD4_NaiveTcell"</span>,
                                metadata <span class="op">=</span> <span class="va">meta</span>, 
                                metadata_annotate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'group'</span>, <span class="st">'timepoint'</span>, <span class="st">'age'</span>, <span class="st">'sex'</span><span class="op">)</span>,
                                sample_column <span class="op">=</span> <span class="st">'sample'</span>,
-                               returnmat <span class="op">=</span> <span class="cn">F</span>, 
+                               returnmat <span class="op">=</span> <span class="cn">FALSE</span>, 
                                savepath <span class="op">=</span> <span class="va">figpath</span>, 
                                savename <span class="op">=</span> <span class="st">"filename"</span><span class="op">)</span>
 
@@ -417,6 +477,46 @@ coefficients</strong></p>
                           savename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">ctype</span>, <span class="st">" "</span>,<span class="va">umod</span><span class="op">[</span><span class="va">u</span><span class="op">]</span>,<span class="st">'.pdf'</span><span class="op">)</span><span class="op">)</span>
   <span class="op">}</span>
 <span class="op">}</span></code></pre></div>
+<p>You can also create a customized map by returning the matrix from
+<code>LeadEdgeSampleHeatmap</code>.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R">
+<span class="co"># scglmmr function to extract leading edge genes </span>
+<span class="va">lexp1</span> <span class="op">=</span> <span class="fu"><a href="../reference/LeadEdgeTidySampleExprs.html">LeadEdgeTidySampleExprs</a></span><span class="op">(</span>av.exprs.list <span class="op">=</span> <span class="va">lcpm</span>, gsea.list <span class="op">=</span> <span class="va">g1c</span>, padj.filter <span class="op">=</span> <span class="fl">0.05</span>, NES.filter <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>
+
+<span class="co"># annotate time and batch on the heatmap</span>
+<span class="va">heatmap_anno</span> <span class="op">=</span> <span class="va">meta</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'batch'</span>, <span class="st">'timepoint'</span><span class="op">)</span><span class="op">]</span>
+<span class="va">anno_color</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>
+  timepoint <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'1'</span> <span class="op">=</span> <span class="st">"orange"</span>, <span class="st">'2'</span> <span class="op">=</span> <span class="st">'red'</span>,  <span class="st">"0"</span> <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span>,
+  batch <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'1'</span> <span class="op">=</span> <span class="st">"black"</span>, <span class="st">'2'</span> <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span>
+<span class="op">)</span>
+
+<span class="co"># define your own custom color vector for the log fold change values</span>
+<span class="va">cu</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#053061"</span>, <span class="st">"#1E61A5"</span>, <span class="st">"#3C8ABE"</span>, <span class="st">"#7CB7D6"</span>, <span class="st">"#BAD9E9"</span>, <span class="st">"#E5EEF3"</span>, 
+       <span class="st">"#F9EAE1"</span>, <span class="st">"#F9C7AD"</span>, <span class="st">"#EB9273"</span>, <span class="st">"#CF5246"</span>, <span class="st">"#AB1529"</span>, <span class="st">"#67001F"</span><span class="op">)</span>
+
+<span class="co"># scglmmr function for leading edge gene matrix across donors</span>
+<span class="va">mat2</span> <span class="op">=</span> <span class="fu">scglmmr</span><span class="fu">::</span><span class="fu"><a href="../reference/LeadEdgeSampleHeatmap.html">LeadEdgeSampleHeatmap</a></span><span class="op">(</span>tidy.exprs.list <span class="op">=</span> <span class="va">le_expr</span>, 
+                                 modulename <span class="op">=</span> <span class="st">"reactome interferon signaling"</span>,
+                                 celltype_plot <span class="op">=</span> <span class="st">'CD14_Mono'</span>,
+                                 <span class="co"># metadata = meta, # unused  </span>
+                                 <span class="co"># metadata_annotate = c('batch'), # unused </span>
+                                 sample_column <span class="op">=</span> <span class="st">'sample'</span>,
+                                 returnmat <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+<span class="co"># draw heatmap </span>
+<span class="fu">pheatmap</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/pheatmap/man/pheatmap.html" class="external-link">pheatmap</a></span><span class="op">(</span><span class="va">mat2</span>, 
+                   border_color <span class="op">=</span> <span class="cn">NA</span>,
+                   treeheight_row <span class="op">=</span> <span class="fl">0</span>, treeheight_col <span class="op">=</span> <span class="fl">10</span>,
+                   annotation <span class="op">=</span> <span class="va">heatmap_anno</span>,
+                   annotation_colors <span class="op">=</span> <span class="va">anno_color</span>,
+                   color <span class="op">=</span> <span class="va">cu</span>,
+                   width <span class="op">=</span> <span class="fl">5</span>,  height <span class="op">=</span> <span class="fl">7.6</span>,
+                   <span class="co"># this can be set to false to look at raw expression e.g. </span>
+                   scale <span class="op">=</span> <span class="st">"row"</span>,
+                   filename <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">figpath</span>, <span class="st">"mono_d1_ReactomeIFN.pdf"</span><span class="op">)</span>
+                   <span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 </div>
   </main>
 </div>

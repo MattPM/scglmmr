@@ -70,7 +70,9 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 <p><a href="https://zenodo.org/badge/latestdoi/330215343" class="external-link"><img src="https://zenodo.org/badge/330215343.svg" alt="DOI"></a></p>
 <p><strong>This package is under active development</strong></p>
-<p>An R package for implementing mixed effects modeling methods on single cell data that can accomodate many different complex experiment designs. The package is built around <a href="https://www.jstatsoft.org/article/view/v067i01" class="external-link">lme4</a> and was originally made for analysis of single cell data collected from many individuals who are assayed pre- and post- perturbation such as drug treatment, nested within one or more response groups. The methods herein allow one to compare the difference in perturbation response effects between groups while modeling variation in donor expression. It also has many wrappers for downstream enrichment testing and visualization.</p>
+<p>An R package for analysis of single cell data collected on many individuals. The package implements both fixed and mixed effects models and can accomodate many different complex experiment designs.</p>
+<p>This package is built around <a href="https://www.jstatsoft.org/article/view/v067i01" class="external-link">lme4</a> and was originally made for analysis of single cell data from multiple subjects each assayed pre- and post- perturbation such as drug treatment, nested within one or more response groups. Other simpler designs are also supported, such as mutliple individuals in different groups, e.g. healthy vs disease.</p>
+<p>Mixed effects models enable contrasting the difference in perturbation response effects between groups while modeling variation in donor expression. This package also has many wrappers for downstream enrichment testing and visualization.</p>
 <p>Please see vignettes</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -83,23 +85,27 @@
 <div class="section level2">
 <h2 id="single-cell-within-cluster-perturbation-response-differential-expression">Single cell within cluster perturbation response differential expression<a class="anchor" aria-label="anchor" href="#single-cell-within-cluster-perturbation-response-differential-expression"></a>
 </h2>
-<p>The purpose of this software is to analyze single cell genomics data with pre and post perturbation measurements from the same individuals, including complex designs with many subjects, each subject having repeated measurements pre and post perturbation and each subject nested within in different groups, such as different end point response correlates, e.g. high and low responders. The focus is on implementing flexible generalized linear multilevel models to derive group (i.e. good or poor clinical outcome, high or low rug response) and treatment associated effects <em>within cell types</em> defined either by protein (e.g. with CITE-seq data) or transcriptome based clustering followed by downstream enrichment testing and visualization.</p>
-<p>Any number of model covariates can be specified. The vignettes provide methods where a random intercept term for teh donor ID of each cell or aggregated library is incluided in the model. These methods model variation around the average baseline expression across individuals, accomodating non-independence of expression for repeated timepoints from each subject.</p>
+<p>The focus is on implementing flexible generalized linear multilevel models to derive group (i.e. good or poor clinical outcome, high or low rug response) and treatment associated effects <em>within cell types</em> defined either by protein (e.g. with CITE-seq data) or transcriptome based clustering followed by downstream enrichment testing and visualization.</p>
+<p>Any number of model covariates can be specified. The vignettes provide methods where a random intercept term for the donor ID of each cell or aggregated library is incluided in the model. These methods model variation around the average baseline expression across individuals, accomodating non-independence of expression for repeated timepoints from each subject.</p>
 <p>An overview of methods provided:</p>
 <div class="section level3">
 <h3 id="id_1-pseudobulk-aggregated-models">1. pseudobulk aggregated models<a class="anchor" aria-label="anchor" href="#id_1-pseudobulk-aggregated-models"></a>
 </h3>
-<p>These functions implement wrappers around <code>limma</code> for fitting fixed effect linear models and the <code>dream</code> method from the <code>variancePartition</code> package. The dream method is the only way to test differential expression while accomodating ‘random’ or varying effects. This is statistically necessary to account for non-independence when we have perturbation experiments with repeated measurements from the same donors. To enable linear models (e.g. modeling the mean with a normal distribution) to be fit to gene counts, dream accounts for the mean variance trend via incorporating <code>voom</code> observational weights.</p>
+<p>These functions implement wrappers around the following methods:</p>
+<p><a href="https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-2-r29" class="external-link"><strong>Limma + voom (Law et al <em>Genome Biology</em> 2014)</strong></a> - fitting fixed effect linear models.</p>
+<p><a href="https://doi.org/10.1093/bioinformatics/btaa687" class="external-link"><strong>‘dream’ – lme4 + voom”, described in Hoffman et al <em>Bioinformatics</em> 2020</strong></a> for experiments with non-independence due to replicated measurements (e.g. multiple timepoints) from the same donor.</p>
 </div>
 <div class="section level3">
 <h3 id="id_2-single-cell-gene-and-gene-module-level-mixed-effects-models">2. single cell gene and gene module level mixed effects models<a class="anchor" aria-label="anchor" href="#id_2-single-cell-gene-and-gene-module-level-mixed-effects-models"></a>
 </h3>
-<p>Test perturbation effect using a gene level Poisson mixed model.</p>
+<p>Model variation in gene counts at the single cell and sample / donor level.</p>
+<p>Rather than aggregating data at the sample level in to average or summed counts, this uses a Piosson generalized linear mixed effects model with a log link function to test the effect of perturbation at the single cell level across a cohort of individuals, incorporating random effects for replicated sampels from the same donor.</p>
 </div>
 <div class="section level3">
 <h3 id="id_3-single-cell-module-level-mixed-effect-models">3. single cell module level mixed effect models<a class="anchor" aria-label="anchor" href="#id_3-single-cell-module-level-mixed-effect-models"></a>
 </h3>
-<p>Test perturbation effects and differences in perturbation responses between groups at the gene module level.</p>
+<p>Model variation of gene module activity at the single cell and sample / donor level</p>
+<p>This set of functions scores the activity of modules in single cells, then tests the effect perturbation across donors using a linear mixed modethe single cell level. Any model can be specified. In addition, a custom function is provided for a experiment with a single perturbation applied to donors nested in 2 response groups, due to the commonality of this experiment design in biological studies.</p>
 </div>
 <div class="section level3">
 <h3 id="id_4-downstream-enrichment-testing-and-visualization">4. Downstream enrichment testing and visualization<a class="anchor" aria-label="anchor" href="#id_4-downstream-enrichment-testing-and-visualization"></a>
@@ -109,63 +115,11 @@
 <div class="section level3">
 <h3 id="philosophy">Philosophy<a class="anchor" aria-label="anchor" href="#philosophy"></a>
 </h3>
-<p>This package models expression within each cluster/ cell type independently in order to capture perturbation effects of cell type specific genes as well as genes that are expressed by multiple cell types. Using a normal distribution on count data requires first modeling the mean variance trend <a href="https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-2-r29" class="external-link">(see Law et al)</a> this requires filtering features (genes) that are not expressed by a iven cell type. These cell type specific transcripts are therefore tested for perturbation effects within only in the cell types that express the genes, instead of across all cell types. Genes that are shared across cell types can be conpared for coherent perturbation effects across all subjects or between different groups of subjects using contrast coding.</p>
-<p>This approach is particularly well suited for multimodal single cell data where cells are clustered based a independent information from the perturbation effects. For example, we have utilized methods in this package for CITE-seq data where we first denoise ADT data using our method <a href="https://github.com/niaid/dsb" class="external-link">dsb</a> followed by modeling transcriptome not for differences between cell types, but for the group level perturbation response effects using this package.</p>
-<p><strong>Experiment designs (within each cluster / celltype) supported by scglmmr</strong> Below is a 2 group repeated measures experiment. This data can be accomodated by scglmmr. More simple experiment designs are also supported, for example 2 groups with one timepoint or more complex experiments for example 3 timepoints.</p>
-<table class="table">
-<colgroup>
-<col width="20%">
-<col width="20%">
-<col width="20%">
-<col width="20%">
-<col width="20%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">sample</th>
-<th align="center">sampleid</th>
-<th align="right">timepoint</th>
-<th align="left">Group</th>
-<th align="center">sex</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">101_t0</td>
-<td align="center">101</td>
-<td align="right">d0</td>
-<td align="left">good</td>
-<td align="center">F</td>
-</tr>
-<tr class="even">
-<td align="left">101_t1</td>
-<td align="center">101</td>
-<td align="right">d1</td>
-<td align="left">poor</td>
-<td align="center">F</td>
-</tr>
-<tr class="odd">
-<td align="left">102_t0</td>
-<td align="center">102</td>
-<td align="right">d0</td>
-<td align="left">good</td>
-<td align="center">M</td>
-</tr>
-<tr class="even">
-<td align="left">102_t1</td>
-<td align="center">102</td>
-<td align="right">d1</td>
-<td align="left">poor</td>
-<td align="center">M</td>
-</tr>
-<tr class="odd">
-<td align="left">… (x n donors)</td>
-<td align="center">… (x n donors)</td>
-<td align="right">… (x n donors)</td>
-<td align="left">… (x n donors)</td>
-<td align="center">… (x n donors)</td>
-</tr>
-</tbody>
-</table>
-<!-- badges: start --><!-- badges: end --><p>Questions? Pls open an issue.</p>
+<p>This package models expression within each cluster/ cell type independently in order to capture perturbation effects of cell type specific genes as well as genes that are expressed by multiple cell types. Using a normal distribution on count data requires first modeling the mean variance trend <a href="https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-2-r29" class="external-link">(see Law et al)</a> this requires filtering features (genes) that are not expressed by each cell type. These cell type specific transcripts are therefore tested for perturbation effects within only in the cell types that express the genes, instead of across all cell types. Genes that are shared across cell types can be conpared for coherent perturbation effects across all subjects or between different groups of subjects using contrast coding.</p>
+<p>This approach is particularly well suited for multimodal single cell data where cells are clustered based a independent information from the perturbation effects. For example, we have utilized methods in this package for CITE-seq data where we first denoise ADT data using <a href="https://github.com/niaid/dsb" class="external-link">dsb</a>, cluster the cells based on the normalized /denoised protein levels, then use this package to model transcriptome within each subset for effects of pertuebation, group status or both using mixed effects models at the single cell or pseudobulk level.</p>
+<!-- badges: start -->
+<!-- badges: end -->
+<p>Questions? Please open an issue.</p>
 </div>
 </div>
 </div>
