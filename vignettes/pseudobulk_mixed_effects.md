@@ -2,8 +2,8 @@ Pseudobulk differential expression with nested group repeated measures
 single cell experiment designs
 ================
 
--   <a href="#1-pseudobulk-mixed-effects-models"
-    id="toc-1-pseudobulk-mixed-effects-models">1. pseudobulk mixed effects
+-   <a href="#pseudobulk-mixed-effects-models"
+    id="toc-pseudobulk-mixed-effects-models">1. pseudobulk mixed effects
     models</a>
 -   <a href="#load-single-cell-data-aggregate-and-quaity-control"
     id="toc-load-single-cell-data-aggregate-and-quaity-control">Load single
@@ -44,14 +44,21 @@ when we have perturbation experiments with repeated measurements from
 the same donors. To enable linear models (e.g. modeling the mean with a
 normal distribution) to be fit to gene counts,
 `variancePartition::dream` accounts for the mean variance trend via
-incorporating voom observational weights. The approach is described in
-[Hoffman et al Bininformatics
-2020](doi.org/10.1093/bioinformatics/btaa687)
+incorporating voom observational weights. The fits are then shrunken
+toward the genome wide trend using an empirical bayes step adjusting for
+the per gene degrees of freedom estimated in the mixed model fits. This
+approach is described in [Hoffman et al Bininformatics
+2020](doi.org/10.1093/bioinformatics/btaa687) **this paper should be
+cited if using the wrapper below `FitDream`.**
+
+In this workflow, mixed effect model fits and gene set enrichment steps
+are parallelized with the BiocParallel package.
 
 ``` r
 #devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
 suppressMessages(library(scglmmr))
 suppressMessages(library(magrittr))
+library(BiocParallel)
 #the mixed model fits and gsea are parallelized 
 BiocParallel::register(BiocParallel::SnowParam(4))
 pparam = BiocParallel::SnowParam(workers = 4, type = "SOCK", progressbar = TRUE)
@@ -136,13 +143,38 @@ dge = Normalize(pseudobulk.list = pb, design = design, minimum.gene.count = 5)
 
 ### Fit models and specify a priori contrasts corresponding to the desired effect comparisons
 
-Below we use a function from the variancePartition package
-makeContrastsDream which is similar to the function makeContrasts from
-limma and works the same way.
+Below shows 2 steps. 1: Specify a varying intercept model using lme4
+symbolic model formula. [More information on symbolic formula
+representations of models](https://arxiv.org/pdf/1911.08628.pdfs). Most
+experiment designs will have some covariate of interest such as time
+relative to perturbation, other covariates which should be adjusted for
+(such as batch or sex), and individuals measured with repeated
+timepoints will have have a “subjectID” or “individual” variable
+specifying which person the measurement came from. This variable will
+often modeled using a varying intercept modeled with a normal
+distribution which is specified with e.g. (1\| subjectID). Other formula
+accepted by lme4 are also possible.
 
-We also specify a varying intercept model using lme4 symbolic formula.
-[More information on symbolic model
-formulas](https://arxiv.org/pdf/1911.08628.pdfs).
+In a simple experiment, e.g. a one way anova design with baseline and
+post treatment and no different outcome groups, if the time relative to
+treatment is the target we want estimates for, we don’t need a design
+matrix, we can simply extract the effect of “time” from the lme4 fits.
+
+In the example below, we want estimate baseline differences, treatment
+effects across all individuals and the difference in fold changes
+between groups adjusting estimates for age and sex (and modeling the
+individual variation with a varying effect). To do this we specify a
+custom a. priori contrast matrix.
+
+2: Using the factor variable combining group and time, we create
+contrasts over the levels to define effects of interest. The function
+`makeContrastsDream` is used for this purpose which works the same way
+as the limma function makeContrasts. More simple contrasts or more
+complex contrasts are also possible. This step is critical for deriving
+the correct effec size estimates. More information on specifying
+contrast matrices is available here: [A guide to creating design
+matrices for gene expression
+experiments](https://bioconductor.org/packages/release/workflows/vignettes/RNAseq123/inst/doc/designmatrices.html)
 
 ``` r
 # Now we  specify model 
@@ -165,7 +197,8 @@ plotContrasts(L2)
 ```
 
 Fit the models with `variancePartition::dream` which uses voom weights
-in lme4 mixed effects models.
+in lme4 mixed effects models with an empirical bayes shrinkage toward
+genome wide trend accounting for per gene degrees of freedom.
 
 ``` r
 
@@ -174,7 +207,6 @@ fit1 = FitDream(pb.list = dge,
                 lme4.formula = f1,
                 dream.contrast.matrix = L2,
                 ncores = 4)
-fit1 = variancePartition::eBayes(fit1)
 ```
 
 Note, `variancePartition::dream` now incorporates an emperical Bayes
@@ -199,14 +231,16 @@ which are output in results based on the names of the contrasts.
 With the list of ranks we then run gene set enrichment with the [fgsea
 method by Korotkevich et
 al](https://www.biorxiv.org/content/10.1101/060012v3) using the function
-`FseaList`.
+`FseaList`. Conveniently this also is parallelized using the same
+biocparallel
 
 Based on our contrast matrix (the object `L2` we created above with
 `makeContrastsDream`), `coefficient.number = 1` corresponds to the
 baseline difference between groups, `coefficient.number = 2` is the
 difference in fold changes between the groups and
 `coefficient.number = 3` is the pre vs post perturbation difference
-across subjects in both groups.
+across subjects in both groups. Estimates for the covariates are also
+availabe.
 
 #### Examples of extracting gene ranks based on contrasts and running gene set enrichment
 

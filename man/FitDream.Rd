@@ -22,9 +22,9 @@ FitDream(
 \item{lme4.formula}{symbolic model formula for model to be fit, for example,
 '~ 0 + group.timepoint + age + sex + (1|SubjectID)'. covariates must be in sample.metadata}
 
-\item{ncores}{number of cores for biocparallel}
-
 \item{dge.lists}{list of DGEList objects indexed by cell types -- the object returned by `scglmmr::Normalize`}
+
+\item{pparam}{number of cores for biocparallel. Set with BiocParallel::register(BiocParallel::SnowParam(4)); pparam = BiocParallel::SnowParam(workers = 4, type = "SOCK", progressbar = TRUE). use the desired number of cores}
 
 \item{sample_column}{quoted character e.g. "sample" the subject level sample variable should have multiple timepoints subjectID_timepoint i.e. s1_0, s1_1}
 }
