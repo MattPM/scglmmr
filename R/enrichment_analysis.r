@@ -59,11 +59,9 @@ FgseaList = function(..., rank.list.celltype, pathways,
 #'
 #' @examples
 #'\dontrun{
-#' t1hvl_rank = GetRankResultsRaw(limma.fit.object.list  = ebf,
-#' coefficient.number = 1,
-#' contrast.name = "time_1_highvslow")
-#' gsea = FgseaList(rank.list.celltype = t1hvl_rank)
-#' celltype.indexed.modules.leadingedge = LeadingEdgeIndexed(gsea, 0.05)
+#' ### rank.list = ExtractResult(what = lmer.z.ranks)...
+#' gsea = FgseaList(rank.list.celltype = rank.list)
+#' celltype.indexed.modules.leadingedge = LeadingEdgeIndexed(gsea, padj.threshold = 0.05)
 #' }
 LeadingEdgeIndexed = function(gsea.result.list, padj.threshold = 0.05, p.threshold = NULL){
   x = gsea.result.list
@@ -86,82 +84,9 @@ LeadingEdgeIndexed = function(gsea.result.list, padj.threshold = 0.05, p.thresho
       names(newlist[[i]]) = y$pathway
     }
     names(newlist) = names(x)
+    # remove cell types with no enrichments.
+    newlist = base::Filter(newlist, f = length)
     return(newlist)
-  }
-}
-
-
-#' EnrichmentJaccard - using gsea list and LeadingEdgeIndexed result, compute pairwise jaccard index of leadingedge genes within celltypes. saves a heatmap of modules for each cell type in savpath if saveplot = TRUE. Returns a gsea result dataframe with all celltypes combined and module annotated with average within celltype jaccard index and leadingedge genes.
-#' @param gsealist results from FgseaList or RunFgseaOnRankList (recommend first lapply filter(padj < 0.05 e.g.) )
-#' @param indexedgenes results fro mLeadingEdgeIndexed
-#' @param saveplot if TRUE saves jaccard index heatmap to figpath
-#' @param figpath place to save figures, a file.path().
-#' @return curated dataframe of gsea results with average jaccard index.
-#' @importFrom pheatmap pheatmap
-#' @importFrom GeneOverlap newGOM getMatrix
-#' @export
-#'
-#' @examples
-#'\dontrun{
-#'# read baseline enrichemnt results
-#' g0 = FgseaList(rank.list.celltype = t1hvl_rank, pathways = btm,  BPPARAM = pparam)
-#' filtered_g0 = lapply(g0, function(x) x %>% filter(padj < 0.05))
-#'
-#'   compute jaccard index of leadingedge genes within celltype
-#'   li = LeadingEdgeIndexed(gsea.result.list = g0,padj.threshold = 0.05)
-#'
-#'   # enrichment jaccard
-#'   d = EnrichmentJaccard(gsealist = filtered_g0, indexedgenes = li,
-#'   saveplot = TRUE, figpath = figpath,
-#'   fontsize_row = 7.5, fontsize_col = 7.5)
-#'   d = d %>%
-#'   mutate(leadingEdge = map_chr(leadingEdge, toString)) %>%
-#'   select(celltype, av_jaccard,everything())
-#'   write_delim(d,file = paste0(datapath, 'g0jaccard.csv'),delim = ',')
-#' }
-#'
-EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, returnJaccardMtx = FALSE, figpath){
-
-  # dat input check
-  # remove enrichments from cell types without more than 1 modules enriched
-  # add these back at end
-  gsealist2 = gsealist
-  subs = lapply(gsealist,nrow) > 1
-  gsealist = gsealist[subs]
-  indexedgenes = indexedgenes[subs]
-  # confirm order of celltypes (lists) are the same
-  stopifnot(isTRUE(all.equal(names(gsealist), names(indexedgenes))))
-  jmat = list()
-  for (i in 1:length(indexedgenes)) {
-    print(names(indexedgenes)[i])
-    #calculate pairwise jaccard index matrix
-    overlap = GeneOverlap::newGOM(gsetA = indexedgenes[[i]], gsetB = indexedgenes[[i]], genome.size = NULL)
-    jaccard_matrix = GeneOverlap::getMatrix(object = overlap, name = 'Jaccard')
-    mean_ji = rowMeans(jaccard_matrix)
-    if (isTRUE(saveplot)) {
-      ph = pheatmap::pheatmap(jaccard_matrix, silent = TRUE, clustering_method = 'complete',
-                              fontsize_col = 5, fontsize_row = 5, width = 15, height = 15,
-                              filename = paste0(figpath, names(indexedgenes)[i], '.pdf'))
-    } else {
-      ph = pheatmap::pheatmap(jaccard_matrix, silent = TRUE, clustering_method = 'complete')
-    }
-    jmat[[i]] = jaccard_matrix
-    #cluster modules
-    clustered_mods = ph$tree_row$labels[ph$tree_row$order]
-    gsealist[[i]] = gsealist[[i]][match(clustered_mods, gsealist[[i]]$pathway), ]
-    gsealist[[i]]$av_jaccard = mean_ji
-  }
-  # return format
-  d2 = do.call(rbind, gsealist2[names(subs[subs==FALSE])])
-  d = do.call(rbind,gsealist)
-  d = rbind(d,d2, fill=TRUE)
-  # format jaccard matrix pheatmap output
-  names(jmat) = names(gsealist)
-  if(isTRUE(returnJaccardMtx)){
-    ret = list('sortedgsea' = d, 'jaccard_matrix_list' = jmat )
-    return(ret)
-  } else{
-    return(d)
   }
 }
 
@@ -579,6 +504,97 @@ LeadEdgeSampleHeatmap = function(tidy.exprs.list, modulename, celltype_plot,
     return(x)
   }
 }
+
+
+
+
+
+#################
+# functions to be retired
+#################
+
+
+#' EnrichmentJaccard - using gsea list and LeadingEdgeIndexed result, compute pairwise jaccard index of leadingedge genes within celltypes. saves a heatmap of modules for each cell type in savpath if saveplot = TRUE. Returns a gsea result dataframe with all celltypes combined and module annotated with average within celltype jaccard index and leadingedge genes.
+#' @param gsealist results from FgseaList or RunFgseaOnRankList (recommend first lapply filter(padj < 0.05 e.g.) )
+#' @param indexedgenes results fro mLeadingEdgeIndexed
+#' @param saveplot if TRUE saves jaccard index heatmap to figpath
+#' @param figpath place to save figures, a file.path().
+#' @return curated dataframe of gsea results with average jaccard index.
+#' @importFrom pheatmap pheatmap
+#' @importFrom GeneOverlap newGOM getMatrix
+#' @export
+#'
+#' @examples
+#'\dontrun{
+#'# read baseline enrichemnt results
+#' g0 = FgseaList(rank.list.celltype = t1hvl_rank, pathways = btm,  BPPARAM = pparam)
+#' filtered_g0 = lapply(g0, function(x) x %>% filter(padj < 0.05))
+#'
+#'   compute jaccard index of leadingedge genes within celltype
+#'   li = LeadingEdgeIndexed(gsea.result.list = g0,padj.threshold = 0.05)
+#'
+#'   # enrichment jaccard
+#'   d = EnrichmentJaccard(gsealist = filtered_g0, indexedgenes = li,
+#'   saveplot = TRUE, figpath = figpath,
+#'   fontsize_row = 7.5, fontsize_col = 7.5)
+#'   d = d %>%
+#'   mutate(leadingEdge = map_chr(leadingEdge, toString)) %>%
+#'   select(celltype, av_jaccard,everything())
+#'   write_delim(d,file = paste0(datapath, 'g0jaccard.csv'),delim = ',')
+#' }
+#'
+EnrichmentJaccard = function(..., gsealist, indexedgenes, saveplot = FALSE, returnJaccardMtx = FALSE, figpath){
+
+  # dat input check
+  # remove enrichments from cell types without more than 1 modules enriched
+  # add these back at end
+  gsealist2 = gsealist
+  subs = lapply(gsealist,nrow) > 1
+  gsealist = gsealist[subs]
+  indexedgenes = indexedgenes[subs]
+  # confirm order of celltypes (lists) are the same
+  stopifnot(isTRUE(all.equal(names(gsealist), names(indexedgenes))))
+  jmat = list()
+  for (i in 1:length(indexedgenes)) {
+    print(names(indexedgenes)[i])
+    #calculate pairwise jaccard index matrix
+    overlap = GeneOverlap::newGOM(gsetA = indexedgenes[[i]], gsetB = indexedgenes[[i]], genome.size = NULL)
+    jaccard_matrix = GeneOverlap::getMatrix(object = overlap, name = 'Jaccard')
+    mean_ji = rowMeans(jaccard_matrix)
+    if (isTRUE(saveplot)) {
+      ph = pheatmap::pheatmap(jaccard_matrix, silent = TRUE, clustering_method = 'complete',
+                              fontsize_col = 5, fontsize_row = 5, width = 15, height = 15,
+                              filename = paste0(figpath, names(indexedgenes)[i], '.pdf'))
+    } else {
+      ph = pheatmap::pheatmap(jaccard_matrix, silent = TRUE, clustering_method = 'complete')
+    }
+    jmat[[i]] = jaccard_matrix
+    #cluster modules
+    clustered_mods = ph$tree_row$labels[ph$tree_row$order]
+    gsealist[[i]] = gsealist[[i]][match(clustered_mods, gsealist[[i]]$pathway), ]
+    gsealist[[i]]$av_jaccard = mean_ji
+  }
+  # return format
+  d2 = do.call(rbind, gsealist2[names(subs[subs==FALSE])])
+  d = do.call(rbind,gsealist)
+  d = rbind(d,d2, fill=TRUE)
+  # format jaccard matrix pheatmap output
+  names(jmat) = names(gsealist)
+  if(isTRUE(returnJaccardMtx)){
+    ret = list('sortedgsea' = d, 'jaccard_matrix_list' = jmat )
+    return(ret)
+  } else{
+    return(d)
+  }
+}
+
+
+
+
+
+
+
+
 
 
 #' GSEABarPlot - plot gsea results for a single cell type

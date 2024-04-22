@@ -1,0 +1,35 @@
+---
+title: "Relationships between cell subsets with latent information correlation network analysis"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Relationships between cell subsets with latent information correlation network analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, eval = FALSE}
+library(scglmmr)
+```
+
+Vignette coming soon. 
+
+```{r, eval = FALSE}
+
+
+
+index = LeadingEdgeIndexed(gsea.result.list = glist,padj.threshold = 0.05)
+jmat = Jmatlist(index)
+sig = Signaturescores(feature.list = gexp, indexedgenes = index)
+sli.list = SLImatrix(sig.scores = sig, jmat.list = jmat, correlation.type = 'spearman')
+
+
+
+```
+

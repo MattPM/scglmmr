@@ -1,5 +1,5 @@
 ---
-title: "Pseudobulk differential expression with nested group repeated measures single cell experiment designs"
+title: "Analysis of cohort perturbation experiments including nested group designs - statistical models to multicell correlation networks"
 output: 
   github_document:
     html_preview: true
@@ -8,7 +8,7 @@ output:
     df_print: kable
     theme: united
 vignette: >
-  %\VignetteIndexEntry{Pseudobulk differential expression with nested group repeated measures single cell experiment designs}
+  %\VignetteIndexEntry{Analysis of cohort perturbation experiments including nested group designs - statistical models to multicell correlation networks}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -21,24 +21,22 @@ knitr::opts_chunk$set(
 )
 ```
 
-### 1. pseudobulk mixed effects models  
-These functions implement wrappers around limma for fitting fixed effect linear models, and the `dream` method from the `variancePartition` package forfitting mixed (i.e. varying) effects models. Mixed models are necessary for experiments that have the design of  repeated measurements from the same donors in perturbation studies in multi sample ‘random’ (varying) effects. This is necessary to account for non-independence when we have perturbation experiments with repeated measurements from the same donors. To enable linear models (e.g. modeling the mean with a normal distribution) to be fit to gene counts, `variancePartition::dream` accounts for the mean variance trend via incorporating voom observational weights. The fits are then shrunken toward the genome wide trend using an empirical bayes step adjusting for the per gene degrees of freedom estimated in the mixed model fits. This approach is described in [Hoffman et al Bininformatics 2020](doi.org/10.1093/bioinformatics/btaa687) **this paper should be cited if using the wrapper below `FitDream`.** 
+### Pseudobulk mixed effects model workflow
+These functions implement wrappers `dream` from the `variancePartition` package to enable mixed (i.e. varying) effects models of gene expression. This approach is described in [Hoffman et al Bininformatics 2020](doi.org/10.1093/bioinformatics/btaa687) **this paper should be cited if using the wrapper below `FitDream`.**  
 
-In this workflow, mixed effect model fits and gene set enrichment steps are parallelized with the BiocParallel package.
+We then run enrichment testing with `fgsea` to define and use network methods to understand relationships between different 
 
-```{r}
-#devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
-suppressMessages(library(scglmmr))
-suppressMessages(library(magrittr))
-library(BiocParallel)
-#the mixed model fits and gsea are parallelized 
-BiocParallel::register(BiocParallel::SnowParam(4))
-pparam = BiocParallel::SnowParam(workers = 4, type = "SOCK", progressbar = TRUE)
-```
+These models: 
+1. Allow estimation of treatment effects and treatment differences across groups in multi-subject perturbation experiments
+1. Adjust for non-independence of repeated measures from the same donors with random effects  
+2. Utilize observational level weights to enable normal methods. 
+3. Shrink estimates toward genome wide trends with empirical Bayes methods tailored to lme4 based models. 
 
-Below analysis of a 2 group repeated measures experiment design is shown. Pre-treatment baseline effect differences, treatment effets across all donors and the difference in treatment effects are all compared while modeling variation in baseline expression using a random intercept term. 
 
-| sample        | sampleid      | time    |   group        | sex            
+
+The experiment design shown below includes multiple subjects (subjectid), each with multiple measurements (sample) corresponding to a pre and post treatment timepoint. Additionally subjects are nested into different pre-defined response groups (e.g. high and low responder).  Below the workflow will describe defining pre-treatment baseline effect differences, treatment effects across all subjects and the difference in treatment effects between the groups including covariate adjustment. 
+
+| sample        | subjectid      | time    |   group        | sex            
 | :------------- | :----------: | -----------: | :------------- | :----------: | 
 |  101_t0     | 101           | d0           |  low            | F            | 
 |  101_t1     | 101           | d1           |  high           | F            | 
@@ -46,8 +44,22 @@ Below analysis of a 2 group repeated measures experiment design is shown. Pre-tr
 |  102_t1     | 102           | d1           |  high           | M             | 
 |  ... (x n donors)    | ... (x n donors)           | ... (x n donors)           |  ... (x n donors)           | ... (x n donors)             | 
 
-### Load single cell data, aggregate and quaity control 
 
+### Getting started - setup, data loading, and quaity control 
+
+In the workflow below, mixed effect model fits and gene set enrichment steps are parallelized with the BiocParallel package.
+
+```{r}
+#devtools::install_github(repo = "https://github.com/MattPM/scglmmr")
+suppressMessages(library(scglmmr))
+suppressMessages(library(magrittr))
+suppressMessages(library(BiocParallel))
+#the mixed model fits and gsea are parallelized 
+BiocParallel::register(BiocParallel::SnowParam(4))
+pparam = BiocParallel::SnowParam(workers = 4, type = "SOCK", progressbar = TRUE)
+```
+
+Load single cell data and quality control 
 
 ```{r, eval = FALSE}
 
@@ -65,7 +77,7 @@ rm(s); gc()
 tab = scglmmr::SubjectCelltypeTable(metadata = meta, celltype_column = "celltype", sample_column = "sample")
 tab$celltypes_remove; tab$`low representation celltypes`; tab$table
 
-# remove cells prior to pseudobulk analysis 
+# remove cells prior to pseudobulk analysis with 0 representation in some donors. 
 meta = meta[!meta$celltype %in% tab$celltypes_remove, ]
 
 # subset data 
@@ -88,18 +100,19 @@ met = scglmmr::AggregateCellMetadata(
   variable_columns = c('subjectid', 'timepoint', 'response', 'age', 'sex'),
   pseudobulk.List = pb
   )
+```
 
-# creation of a combined grouping factor indicating both timepoint and group
-# (e.g. t0_Group1, t0_group2) will make it simple to set up contrasts.
-# here group means 'response group' i.e. high vs low responder. 
-# also convert other variables to factors and do some standard transformation
-# of metadata.
+Now we create a combined grouping factor indicating both timepoint and response group for each sample which will help define any contrast of effects with respect to time and group, e.g. differences in treatment effects.  
+
+Note in a one way design where the target estimand is for example the treatment effect only, this step is not needed as we can simply extract the effect of "time" from the lme4 fits.  
+
+```{r, eval = FALSE}
+
 met$group.time = paste(met$group, met$timepoint, sep = '_')
 
 # make sure this is a factor and the levels are in a coherent order for the 
 # contrast matrix -- see below. here: 
-# time 0 = 0, time 1 = 1. 
-# low response = 0 high response = 1. 
+# time 0 = 0, time 1 = 1. low group = 0 high group = 1. 
 met$group.time = factor(
   met$group.time,
   levels = c("1_0", "1_1", "0_0", "0_1")
@@ -113,16 +126,14 @@ dge = Normalize(pseudobulk.list = pb, design = design, minimum.gene.count = 5)
 
 ### Fit models and specify a priori contrasts corresponding to the desired effect comparisons  
 
-Below shows 2 steps. 1: Specify a varying intercept model using lme4 symbolic model formula. [More information on symbolic formula representations of models](https://arxiv.org/pdf/1911.08628.pdfs). Most experiment designs will have some covariate of interest such as time relative to perturbation, other covariates which should be adjusted for (such as batch or sex), and individuals measured with repeated timepoints will have have a "subjectID" or "individual" variable specifying which person the measurement came from. This variable will often modeled using a varying intercept modeled with a normal distribution which is specified with e.g. (1| subjectID). Other formula accepted by lme4 are also possible.  
-
-In a simple experiment, e.g. a one way anova design with baseline and post treatment and no different outcome groups, if the time relative to treatment is the target we want estimates for, we don't need a design matrix, we can simply extract the effect of "time" from the lme4 fits.
+Below shows 2 steps. 1: Specify a varying intercept model using [lme4 symbolic model formula](https://arxiv.org/pdf/1911.08628.pdfs). The `1|subjectID` term treats individual as a random effect. This partially pools the estimate for baseline expression toward the global trend for each cell type by fitting a normal distribution to baseline expression (for each gene in the genome separately). 
 
 In the example below, we want estimate baseline differences, treatment effects across all individuals and the difference in fold changes between groups adjusting estimates for age and sex (and modeling the individual variation with a varying effect). To do this we specify a custom a. priori contrast matrix. 
 
 2: Using the factor variable combining group and time, we create contrasts over the levels to define effects of interest. The function `makeContrastsDream` is used for this purpose which works the same way as the limma function makeContrasts. More simple contrasts or more complex contrasts are also possible. This step is critical for deriving the correct effec size estimates. More information on specifying contrast matrices is available here: [A guide to creating design matrices for gene expression experiments](https://bioconductor.org/packages/release/workflows/vignettes/RNAseq123/inst/doc/designmatrices.html)
 
 ```{r}
-# Now we  specify model 
+# specify a random intercept model with lme4 syntax.
 f1 <- ~ 0 + age + sex + group.time + (1|subjectid) 
 
 # make contrast matrix 
@@ -162,7 +173,6 @@ Run gene set enrichment analysis within each cell type fbased on genes ranked by
 
 Here within each cell type and for each contrast we run gene set enrichment analysis using 2 functions `ExtractResult` and `FgseaList`. `ExtractResult` is used to extract a list of gene ranks (it can be used as a wrapper around dream::topTable and limma::topTable to return a full list of results). Since we had multiple covariates in a mixed model and we used a custom contrast matrix, we specify the covariate of interest from the contrast using arguments `coefficient.number`  and `coef.name` which are output in results based on the names of the contrasts. 
 
-With the list of ranks we then run gene set enrichment with the [fgsea method by Korotkevich et al](https://www.biorxiv.org/content/10.1101/060012v3) using the function `FseaList`. Conveniently this also is parallelized using the same biocparallel 
 
 Based on our contrast matrix (the object `L2` we created above with `makeContrastsDream`), `coefficient.number = 1` corresponds to the baseline difference between groups, `coefficient.number = 2` is the difference in fold changes between the groups and `coefficient.number = 3` is the pre vs post perturbation difference across subjects in both groups. Estimates for the covariates are also availabe. 
 
