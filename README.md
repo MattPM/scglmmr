@@ -6,21 +6,26 @@ networks in R
 
 [![DOI](https://zenodo.org/badge/330215343.svg)](https://zenodo.org/badge/latestdoi/330215343)
 
-*This package is under active development*
-
 This R package supports analysis of single cell data from multi-subject
-experiments. The main use case is for testing *within* each cell type /
-cluster, the effects of treatment, differences in treatment effect
+experiments. The main use case is for **testing *within* each cell type
+/ cluster**, the effects of treatment, differences in treatment effect
 between groups, baseline differences between groups, and intrinsic
-effects such as age or sex on gene expression variation. Testing can be
-done at the single cell or data aggregated within each cell subset at
-the “pseudobulk” level. Once these effects are defined, functions are
-provided to understand relationships between different cell types,
-including celltypexsample level scoring transcriptome signals driving an
-effect of interest then correlating scores across individuals and cell
-types. This creates an interpretable multi cell correlation network
-based effects derived from the statistical model as it is based on user
-defined effects adjusted for covariates etc.
+effects such as age or sex on gene expression variation. After
+multivariate statistical models define these interpretable effects
+**relationships between cell types** can be defined using multi cell
+correlation network based approaches also provided here. One can use
+these approaches in isolation or together to interpret the effect of
+perturbation on the “wiring” of the system being profiled. These
+networks and phenotypes derived are interpretable as they are based on
+robust multivariate and mixed effects models that can flexibly adapt to
+different experiment designs.
+
+*under active development*  
+**Examples of manuscripts using this package:**  
+[Mulè et al *Immunity* (2024 in
+press)](https://www.medrxiv.org/content/10.1101/2023.03.20.23287474v1)  
+[Mulè et al *Biorxiv*
+(2022)](https://www.biorxiv.org/content/10.1101/2022.06.05.494592v1.full)
 
 An overview of methods provided below-see vignettes for more details.
 
@@ -38,31 +43,31 @@ each subject, fixed effects models are used. The statistical effect size
 of covariates or contrasts from these models can be extracted for gene
 set enrichment using `fgsea`. The sample level scores for expression of
 the leading edge genes driving each enriched signal are then calculated
-and can be used in a correlation network analysis. The methods here add
-fdr control to correlation networks and adjust for gene sharing between
-leading edge genes from different signatures within the same cell types.
+and can be used for a correlation network analysis. The network
+correlation methods add fdr control and additional adjustments for gene
+sharing between leading edge genes from different signatures within the
+same cell types.
 
-Note this workflow uses wrappers around methods created by others which
-should be cited:
+This workflow uses wrapper functions around well supported methods
+created by other groups. These should be cited as outlined below:
 
 Cite [Hoffman et al *Bioinformatics*
 2020](https://doi.org/10.1093/bioinformatics/btaa687) is using the
-function `FitDream()`, a wrapper around the method `dream`. This
-excellent method implements mixed effects models for transcriptome data
-by incorporating observational weights and empirical Bayes methods
-tailored to models fit with
-[lme4](https://www.jstatsoft.org/article/view/v067i01).
+function `FitDream()`, a wrapper around the method `dream`. This method
+implements mixed effects models for transcriptome data by incorporating
+observational weights and empirical Bayes methods tailored to models fit
+with [lme4](https://www.jstatsoft.org/article/view/v067i01).
 
 Cite [Law et al *Genome Biology*
 2014](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-2-r29)
-if using the function `RunVoomLimma`, a wrapper aound the fixed effects
+if using the function `RunVoomLimma`, a wrapper around the fixed effects
 model `Limma + voom` which introduced observational weights to allow
-normal based methods for transcriptome count data.
+normal-based methods for transcriptome count data.
 
 Cite [Korotkevich et al *Biorxiv*
 2021](https://www.biorxiv.org/content/10.1101/060012v3) if using the
-function `FgseaList()`, a wrapper around a novel Monte Carlo algorithm
-for exact enrichment statistics, `fgsea`.
+function `FgseaList()`, a wrapper around `fgsea`, a novel Monte Carlo
+algorithm for enrichment with exact statistics.
 
 ### 2. Single cell gene or module level models
 
@@ -87,35 +92,38 @@ signatures, and visualizing results.
 Multi sample / subject experiments from human cohorts including many
 individuals pre and post treatment nested into different ‘response’
 groups or treated with different drug perturbations are becoming more
-common. The methods developed for early single cell experiments for
-comparing cell types do not scale to these types complex highly nested
-data. Most notably, assumptions about independence made by methods that
-do not adjust for repeated measures (cells) from the same donor are
-violated with complex nesting. Consider the structure and effects shown
-below. Instead of ignoring or removing subject to subject variations,
-multivariate mixed effects models enable integration and quantification
-of human population variation inherent in these multi-subject
-experiments. The effects of age, sex, ethnicity can all be extracted and
-analyzed for enrichment of biological pathways. In addition, one can
-utilize the correlation of each signal driving treatment effects or
-group level differences across donors to understand relationships
-between cell phenotypes across the entire system profiled. The package
-uses correlation network analysis and a shared latent information metric
-to infer these relationships.
+common. Common workflows for single cell analysis focus on comparing
+differences between cell type clusters and do not provide support for
+complex highly nested data. The approach outlined hereenables
+integrating human population variations with inference about differences
+due to group status or treatment effects and single cell variations. For
+example, assumptions about independence made by many methods methods
+that do not adjust for repeated measures (cells) from the same donor are
+violated with complex nesting. This package supports this complex
+structure. Consider the structure and effects shown below. Instead of
+ignoring or removing subject to subject variations, multivariate mixed
+effects models enable integration and quantification of human population
+variation inherent in these multi-subject experiments. The effects of
+age, sex, ethnicity can all be extracted and analyzed for enrichment of
+biological pathways. In addition, by using correlation network analysis
+and a shared latent information metric one can understand relationships
+between cell phenotypes across the entire system profiled.
 
 <img src="man/figures/scglmmr.overview.png" width=750 height=550 />
+
+### Additional details
 
 We model expression within each cluster/ cell type independently in
 order to capture perturbation effects of cell type specific genes as
 well as genes that are expressed by multiple cell types. This is
-necessary in order to implement linear methods since the mean variance
-trend must be modeld after filtering out genes with near 0 expression
+necessary in order to implement linear methods which first model the
+mean variance trend after filtering out genes with near 0 expression
 across all individuals for a given cell type. Transcripts are therefore
 tested for perturbation effects within only in the cell types that
-express the genes, instead of across all cell types. Enrichment and fdr
-testing is then done within cell type enabling the extraction of cell
-type specific signatures of perturbation response. The package provides
-simple methods for extracting such signatures.
+express the genes. Enrichment and fdr testing is then done within cell
+type enabling the extraction of cell type specific signatures of
+perturbation response. The package provides simple methods for
+extracting such signatures.
 
 The approach in this package is particularly well suited for multimodal
 single cell data where separate interpretable information (for example
@@ -128,11 +136,6 @@ normalized protein levels, then using the workflows described in this
 package to integrate human population variation with transcriptome
 variations, inferring e.g. drug treatment effects within each protein
 based subset.
-
-For examples of use of this package see: [Mulè et al *Immunity* (2024 in
-press)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10120791/) [Mulè et
-al *Biorxiv* (2022 in
-press)](https://www.biorxiv.org/content/10.1101/2022.06.05.494592v1.full)
 
 <!-- badges: start -->
 <!-- badges: end -->

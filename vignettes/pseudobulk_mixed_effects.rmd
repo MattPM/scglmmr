@@ -126,11 +126,12 @@ dge = Normalize(pseudobulk.list = pb, design = design, minimum.gene.count = 5)
 
 ### Fit models and specify a priori contrasts corresponding to the desired effect comparisons  
 
-Below shows 2 steps. 1: Specify a varying intercept model using [lme4 symbolic model formula](https://arxiv.org/pdf/1911.08628.pdfs). The `1|subjectID` term treats individual as a random effect. This partially pools the estimate for baseline expression toward the global trend for each cell type by fitting a normal distribution to baseline expression (for each gene in the genome separately). 
+Below shows 2 steps  
+1: Specify a varying intercept model using [lme4 symbolic model formula](https://arxiv.org/pdf/1911.08628.pdfs). The `1|subjectID` term treats individual as a random effect to adjust for the non independence in expression between the same individual by estimating baseline expression variation with a normal distribution for each gene in the genome.  
 
 In the example below, we want estimate baseline differences, treatment effects across all individuals and the difference in fold changes between groups adjusting estimates for age and sex (and modeling the individual variation with a varying effect). To do this we specify a custom a. priori contrast matrix. 
 
-2: Using the factor variable combining group and time, we create contrasts over the levels to define effects of interest. The function `makeContrastsDream` is used for this purpose which works the same way as the limma function makeContrasts. More simple contrasts or more complex contrasts are also possible. This step is critical for deriving the correct effec size estimates. More information on specifying contrast matrices is available here: [A guide to creating design matrices for gene expression experiments](https://bioconductor.org/packages/release/workflows/vignettes/RNAseq123/inst/doc/designmatrices.html)
+2: Using the factor variable combining group and time, we create contrasts over the levels to define effects of interest. The function `makeContrastsDream` is used for this purpose which is similar to the limma function makeContrasts. More simple contrasts or more complex contrasts are also possible. This step is critical for deriving the correct effect size estimates. More information on specifying contrast matrices is available here: [A guide to creating design matrices for gene expression experiments](https://bioconductor.org/packages/release/workflows/vignettes/RNAseq123/inst/doc/designmatrices.html)
 
 ```{r}
 # specify a random intercept model with lme4 syntax.
@@ -165,24 +166,24 @@ fit1 = FitDream(pb.list = dge,
 
 ```
 
-Note, `variancePartition::dream` now incorporates an emperical Bayes step derived for mixed effects models accounting for per gene degrees of freedom, please see: https://github.com/GabrielHoffman/variancePartition/issues/54. 
+Note, `variancePartition::dream` now [incorporates an emperical Bayes step](https://github.com/GabrielHoffman/variancePartition/issues/54) derived for models fit with lme4. 
 
 ### Downstream gene set enrichment analysis within celltypes for different effects 
 
-Run gene set enrichment analysis within each cell type fbased on genes ranked by effect size for each of the effects defined above.  
+Run gene set enrichment analysis within each cell type based on genes ranked by effect size for each of the effects defined above.  
 
-Here within each cell type and for each contrast we run gene set enrichment analysis using 2 functions `ExtractResult` and `FgseaList`. `ExtractResult` is used to extract a list of gene ranks (it can be used as a wrapper around dream::topTable and limma::topTable to return a full list of results). Since we had multiple covariates in a mixed model and we used a custom contrast matrix, we specify the covariate of interest from the contrast using arguments `coefficient.number`  and `coef.name` which are output in results based on the names of the contrasts. 
-
+Here within each cell type and for each contrast we run gene set enrichment analysis using 2 functions `ExtractResult` and `FgseaList`. `ExtractResult` is used to extract a list of gene ranks (a wrapper around dream::topTable and limma::topTable to return a full list of results). Since we had multiple covariates in a mixed model and we used a custom contrast matrix, we specify the covariate of interest from the contrast using arguments `coefficient.number`  and `coef.name` which are output in results based on the names of the contrasts. 
 
 Based on our contrast matrix (the object `L2` we created above with `makeContrastsDream`), `coefficient.number = 1` corresponds to the baseline difference between groups, `coefficient.number = 2` is the difference in fold changes between the groups and `coefficient.number = 3` is the pre vs post perturbation difference across subjects in both groups. Estimates for the covariates are also availabe. 
 
 #### Examples of extracting gene ranks based on contrasts and running gene set enrichment 
 
 ```{r}
-
 # msigDB hallmark pathways are included in the scglmmr package
+# can load any custom gene set 
 hlmk = scglmmr::hallmark
-scglmmr::ExtractResult()
+
+
 # extract genes ranked by treatment effect (across all donors) 
 rtreat = ExtractResult(model.fit.list = fit1,
                        what = 'lmer.z.ranks',
@@ -207,7 +208,7 @@ hlmk.delta = RunFgseaOnRankList(rank.list.celltype = rdelta,
 
 ```
 
-On a technical note, it's also possible to fit a simple model for the baseline contrast not estimating the variation across subjects with a random effect as this contrast is more typically estimated with a standard group 1 vs 2 least squares approach. The function `RunVoomLimma` is provided to fit these models. If you compare the effect size estimates for an individual cell type for the `coefficient.number = 1` from the mixed model fits (object `fit1` above) to the models below they will be very highly corrleated along the diagonal with some differences arising to the different degrees of freedom, sample size and variance coming from the additional layer of variation estimated by the mixed model. The choice of model to use is up to the user. 
+On a technical note, it's also possible to fit a simple model for the baseline contrast not estimating the variation across subjects with a random effect as this contrast is more typically estimated with a standard group 1 vs 2 least squares approach. The function `RunVoomLimma` is provided to fit these models. If you compare the effect size estimates for an individual cell type for the `coefficient.number = 1` from the mixed model fits (object `fit1` above) to the models below they are highly correlated along the diagonal with some differences arising to the different degrees of freedom, sample size and variance coming from the additional layer of variation estimated by the mixed model. The choice of model to use is up to the user. 
 
 ```{r}
 # fit simple linear model for the baseline group level contrast 
@@ -281,6 +282,23 @@ results.sorted = treat.JI$sortedgsea %>%
   dplyr::mutate(signal = paste(celltype, pathway, sep = '~'))
   
 # data.table::fwrite(results.sorted, file = paste0(datapath, 'g0.result.sort.txt'),sep = "\t")
+```
+
+### Network analysis of relationships between cell types based on correlation and shared information. 
+
+See separate networks vignette (coming soon). 
+
+Example usage provided below.  
+
+For details on implementation see methods section of https://www.medrxiv.org/content/10.1101/2023.03.20.23287474v1
+
+```{r}
+
+index = LeadingEdgeIndexed(gsea.result.list = glist,padj.threshold = 0.05)
+jmat = Jmatlist(index)
+sig = Signaturescores(feature.list = gexp, indexedgenes = index)
+sli.list = SLImatrix(sig.scores = sig, jmat.list = jmat, correlation.type = 'spearman')
+
 ```
 
 
